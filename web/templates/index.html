@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>EduBot</span>
+            </div>
+            <div class="nav-menu">
+                <a href="#about" class="nav-link">О преподавателе</a>
+                <a href="#subjects" class="nav-link">Предметы</a>
+                <a href="#contact" class="nav-link">Контакты</a>
+                <button class="btn btn-primary" onclick="openTrialModal()">
+                    <i class="fas fa-calendar-plus"></i>
+                    Записаться на пробное занятие
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Главный экран -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Подготовка к ЕГЭ по физике и математике
+                </h1>
+                <p class="hero-subtitle">
+                    С Александром Пугачевым - опытным преподавателем с 5-летним стажем
+                </p>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">85+</span>
+                        <span class="stat-label">Средний балл учеников</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">5</span>
+                        <span class="stat-label">Лет опыта</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">100+</span>
+                        <span class="stat-label">Успешных учеников</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-large" onclick="openTrialModal()">
+                    <i class="fas fa-rocket"></i>
+                    Начать обучение
+                </button>
+            </div>
+            <div class="hero-image">
+                <div class="teacher-card">
+                    <div class="teacher-photo">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <h3>Александр Пугачев</h3>
+                    <p>Преподаватель физики и математики</p>
+                    <div class="teacher-badges">
+                        <span class="badge">ЕГЭ эксперт</span>
+                        <span class="badge">Опыт 5+ лет</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- О преподавателе -->
+    <section id="about" class="about">
+        <div class="container">
+            <h2 class="section-title">О преподавателе</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <h3>Александр Пугачев</h3>
+                    <p class="about-description">
+                        Опытный преподаватель физики и профильной математики с 5-летним стажем. 
+                        Специализируюсь на подготовке к ЕГЭ и помогаю ученикам достигать высоких результатов.
+                    </p>
+                    <div class="achievements">
+                        <div class="achievement">
+                            <i class="fas fa-trophy"></i>
+                            <div>
+                                <h4>Высокие результаты</h4>
+                                <p>Средний балл моих учеников составляет 85+ баллов</p>
+                            </div>
+                        </div>
+                        <div class="achievement">
+                            <i class="fas fa-users"></i>
+                            <div>
+                                <h4>Индивидуальный подход</h4>
+                                <p>Каждый ученик получает персональное внимание и поддержку</p>
+                            </div>
+                        </div>
+                        <div class="achievement">
+                            <i class="fas fa-chart-line"></i>
+                            <div>
+                                <h4>Системная подготовка</h4>
+                                <p>Структурированная программа с четкими целями и дедлайнами</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Предметы -->
+    <section id="subjects" class="subjects">
+        <div class="container">
+            <h2 class="section-title">Предметы</h2>
+            <div class="subjects-grid">
+                <div class="subject-card">
+                    <div class="subject-icon">
+                        <i class="fas fa-atom"></i>
+                    </div>
+                    <h3>Физика</h3>
+                    <p>Подготовка к ЕГЭ по физике с разбором всех типов задач</p>
+                    <ul class="subject-features">
+                        <li>Механика</li>
+                        <li>Термодинамика</li>
+                        <li>Электродинамика</li>
+                        <li>Оптика и квантовая физика</li>
+                    </ul>
+                </div>
+                <div class="subject-card">
+                    <div class="subject-icon">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <h3>Профильная математика</h3>
+                    <p>Углубленная подготовка к ЕГЭ по профильной математике</p>
+                    <ul class="subject-features">
+                        <li>Алгебра</li>
+                        <li>Геометрия</li>
+                        <li>Начала математического анализа</li>
+                        <li>Теория вероятностей</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Контакты -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2 class="section-title">Контакты</h2>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <span>Телефон: +7 (XXX) XXX-XX-XX</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fab fa-telegram"></i>
+                        <span>Telegram: @pugachev_teacher</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>Email: pugachev@edubot.ru</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Модальное окно записи на пробное занятие -->
+    <div id="trialModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Записаться на пробное занятие</h2>
+                <button class="modal-close" onclick="closeTrialModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="trialForm" class="modal-body">
+                <div class="form-group">
+                    <label for="name">Имя ученика *</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="grade">Класс *</label>
+                    <select id="grade" name="grade" required>
+                        <option value="">Выберите класс</option>
+                        <option value="10">10 класс</option>
+                        <option value="11">11 класс</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="subject">Предмет *</label>
+                    <select id="subject" name="subject" required>
+                        <option value="">Выберите предмет</option>
+                        <option value="physics">Физика</option>
+                        <option value="math">Математика</option>
+                        <option value="both">Оба предмета</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="level">Текущий уровень (1-5) *</label>
+                    <select id="level" name="level" required>
+                        <option value="">Выберите уровень</option>
+                        <option value="1">1 - Начальный</option>
+                        <option value="2">2 - Слабый</option>
+                        <option value="3">3 - Средний</option>
+                        <option value="4">4 - Хороший</option>
+                        <option value="5">5 - Отличный</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Контактный телефон *</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="comment">Комментарий или вопросы</label>
+                    <textarea id="comment" name="comment" rows="4"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeTrialModal()">
+                        Отмена
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i>
+                        Отправить заявку
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Подвал -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>EduBot by Пугачев</span>
+                </div>
+                <p>&copy; 2024 EduBot. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

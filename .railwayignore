@@ -1,0 +1,11 @@
+# Railway ignore file
+data/
+uploads/
+.env
+*.log
+.DS_Store
+.git/
+.gitignore
+README.md
+QUICKSTART.md
+Makefile

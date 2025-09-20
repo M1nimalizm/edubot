@@ -1,0 +1,446 @@
+// Основной JavaScript файл для EduBot
+
+// Глобальные переменные
+let currentUser = null;
+let authToken = null;
+
+// Инициализация приложения
+document.addEventListener('DOMContentLoaded', function() {
+    initializeApp();
+    setupEventListeners();
+    checkAuthStatus();
+});
+
+// Инициализация приложения
+function initializeApp() {
+    console.log('EduBot initialized');
+    
+    // Плавная прокрутка для навигации
+    setupSmoothScrolling();
+    
+    // Анимации при скролле
+    setupScrollAnimations();
+}
+
+// Настройка обработчиков событий
+function setupEventListeners() {
+    // Форма записи на пробное занятие
+    const trialForm = document.getElementById('trialForm');
+    if (trialForm) {
+        trialForm.addEventListener('submit', handleTrialSubmission);
+    }
+    
+    // Закрытие модального окна по клику вне его
+    const modal = document.getElementById('trialModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeTrialModal();
+            }
+        });
+        modal.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-close')) {
+                closeTrialModal();
+            }
+        });
+    }
+    
+    // Обработка клавиши Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeTrialModal();
+        }
+    });
+}
+
+// Плавная прокрутка для навигации
+function setupSmoothScrolling() {
+    const navLinks = document.querySelectorAll('.nav-link[href^="#"]');
+    
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+                const offsetTop = targetElement.offsetTop - 70; // Учитываем высоту навигации
+                
+                window.scrollTo({
+                    top: offsetTop,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+}
+
+// Анимации при скролле
+function setupScrollAnimations() {
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+    
+    // Наблюдаем за элементами для анимации
+    const animatedElements = document.querySelectorAll('.subject-card, .achievement, .contact-item');
+    animatedElements.forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(30px)';
+        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(el);
+    });
+}
+
+// Проверка статуса авторизации
+function checkAuthStatus() {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+        authToken = token;
+        // TODO: Валидировать токен с сервером
+        console.log('User is authenticated');
+    }
+}
+
+// Открытие модального окна записи на пробное занятие
+function openTrialModal() {
+    const modal = document.getElementById('trialModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        // Фокус на первом поле формы
+        const firstInput = modal.querySelector('input, select');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 100);
+        }
+    }
+}
+
+// Закрытие модального окна
+function closeTrialModal() {
+    const modal = document.getElementById('trialModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+        
+        // Очистка формы
+        const form = document.getElementById('trialForm');
+        if (form) {
+            form.reset();
+        }
+    }
+}
+
+// Обработка отправки формы записи на пробное занятие
+async function handleTrialSubmission(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Валидация данных
+    if (!validateTrialForm(data)) {
+        return;
+    }
+    
+    // Показываем индикатор загрузки
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+    submitBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/public/trial-request', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': authToken ? `Bearer ${authToken}` : ''
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            showNotification('Заявка успешно отправлена! Мы свяжемся с вами в ближайшее время.', 'success');
+            closeTrialModal();
+        } else {
+            const error = await response.json();
+            showNotification(error.error || 'Произошла ошибка при отправке заявки', 'error');
+        }
+    } catch (error) {
+        console.error('Error submitting trial request:', error);
+        showNotification('Произошла ошибка при отправке заявки. Попробуйте еще раз.', 'error');
+    } finally {
+        // Восстанавливаем кнопку
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+// Валидация формы записи на пробное занятие
+function validateTrialForm(data) {
+    const errors = [];
+    
+    if (!data.name || data.name.trim().length < 2) {
+        errors.push('Имя должно содержать минимум 2 символа');
+    }
+    
+    if (!data.grade) {
+        errors.push('Выберите класс');
+    }
+    
+    if (!data.subject) {
+        errors.push('Выберите предмет');
+    }
+    
+    if (!data.level) {
+        errors.push('Выберите текущий уровень');
+    }
+    
+    if (!data.phone || !isValidPhone(data.phone)) {
+        errors.push('Введите корректный номер телефона');
+    }
+    
+    if (errors.length > 0) {
+        showNotification(errors.join('<br>'), 'error');
+        return false;
+    }
+    
+    return true;
+}
+
+// Валидация номера телефона
+function isValidPhone(phone) {
+    const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,}$/;
+    return phoneRegex.test(phone);
+}
+
+// Показ уведомлений
+function showNotification(message, type = 'info') {
+    // Удаляем существующие уведомления
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notification => notification.remove());
+    
+    // Создаем новое уведомление
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas ${getNotificationIcon(type)}"></i>
+            <span>${message}</span>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    // Добавляем стили для уведомления
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${getNotificationColor(type)};
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        z-index: 3000;
+        max-width: 400px;
+        animation: slideInRight 0.3s ease;
+    `;
+    
+    // Добавляем в DOM
+    document.body.appendChild(notification);
+    
+    // Автоматическое удаление через 5 секунд
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 5000);
+}
+
+// Получение иконки для уведомления
+function getNotificationIcon(type) {
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+    };
+    return icons[type] || icons.info;
+}
+
+// Получение цвета для уведомления
+function getNotificationColor(type) {
+    const colors = {
+        success: '#27AE60',
+        error: '#E74C3C',
+        warning: '#F39C12',
+        info: '#3498DB'
+    };
+    return colors[type] || colors.info;
+}
+
+// Авторизация через Telegram
+async function authenticateWithTelegram(telegramData) {
+    try {
+        const response = await fetch('/api/public/auth/telegram', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(telegramData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            authToken = result.token;
+            currentUser = result.user;
+            
+            // Сохраняем токен в localStorage
+            localStorage.setItem('authToken', authToken);
+            
+            // Обновляем интерфейс
+            updateUIForUser(result.user);
+            
+            return result;
+        } else {
+            const error = await response.json();
+            throw new Error(error.error);
+        }
+    } catch (error) {
+        console.error('Authentication error:', error);
+        showNotification('Ошибка авторизации: ' + error.message, 'error');
+        throw error;
+    }
+}
+
+// Обновление интерфейса для авторизованного пользователя
+function updateUIForUser(user) {
+    // Скрываем кнопку записи на пробное занятие для авторизованных пользователей
+    const trialButtons = document.querySelectorAll('[onclick="openTrialModal()"]');
+    trialButtons.forEach(btn => {
+        if (user.role === 'student') {
+            btn.textContent = 'Личный кабинет';
+            btn.onclick = () => window.location.href = '/student/dashboard';
+        } else if (user.role === 'teacher') {
+            btn.textContent = 'Панель преподавателя';
+            btn.onclick = () => window.location.href = '/teacher/dashboard';
+        }
+    });
+}
+
+// Выход из системы
+function logout() {
+    authToken = null;
+    currentUser = null;
+    localStorage.removeItem('authToken');
+    
+    // Обновляем интерфейс
+    location.reload();
+}
+
+// Утилиты для работы с API
+const api = {
+    async request(url, options = {}) {
+        const defaultOptions = {
+            headers: {
+                'Content-Type': 'application/json',
+                ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+            }
+        };
+        
+        const mergedOptions = { ...defaultOptions, ...options };
+        
+        const response = await fetch(url, mergedOptions);
+        
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ error: 'Network error' }));
+            throw new Error(error.error || 'Request failed');
+        }
+        
+        return response.json();
+    },
+    
+    get(url) {
+        return this.request(url, { method: 'GET' });
+    },
+    
+    post(url, data) {
+        return this.request(url, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+    
+    put(url, data) {
+        return this.request(url, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+    
+    delete(url) {
+        return this.request(url, { method: 'DELETE' });
+    }
+};
+
+// Добавляем CSS для анимаций уведомлений
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    .notification-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .notification-close {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 50%;
+        transition: background-color 0.2s;
+    }
+    
+    .notification-close:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+`;
+document.head.appendChild(style);
