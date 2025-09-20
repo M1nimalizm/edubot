@@ -227,7 +227,7 @@ func (s *AuthService) GetTrialRequests() ([]models.TrialRequest, error) {
 // GetStats получает статистику для панели управления
 func (s *AuthService) GetStats() (map[string]interface{}, error) {
 	// Получаем количество учеников
-	students, err := s.userRepo.GetByRole(models.RoleStudent)
+	students, err := s.userRepo.ListByRole(models.RoleStudent)
 	if err != nil {
 		return nil, err
 	}

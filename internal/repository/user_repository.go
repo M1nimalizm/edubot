@@ -95,4 +95,3 @@ func (r *UserRepository) GenerateInviteCode() (string, error) {
 		}
 	}
 }
-
