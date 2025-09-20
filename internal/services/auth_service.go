@@ -248,10 +248,10 @@ func (s *AuthService) GetStats() (map[string]interface{}, error) {
 
 	return map[string]interface{}{
 		"total_students":    len(students),
-		"pending_requests": pendingCount,
+		"pending_requests":  pendingCount,
 		"total_requests":    len(requests),
 		"total_assignments": 0, // TODO: реализовать когда будут задания
-		"total_content":    0,  // TODO: реализовать когда будет контент
+		"total_content":     0, // TODO: реализовать когда будет контент
 	}, nil
 }
 
