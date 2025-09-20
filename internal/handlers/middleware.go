@@ -114,15 +114,20 @@ func StudentOnlyMiddleware() gin.HandlerFunc {
 // CORSMiddleware создает middleware для CORS
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Разрешаем все домены для Telegram WebApp
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Requested-With")
 		c.Header("Access-Control-Allow-Credentials", "true")
 
 		// Заголовки для Telegram WebApp
-		c.Header("X-Frame-Options", "SAMEORIGIN")
-		c.Header("Content-Security-Policy", "frame-ancestors 'self' https://web.telegram.org https://telegram.org")
-		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+		c.Header("X-Frame-Options", "ALLOWALL")
+		c.Header("Content-Security-Policy", "frame-ancestors *")
+		c.Header("Referrer-Policy", "no-referrer-when-downgrade")
+		
+		// Дополнительные заголовки для Telegram
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Header("X-XSS-Protection", "1; mode=block")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)

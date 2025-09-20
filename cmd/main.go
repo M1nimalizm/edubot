@@ -85,6 +85,15 @@ func main() {
 	// Статические файлы
 	router.Static("/static", "./web/static")
 	router.LoadHTMLGlob("web/templates/*")
+	
+	// Специальный endpoint для Telegram WebApp
+	router.GET("/telegram-check", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "telegram_ready",
+			"webapp_url": "https://edubot-0g05.onrender.com",
+			"bot_username": "EduBot_by_Pugachev_bot",
+		})
+	})
 
 	// Главная страница
 	router.GET("/", func(c *gin.Context) {

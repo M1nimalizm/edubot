@@ -9,7 +9,38 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
     checkAuthStatus();
+    initializeTelegramWebApp();
 });
+
+// Инициализация Telegram WebApp
+function initializeTelegramWebApp() {
+    if (window.Telegram && window.Telegram.WebApp) {
+        console.log('Telegram WebApp detected');
+        
+        // Настраиваем WebApp
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+        
+        // Настраиваем тему
+        document.body.style.backgroundColor = window.Telegram.WebApp.backgroundColor;
+        document.body.style.color = window.Telegram.WebApp.textColor;
+        
+        // Скрываем кнопку закрытия, если мы в Telegram
+        const closeButtons = document.querySelectorAll('.telegram-hidden');
+        closeButtons.forEach(btn => btn.style.display = 'none');
+        
+        // Настраиваем главную кнопку
+        window.Telegram.WebApp.MainButton.setText('Записаться на пробное занятие');
+        window.Telegram.WebApp.MainButton.onClick(function() {
+            openTrialModal();
+        });
+        window.Telegram.WebApp.MainButton.show();
+        
+        console.log('Telegram WebApp initialized successfully');
+    } else {
+        console.log('Running outside Telegram WebApp');
+    }
+}
 
 // Инициализация приложения
 function initializeApp() {
