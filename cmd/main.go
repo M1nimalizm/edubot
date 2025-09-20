@@ -93,6 +93,13 @@ func main() {
 		})
 	})
 
+	// Панель управления учителя
+	router.GET("/teacher-dashboard", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "teacher-dashboard.html", gin.H{
+			"title": "Панель управления - EduBot",
+		})
+	})
+
 	// API маршруты
 	api := router.Group("/api")
 
@@ -158,19 +165,19 @@ func main() {
 		// Telegram проверяет доступность webhook
 		c.JSON(http.StatusOK, gin.H{"status": "webhook_ready"})
 	})
-	
+
 	router.POST("/webhook", func(c *gin.Context) {
 		var update map[string]interface{}
 		if err := c.ShouldBindJSON(&update); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		
+
 		// Обрабатываем обновление от Telegram
 		if telegramBot != nil {
 			telegramBot.ProcessUpdate(update)
 		}
-		
+
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 

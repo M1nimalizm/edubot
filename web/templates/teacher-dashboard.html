@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель управления - EduBot</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .dashboard {
+            padding-top: 80px;
+            min-height: 100vh;
+        }
+        
+        .dashboard-header {
+            background: var(--white);
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+        
+        .dashboard-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .dashboard-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+        }
+        
+        .dashboard-card h3 {
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            display: block;
+        }
+        
+        .stat-label {
+            color: var(--gray-medium);
+            font-size: 0.9rem;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .trial-requests {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .request-item {
+            padding: 1rem;
+            border: 1px solid var(--gray-light);
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            background: var(--white);
+        }
+        
+        .request-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .request-name {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .request-date {
+            color: var(--gray-medium);
+            font-size: 0.9rem;
+        }
+        
+        .request-details {
+            color: var(--text-color);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .request-phone {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>EduBot - Панель управления</span>
+            </div>
+            <div class="nav-menu">
+                <a href="/" class="nav-link">На главную</a>
+                <button class="btn btn-outline" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Выйти
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <div class="container">
+                <h1><i class="fas fa-chalkboard-teacher"></i> Панель управления</h1>
+                <p>Добро пожаловать, Александр! Управляйте вашей образовательной платформой.</p>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- Статистика -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-number" id="totalStudents">0</span>
+                    <span class="stat-label">Всего учеников</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="pendingRequests">0</span>
+                    <span class="stat-label">Новых заявок</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="totalAssignments">0</span>
+                    <span class="stat-label">Заданий</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="totalContent">0</span>
+                    <span class="stat-label">Материалов</span>
+                </div>
+            </div>
+
+            <!-- Основной контент -->
+            <div class="dashboard-content">
+                <!-- Заявки на пробные уроки -->
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-calendar-plus"></i> Заявки на пробные уроки</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-primary btn-small" onclick="refreshTrialRequests()">
+                            <i class="fas fa-sync"></i> Обновить
+                        </button>
+                        <button class="btn btn-outline btn-small" onclick="markAllAsContacted()">
+                            <i class="fas fa-check"></i> Отметить все как связанные
+                        </button>
+                    </div>
+                    <div class="trial-requests" id="trialRequests">
+                        <p>Загрузка заявок...</p>
+                    </div>
+                </div>
+
+                <!-- Быстрые действия -->
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-tools"></i> Быстрые действия</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="createAssignment()">
+                            <i class="fas fa-plus"></i> Создать задание
+                        </button>
+                        <button class="btn btn-outline" onclick="addContent()">
+                            <i class="fas fa-file-alt"></i> Добавить материал
+                        </button>
+                        <button class="btn btn-outline" onclick="generateInviteCode()">
+                            <i class="fas fa-key"></i> Создать код приглашения
+                        </button>
+                        <button class="btn btn-outline" onclick="viewStudents()">
+                            <i class="fas fa-users"></i> Ученики
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Последние активности -->
+            <div class="dashboard-card">
+                <h3><i class="fas fa-history"></i> Последние активности</h3>
+                <div id="recentActivity">
+                    <p>Загрузка активности...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        // Загрузка данных панели управления
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+        });
+
+        async function loadDashboardData() {
+            try {
+                // Загружаем статистику
+                await loadStats();
+                
+                // Загружаем заявки на пробные уроки
+                await loadTrialRequests();
+                
+                // Загружаем последние активности
+                await loadRecentActivity();
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showNotification('Ошибка загрузки данных панели управления', 'error');
+            }
+        }
+
+        async function loadStats() {
+            // Здесь должны быть реальные API вызовы
+            // Пока используем заглушки
+            document.getElementById('totalStudents').textContent = '12';
+            document.getElementById('pendingRequests').textContent = '3';
+            document.getElementById('totalAssignments').textContent = '25';
+            document.getElementById('totalContent').textContent = '18';
+        }
+
+        async function loadTrialRequests() {
+            const container = document.getElementById('trialRequests');
+            
+            // Заглушка данных
+            const requests = [
+                {
+                    name: 'Анна Петрова',
+                    grade: 11,
+                    subject: 'Физика',
+                    level: 3,
+                    phone: '+7 (999) 123-45-67',
+                    comment: 'Интересует подготовка к ЕГЭ по физике',
+                    date: '20.09.2024 14:30'
+                },
+                {
+                    name: 'Михаил Сидоров',
+                    grade: 10,
+                    subject: 'Математика',
+                    level: 4,
+                    phone: '+7 (999) 234-56-78',
+                    comment: 'Нужна помощь с алгеброй',
+                    date: '20.09.2024 13:15'
+                },
+                {
+                    name: 'Елена Козлова',
+                    grade: 11,
+                    subject: 'Оба предмета',
+                    level: 2,
+                    phone: '+7 (999) 345-67-89',
+                    comment: 'Подготовка к ЕГЭ по физике и математике',
+                    date: '19.09.2024 16:45'
+                }
+            ];
+
+            if (requests.length === 0) {
+                container.innerHTML = '<p>Новых заявок нет</p>';
+                return;
+            }
+
+            container.innerHTML = requests.map(request => `
+                <div class="request-item">
+                    <div class="request-header">
+                        <span class="request-name">${request.name}</span>
+                        <span class="request-date">${request.date}</span>
+                    </div>
+                    <div class="request-details">
+                        ${request.grade} класс • ${request.subject} • Уровень ${request.level}
+                    </div>
+                    <div class="request-details">
+                        ${request.comment}
+                    </div>
+                    <div class="request-phone">
+                        <i class="fas fa-phone"></i> ${request.phone}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadRecentActivity() {
+            const container = document.getElementById('recentActivity');
+            
+            // Заглушка данных
+            const activities = [
+                'Новая заявка от Анны Петровой',
+                'Михаил Сидоров сдал задание по алгебре',
+                'Елена Козлова просмотрела материал по физике',
+                'Создано новое задание "Кинематика"'
+            ];
+
+            container.innerHTML = activities.map(activity => `
+                <div class="request-item">
+                    <i class="fas fa-circle" style="color: var(--accent-color); font-size: 0.5rem; margin-right: 0.5rem;"></i>
+                    ${activity}
+                </div>
+            `).join('');
+        }
+
+        function refreshTrialRequests() {
+            loadTrialRequests();
+            showNotification('Заявки обновлены', 'success');
+        }
+
+        function markAllAsContacted() {
+            showNotification('Все заявки отмечены как связанные', 'success');
+            loadTrialRequests();
+        }
+
+        function createAssignment() {
+            showNotification('Функция создания заданий в разработке', 'info');
+        }
+
+        function addContent() {
+            showNotification('Функция добавления материалов в разработке', 'info');
+        }
+
+        function generateInviteCode() {
+            showNotification('Функция создания кодов приглашения в разработке', 'info');
+        }
+
+        function viewStudents() {
+            showNotification('Функция просмотра учеников в разработке', 'info');
+        }
+
+        function logout() {
+            if (confirm('Вы уверены, что хотите выйти?')) {
+                window.location.href = '/';
+            }
+        }
+    </script>
+</body>
+</html>

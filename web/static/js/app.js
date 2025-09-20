@@ -444,3 +444,71 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Функции для работы с модальным окном учителя
+function openTeacherLogin() {
+    const modal = document.getElementById('teacherLoginModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeTeacherLoginModal() {
+    const modal = document.getElementById('teacherLoginModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        
+        // Очищаем форму
+        const form = document.getElementById('teacherLoginForm');
+        if (form) {
+            form.reset();
+        }
+    }
+}
+
+// Обработка отправки формы входа учителя
+document.addEventListener('DOMContentLoaded', function() {
+    const teacherLoginForm = document.getElementById('teacherLoginForm');
+    if (teacherLoginForm) {
+        teacherLoginForm.addEventListener('submit', handleTeacherLogin);
+    }
+});
+
+async function handleTeacherLogin(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    const password = formData.get('password');
+    
+    // Показываем индикатор загрузки
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Вход...';
+    submitBtn.disabled = true;
+    
+    try {
+        // Простая проверка пароля (в реальном приложении нужна более сложная авторизация)
+        if (password === 'teacher2024') {
+            showNotification('Успешный вход! Переходим в панель управления...', 'success');
+            
+            // Закрываем модальное окно
+            setTimeout(() => {
+                closeTeacherLoginModal();
+                // Переходим в панель управления учителя
+                window.location.href = '/teacher-dashboard';
+            }, 1500);
+        } else {
+            showNotification('Неверный пароль. Попробуйте еще раз.', 'error');
+        }
+    } catch (error) {
+        console.error('Error during teacher login:', error);
+        showNotification('Произошла ошибка при входе. Попробуйте еще раз.', 'error');
+    } finally {
+        // Восстанавливаем кнопку
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
