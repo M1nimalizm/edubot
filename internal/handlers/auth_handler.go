@@ -170,3 +170,25 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, user)
 }
+
+// GetTrialRequests получает заявки на пробные занятия
+func (h *AuthHandler) GetTrialRequests(c *gin.Context) {
+	requests, err := h.authService.GetTrialRequests()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"requests": requests})
+}
+
+// GetStats получает статистику для панели управления
+func (h *AuthHandler) GetStats(c *gin.Context) {
+	stats, err := h.authService.GetStats()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
+}

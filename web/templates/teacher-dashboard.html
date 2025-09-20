@@ -252,70 +252,84 @@
         }
 
         async function loadStats() {
-            // Здесь должны быть реальные API вызовы
-            // Пока используем заглушки
-            document.getElementById('totalStudents').textContent = '12';
-            document.getElementById('pendingRequests').textContent = '3';
-            document.getElementById('totalAssignments').textContent = '25';
-            document.getElementById('totalContent').textContent = '18';
+            try {
+                const response = await fetch('/api/teacher/stats', {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('authToken')
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('totalStudents').textContent = data.total_students || 0;
+                    document.getElementById('pendingRequests').textContent = data.pending_requests || 0;
+                    document.getElementById('totalAssignments').textContent = data.total_assignments || 0;
+                    document.getElementById('totalContent').textContent = data.total_content || 0;
+                } else {
+                    console.error('Failed to load stats:', response.status);
+                    // Fallback to default values
+                    document.getElementById('totalStudents').textContent = '0';
+                    document.getElementById('pendingRequests').textContent = '0';
+                    document.getElementById('totalAssignments').textContent = '0';
+                    document.getElementById('totalContent').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                // Fallback to default values
+                document.getElementById('totalStudents').textContent = '0';
+                document.getElementById('pendingRequests').textContent = '0';
+                document.getElementById('totalAssignments').textContent = '0';
+                document.getElementById('totalContent').textContent = '0';
+            }
         }
 
         async function loadTrialRequests() {
             const container = document.getElementById('trialRequests');
             
-            // Заглушка данных
-            const requests = [
-                {
-                    name: 'Анна Петрова',
-                    grade: 11,
-                    subject: 'Физика',
-                    level: 3,
-                    phone: '+7 (999) 123-45-67',
-                    comment: 'Интересует подготовка к ЕГЭ по физике',
-                    date: '20.09.2024 14:30'
-                },
-                {
-                    name: 'Михаил Сидоров',
-                    grade: 10,
-                    subject: 'Математика',
-                    level: 4,
-                    phone: '+7 (999) 234-56-78',
-                    comment: 'Нужна помощь с алгеброй',
-                    date: '20.09.2024 13:15'
-                },
-                {
-                    name: 'Елена Козлова',
-                    grade: 11,
-                    subject: 'Оба предмета',
-                    level: 2,
-                    phone: '+7 (999) 345-67-89',
-                    comment: 'Подготовка к ЕГЭ по физике и математике',
-                    date: '19.09.2024 16:45'
+            try {
+                const response = await fetch('/api/teacher/trial-requests', {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('authToken')
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const requests = data.requests || [];
+                    
+                    if (requests.length === 0) {
+                        container.innerHTML = '<p>Новых заявок нет</p>';
+                        return;
+                    }
+
+                    container.innerHTML = requests.map(request => {
+                        const date = new Date(request.created_at).toLocaleString('ru-RU');
+                        return `
+                            <div class="request-item">
+                                <div class="request-header">
+                                    <span class="request-name">${request.name}</span>
+                                    <span class="request-date">${date}</span>
+                                </div>
+                                <div class="request-details">
+                                    ${request.grade} класс • ${request.subject} • Уровень ${request.level}
+                                </div>
+                                <div class="request-details">
+                                    ${request.comment || 'Без комментариев'}
+                                </div>
+                                <div class="request-phone">
+                                    <i class="fas fa-phone"></i> ${request.phone}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    console.error('Failed to load trial requests:', response.status);
+                    container.innerHTML = '<p>Ошибка загрузки заявок</p>';
                 }
-            ];
-
-            if (requests.length === 0) {
-                container.innerHTML = '<p>Новых заявок нет</p>';
-                return;
+            } catch (error) {
+                console.error('Error loading trial requests:', error);
+                container.innerHTML = '<p>Ошибка загрузки заявок</p>';
             }
-
-            container.innerHTML = requests.map(request => `
-                <div class="request-item">
-                    <div class="request-header">
-                        <span class="request-name">${request.name}</span>
-                        <span class="request-date">${request.date}</span>
-                    </div>
-                    <div class="request-details">
-                        ${request.grade} класс • ${request.subject} • Уровень ${request.level}
-                    </div>
-                    <div class="request-details">
-                        ${request.comment}
-                    </div>
-                    <div class="request-phone">
-                        <i class="fas fa-phone"></i> ${request.phone}
-                    </div>
-                </div>
-            `).join('');
         }
 
         async function loadRecentActivity() {

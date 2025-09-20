@@ -219,6 +219,42 @@ func (s *AuthService) generateJWT(user *models.User) (string, error) {
 	return token.SignedString([]byte(s.jwtSecret))
 }
 
+// GetTrialRequests получает все заявки на пробные занятия
+func (s *AuthService) GetTrialRequests() ([]models.TrialRequest, error) {
+	return s.trialRepo.GetAll()
+}
+
+// GetStats получает статистику для панели управления
+func (s *AuthService) GetStats() (map[string]interface{}, error) {
+	// Получаем количество учеников
+	students, err := s.userRepo.GetByRole(models.RoleStudent)
+	if err != nil {
+		return nil, err
+	}
+
+	// Получаем количество заявок
+	requests, err := s.trialRepo.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	// Подсчитываем новые заявки (статус pending)
+	pendingCount := 0
+	for _, req := range requests {
+		if req.Status == "pending" {
+			pendingCount++
+		}
+	}
+
+	return map[string]interface{}{
+		"total_students":    len(students),
+		"pending_requests": pendingCount,
+		"total_requests":    len(requests),
+		"total_assignments": 0, // TODO: реализовать когда будут задания
+		"total_content":    0,  // TODO: реализовать когда будет контент
+	}, nil
+}
+
 // validateTelegramAuth валидирует данные авторизации Telegram (упрощенная версия)
 func (s *AuthService) validateTelegramAuth(authData *TelegramAuthData) bool {
 	// В реальном приложении здесь должна быть проверка подписи

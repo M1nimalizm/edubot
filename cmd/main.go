@@ -139,10 +139,9 @@ func main() {
 	teacher.Use(handlers.TeacherOnlyMiddleware())
 	{
 		// Управление заявками на пробные занятия
-		teacher.GET("/trial-requests", func(c *gin.Context) {
-			// TODO: Реализовать получение заявок
-			c.JSON(http.StatusOK, gin.H{"message": "Trial requests endpoint"})
-		})
+		teacher.GET("/trial-requests", authHandler.GetTrialRequests)
+		teacher.GET("/stats", authHandler.GetStats)
+		teacher.POST("/invite-code", authHandler.GenerateInviteCode)
 
 		// Генерация кодов приглашения
 		teacher.POST("/invite-codes", authHandler.GenerateInviteCode)

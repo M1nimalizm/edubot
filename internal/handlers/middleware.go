@@ -118,6 +118,11 @@ func CORSMiddleware() gin.HandlerFunc {
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
 		c.Header("Access-Control-Allow-Credentials", "true")
+		
+		// Заголовки для Telegram WebApp
+		c.Header("X-Frame-Options", "SAMEORIGIN")
+		c.Header("Content-Security-Policy", "frame-ancestors 'self' https://web.telegram.org https://telegram.org")
+		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)
