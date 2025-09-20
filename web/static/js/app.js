@@ -714,13 +714,7 @@ function initializeMobileUX() {
             }
         });
         
-        // Предотвращаем скролл при открытом селекте
-        document.addEventListener('touchmove', function(e) {
-            const openSelect = document.querySelector('.select-items:not(.select-hide)');
-            if (openSelect) {
-                e.preventDefault();
-            }
-        }, { passive: false });
+        // Убираем предотвращение скролла - позволяем нормальное поведение
     }
     
     // Обработчик изменения размера окна

@@ -117,6 +117,10 @@
             font-weight: bold;
         }
         
+        .request-phone i {
+            margin-right: 5px;
+        }
+        
         @media (max-width: 768px) {
             .dashboard-content {
                 grid-template-columns: 1fr;
@@ -311,7 +315,9 @@
                                     ${request.comment || 'Без комментариев'}
                                 </div>
                                 <div class="request-phone">
-                                    <i class="fas fa-phone"></i> ${request.phone}
+                                    ${request.contact_type === 'phone' ? 
+                                        '<i class="fas fa-phone"></i> ' + request.contact_value : 
+                                        '<i class="fab fa-telegram"></i> ' + request.contact_value}
                                 </div>
                             </div>
                         `;
