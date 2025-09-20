@@ -18,6 +18,6 @@ services:
       - key: TEACHER_TELEGRAM_ID
         value: 584479424
       - key: TELEGRAM_BOT_TOKEN
-        value: 8175784572:AAEgKw4eiOkNb5B92sWuasuK1WDLbkQIa-E
+        value: 7904749980:AAEwCC3ykkwGoQUvIfO-LgS9fTF3jw2Ioh8
       - key: TELEGRAM_WEBHOOK_URL
         value: "https://edubot-0g05.onrender.com/webhook"
