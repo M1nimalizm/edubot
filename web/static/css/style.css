@@ -774,8 +774,13 @@ section {
     
     /* Отступы для контента */
     .hero {
-        margin-top: 60px;
+        margin-top: 80px;
         padding-top: 20px;
+    }
+    
+    /* Дополнительный отступ для всех секций на мобильных */
+    section {
+        padding-top: 100px;
     }
     
     .hero-container {

@@ -182,6 +182,16 @@ function closeTrialModal() {
     }
 }
 
+// Функция для отправки формы через мобильную кнопку
+function submitTrialForm() {
+    const form = document.getElementById('trialForm');
+    if (form) {
+        // Создаем событие submit и отправляем форму
+        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+        form.dispatchEvent(submitEvent);
+    }
+}
+
 // Обработка отправки формы записи на пробное занятие
 async function handleTrialSubmission(e) {
     e.preventDefault();
@@ -211,9 +221,22 @@ async function handleTrialSubmission(e) {
     
     // Показываем индикатор загрузки
     const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
-    submitBtn.disabled = true;
+    const mobileBtn = document.querySelector('.btn-mobile');
+    const mobileBtnText = mobileBtn.querySelector('.btn-text');
+    
+    let originalText, originalMobileText;
+    
+    if (submitBtn) {
+        originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+        submitBtn.disabled = true;
+    }
+    
+    if (mobileBtn && mobileBtnText) {
+        originalMobileText = mobileBtnText.textContent;
+        mobileBtnText.textContent = 'Отправка...';
+        mobileBtn.disabled = true;
+    }
     
     try {
         const headers = {
@@ -248,9 +271,16 @@ async function handleTrialSubmission(e) {
         console.error('Error submitting trial request:', error);
         showNotification('Произошла ошибка при отправке заявки. Попробуйте еще раз.', 'error');
     } finally {
-        // Восстанавливаем кнопку
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
+        // Восстанавливаем кнопки
+        if (submitBtn && originalText) {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+        
+        if (mobileBtn && mobileBtnText && originalMobileText) {
+            mobileBtnText.textContent = originalMobileText;
+            mobileBtn.disabled = false;
+        }
     }
 }
 
