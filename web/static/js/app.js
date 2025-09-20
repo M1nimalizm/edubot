@@ -159,6 +159,11 @@ function openTrialModal() {
         if (firstInput) {
             setTimeout(() => firstInput.focus(), 100);
         }
+        
+        // Скрываем дублирующие кнопки на мобильных
+        setTimeout(() => {
+            hideDuplicateButtons();
+        }, 100);
     }
 }
 
@@ -693,6 +698,9 @@ function initializeMobileUX() {
         // Добавляем класс для мобильных устройств
         document.body.classList.add('mobile-device');
         
+        // Принудительно скрываем все кнопки кроме мобильной
+        hideDuplicateButtons();
+        
         // Улучшаем поведение кастомных селектов на мобильных
         const customSelects = document.querySelectorAll('.custom-select');
         customSelects.forEach(select => {
@@ -716,6 +724,23 @@ function initializeMobileUX() {
         
         // Убираем предотвращение скролла - позволяем нормальное поведение
     }
+}
+
+// Функция для скрытия дублирующих кнопок
+function hideDuplicateButtons() {
+    // Находим все кнопки submit кроме мобильной
+    const submitButtons = document.querySelectorAll('button[type="submit"]:not(.btn-mobile)');
+    submitButtons.forEach(button => {
+        button.style.display = 'none';
+        button.style.visibility = 'hidden';
+    });
+    
+    // Находим все кнопки с классом btn-primary кроме мобильной
+    const primaryButtons = document.querySelectorAll('.btn-primary:not(.btn-mobile)');
+    primaryButtons.forEach(button => {
+        button.style.display = 'none';
+        button.style.visibility = 'hidden';
+    });
     
     // Обработчик изменения размера окна
     window.addEventListener('resize', function() {

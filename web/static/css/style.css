@@ -574,6 +574,7 @@ section {
     position: relative;
     font-family: inherit;
     font-size: 1rem;
+    color: var(--text-color);
 }
 
 .select-selected:after {
@@ -936,6 +937,16 @@ section {
             display: none !important;
         }
         
+        /* Дополнительная защита от дублирующих кнопок */
+        .modal-content button[type="submit"]:not(.btn-mobile) {
+            display: none !important;
+        }
+        
+        /* Скрываем все кнопки с классом btn-primary кроме мобильной */
+        .modal-content .btn-primary:not(.btn-mobile) {
+            display: none !important;
+        }
+        
         /* Исправляем кастомные селекты на мобильных */
         .select-items {
             position: absolute !important;
@@ -990,6 +1001,7 @@ section {
             background: var(--white) !important;
             border: 2px solid var(--gray-light) !important;
             border-radius: var(--border-radius) !important;
+            color: var(--text-color) !important;
         }
         
         .select-selected:after {
