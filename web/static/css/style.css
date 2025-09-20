@@ -944,7 +944,7 @@ section {
         }
         
         /* Скрываем кнопки на мобильных */
-        .mobile-hidden {
+        .btn-primary:not(.btn-mobile) {
             display: none !important;
         }
         

@@ -775,9 +775,9 @@ function hideDuplicateButtons() {
         button.style.visibility = 'hidden';
     });
     
-    // Скрываем кнопки с классом mobile-hidden на мобильных
-    const mobileHiddenButtons = document.querySelectorAll('.mobile-hidden');
-    mobileHiddenButtons.forEach(button => {
+    // Дополнительное скрытие кнопок на мобильных
+    const allPrimaryButtons = document.querySelectorAll('.btn-primary:not(.btn-mobile)');
+    allPrimaryButtons.forEach(button => {
         button.style.display = 'none';
         button.style.visibility = 'hidden';
     });
