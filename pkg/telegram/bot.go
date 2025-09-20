@@ -137,20 +137,28 @@ func (b *Bot) GetUpdates() (tgbotapi.UpdatesChannel, error) {
 }
 
 // ProcessUpdate обрабатывает входящее обновление
-func (b *Bot) ProcessUpdate(update tgbotapi.Update) {
-	if update.Message == nil {
+func (b *Bot) ProcessUpdate(update map[string]interface{}) {
+	message, ok := update["message"].(map[string]interface{})
+	if !ok {
 		return
 	}
 
-	log.Printf("Received message: %s from user %d", update.Message.Text, update.Message.From.ID)
+	text, _ := message["text"].(string)
+	from, _ := message["from"].(map[string]interface{})
+	chat, _ := message["chat"].(map[string]interface{})
+	
+	userID, _ := from["id"].(float64)
+	chatID, _ := chat["id"].(float64)
 
-	// Здесь можно добавить обработку команд бота
-	switch update.Message.Text {
+	log.Printf("Received message: %s from user %d", text, int64(userID))
+
+	// Обработка команд бота
+	switch text {
 	case "/start":
-		b.SendMessage(update.Message.Chat.ID, "Добро пожаловать в EduBot! Переходите в приложение для продолжения.")
+		b.SendMessage(int64(chatID), "Добро пожаловать в EduBot! Переходите в приложение для продолжения.")
 	case "/help":
-		b.SendMessage(update.Message.Chat.ID, "Это бот для образовательной платформы EduBot. Используйте приложение для полного функционала.")
+		b.SendMessage(int64(chatID), "Это бот для образовательной платформы EduBot. Используйте приложение для полного функционала.")
 	default:
-		b.SendMessage(update.Message.Chat.ID, "Используйте приложение EduBot для взаимодействия с платформой.")
+		b.SendMessage(int64(chatID), "Используйте приложение EduBot для взаимодействия с платформой.")
 	}
 }

@@ -155,7 +155,17 @@ func main() {
 
 	// Webhook для Telegram
 	router.POST("/webhook", func(c *gin.Context) {
-		// TODO: Реализовать обработку webhook от Telegram
+		var update map[string]interface{}
+		if err := c.ShouldBindJSON(&update); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		
+		// Обрабатываем обновление от Telegram
+		if telegramBot != nil {
+			telegramBot.ProcessUpdate(update)
+		}
+		
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
