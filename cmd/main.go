@@ -161,7 +161,8 @@ func main() {
 
 	// Запускаем сервер
 	addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
-	log.Printf("Starting server on %s", addr)
+	log.Printf("Starting EduBot server on %s", addr)
+	log.Printf("Teacher Telegram ID: %d", cfg.TeacherTelegramID)
 
 	if err := router.Run(addr); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
