@@ -912,16 +912,28 @@ section {
         padding: 15px;
         font-size: 16px;
         font-weight: 600;
+        background: var(--accent-color);
+        color: var(--white);
+        border: none;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    
+    .btn-mobile:hover {
+        background: var(--primary-color);
+        transform: translateY(-2px);
     }
     
     /* Показываем мобильную кнопку только на мобильных устройствах */
     @media (max-width: 768px) {
         .mobile-submit-btn {
-            display: block;
+            display: block !important;
         }
         
-        .form-actions {
-            display: none; /* Скрываем обычные кнопки на мобильных */
+        /* Скрываем все кнопки внутри формы на мобильных */
+        .modal-body button[type="submit"]:not(.btn-mobile) {
+            display: none !important;
         }
         
         /* Исправляем кастомные селекты на мобильных */
@@ -934,16 +946,56 @@ section {
             max-height: 50vh !important;
             border-radius: 15px 15px 0 0 !important;
             z-index: 9999 !important;
+            background: var(--white) !important;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15) !important;
+            border: none !important;
         }
         
         .select-items div {
             padding: 20px 16px !important;
             font-size: 16px !important;
             border-bottom: 1px solid var(--gray-light) !important;
+            background: var(--white) !important;
+            color: var(--text-color) !important;
+            cursor: pointer !important;
+            transition: var(--transition) !important;
+        }
+        
+        .select-items div:hover {
+            background: var(--gray-light) !important;
         }
         
         .select-items div:last-child {
             border-bottom: none !important;
+            border-radius: 0 0 15px 15px !important;
+        }
+        
+        .select-items div:first-child {
+            border-radius: 15px 15px 0 0 !important;
+        }
+        
+        /* Дополнительные стили для мобильных устройств */
+        .mobile-device .modal-content {
+            margin-bottom: 100px; /* Отступ для мобильной кнопки */
+        }
+        
+        .mobile-device .modal-body {
+            padding-bottom: 120px; /* Дополнительный отступ */
+        }
+        
+        /* Улучшаем отображение выбранных значений в селектах */
+        .select-selected {
+            font-size: 16px !important;
+            padding: 15px !important;
+            background: var(--white) !important;
+            border: 2px solid var(--gray-light) !important;
+            border-radius: var(--border-radius) !important;
+        }
+        
+        .select-selected:after {
+            font-size: 18px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
         }
     }
 }

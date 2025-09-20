@@ -679,6 +679,59 @@ function initializeContactChoice() {
             }
         });
     }
+    
+    // Инициализация мобильного UX
+    initializeMobileUX();
+}
+
+// Инициализация мобильного UX
+function initializeMobileUX() {
+    // Проверяем, мобильное ли устройство
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        // Добавляем класс для мобильных устройств
+        document.body.classList.add('mobile-device');
+        
+        // Улучшаем поведение кастомных селектов на мобильных
+        const customSelects = document.querySelectorAll('.custom-select');
+        customSelects.forEach(select => {
+            const selectItems = select.querySelector('.select-items');
+            if (selectItems) {
+                // Добавляем класс для мобильных селектов
+                selectItems.classList.add('mobile-select');
+                
+                // Обработка клика по элементам селекта
+                const options = selectItems.querySelectorAll('div');
+                options.forEach(option => {
+                    option.addEventListener('click', function() {
+                        // Закрываем селект после выбора
+                        setTimeout(() => {
+                            closeAllSelects();
+                        }, 100);
+                    });
+                });
+            }
+        });
+        
+        // Предотвращаем скролл при открытом селекте
+        document.addEventListener('touchmove', function(e) {
+            const openSelect = document.querySelector('.select-items:not(.select-hide)');
+            if (openSelect) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    }
+    
+    // Обработчик изменения размера окна
+    window.addEventListener('resize', function() {
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            document.body.classList.add('mobile-device');
+        } else {
+            document.body.classList.remove('mobile-device');
+        }
+    });
 }
 
 async function handleTeacherLogin(e) {
