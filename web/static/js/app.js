@@ -148,7 +148,17 @@ async function handleTrialSubmission(e) {
     
     const form = e.target;
     const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
+    const rawData = Object.fromEntries(formData.entries());
+    
+    // Преобразуем типы данных
+    const data = {
+        name: rawData.name,
+        grade: parseInt(rawData.grade),
+        subject: rawData.subject,
+        level: parseInt(rawData.level),
+        phone: rawData.phone,
+        comment: rawData.comment || ''
+    };
     
     // Валидация данных
     if (!validateTrialForm(data)) {
@@ -208,16 +218,16 @@ function validateTrialForm(data) {
         errors.push('Имя должно содержать минимум 2 символа');
     }
     
-    if (!data.grade) {
-        errors.push('Выберите класс');
+    if (!data.grade || data.grade < 10 || data.grade > 11) {
+        errors.push('Выберите корректный класс (10 или 11)');
     }
     
     if (!data.subject) {
         errors.push('Выберите предмет');
     }
     
-    if (!data.level) {
-        errors.push('Выберите текущий уровень');
+    if (!data.level || data.level < 1 || data.level > 5) {
+        errors.push('Выберите корректный уровень подготовки (1-5)');
     }
     
     if (!data.phone || !isValidPhone(data.phone)) {
