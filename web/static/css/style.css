@@ -16,72 +16,7 @@
     --transition: all 0.3s ease;
 }
 
-/* Мобильные стили */
-@media (max-width: 768px) {
-    .container {
-        padding: 0 15px;
-    }
-    
-    .hero-content h1 {
-        font-size: 2rem;
-        line-height: 1.2;
-    }
-    
-    .hero-content p {
-        font-size: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    .btn {
-        padding: 12px 24px;
-        font-size: 14px;
-    }
-    
-    .features-grid {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-    }
-    
-    .feature-card {
-        padding: 1.5rem;
-    }
-    
-    .modal-content {
-        width: 95%;
-        max-width: 400px;
-        margin: 20px auto;
-        max-height: 90vh;
-        overflow-y: auto;
-    }
-    
-    .form-group {
-        margin-bottom: 1rem;
-    }
-    
-    .form-group label {
-        font-size: 14px;
-        margin-bottom: 0.5rem;
-    }
-    
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-        padding: 12px;
-        font-size: 16px; /* Предотвращает зум на iOS */
-    }
-    
-    .nav-container {
-        padding: 0 15px;
-    }
-    
-    .nav-links {
-        display: none;
-    }
-    
-    .mobile-menu-btn {
-        display: block;
-    }
-}
+/* Мобильные стили перенесены в основной блок @media (max-width: 768px) */
 
 /* Сброс стилей */
 * {
@@ -553,7 +488,6 @@ section {
 }
 
 .form-group input,
-.form-group select,
 .form-group textarea {
     width: 100%;
     padding: 12px 16px;
@@ -565,7 +499,6 @@ section {
 }
 
 .form-group input:focus,
-.form-group select:focus,
 .form-group textarea:focus {
     outline: none;
     border-color: var(--accent-color);
@@ -575,6 +508,98 @@ section {
 .form-group textarea {
     resize: vertical;
     min-height: 100px;
+}
+
+/* Кастомные выпадающие списки */
+.custom-select {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select select {
+    display: none;
+}
+
+.select-selected {
+    background-color: var(--white);
+    border: 2px solid var(--gray-light);
+    border-radius: var(--border-radius);
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: var(--transition);
+    position: relative;
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+.select-selected:after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    width: 0;
+    height: 0;
+    border: 6px solid transparent;
+    border-color: var(--gray-medium) transparent transparent transparent;
+    transform: translateY(-50%);
+    transition: var(--transition);
+}
+
+.select-selected.select-arrow-active:after {
+    border-color: transparent transparent var(--gray-medium) transparent;
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.select-selected:hover {
+    border-color: var(--accent-color);
+}
+
+.select-selected.select-arrow-active {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.1);
+}
+
+.select-items {
+    position: absolute;
+    background-color: var(--white);
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 99;
+    border: 2px solid var(--accent-color);
+    border-top: none;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    box-shadow: var(--shadow);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.select-hide {
+    display: none;
+}
+
+.select-items div {
+    color: var(--text-color);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--gray-light);
+    cursor: pointer;
+    user-select: none;
+    transition: var(--transition);
+}
+
+.select-items div:last-child {
+    border-bottom: none;
+}
+
+.select-items div:hover {
+    background-color: var(--accent-color);
+    color: var(--white);
+}
+
+.select-items div.same-as-selected {
+    background-color: rgba(243, 156, 18, 0.1);
+    color: var(--accent-color);
 }
 
 .form-actions {
@@ -613,15 +638,35 @@ section {
 
 /* Адаптивность */
 @media (max-width: 768px) {
-    /* Навигация для мобильных */
+    /* Фиксированная навигация для мобильных */
+    .navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: var(--white);
+        box-shadow: var(--shadow);
+        height: 60px;
+    }
+    
     .nav-container {
         padding: 0 15px;
         height: 60px;
-        flex-wrap: wrap;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
     
     .nav-brand {
         font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .nav-brand i {
+        margin-right: 8px;
+        font-size: 1.1rem;
     }
     
     .nav-menu {
@@ -643,9 +688,10 @@ section {
     }
     
     .nav-link {
-        padding: 10px 0;
+        padding: 12px 0;
         border-bottom: 1px solid var(--gray-light);
         text-align: center;
+        font-size: 16px;
     }
     
     .nav-link:last-child {
@@ -653,15 +699,16 @@ section {
     }
     
     .btn {
-        padding: 10px 16px;
-        font-size: 13px;
-        margin: 5px 0;
+        padding: 12px 20px;
+        font-size: 14px;
+        margin: 8px 0;
         width: 100%;
         text-align: center;
+        border-radius: 8px;
     }
     
     .btn i {
-        margin-right: 5px;
+        margin-right: 8px;
     }
     
     /* Мобильное меню */
@@ -672,19 +719,31 @@ section {
         font-size: 1.5rem;
         color: var(--primary-color);
         cursor: pointer;
-        padding: 5px;
+        padding: 8px;
+        border-radius: 4px;
+        transition: var(--transition);
+    }
+    
+    .mobile-menu-btn:hover {
+        background: var(--gray-light);
+    }
+    
+    /* Отступы для контента */
+    .hero {
+        margin-top: 60px;
+        padding-top: 20px;
     }
     
     .hero-container {
         grid-template-columns: 1fr;
         gap: 40px;
         text-align: center;
-        margin-top: 80px; /* Отступ от фиксированной навигации */
     }
     
     .hero-title {
         font-size: 1.8rem;
         line-height: 1.2;
+        margin-bottom: 1rem;
     }
     
     .hero-stats {
@@ -702,6 +761,16 @@ section {
     
     .form-actions {
         flex-direction: column;
+    }
+    
+    /* Модальные окна */
+    .modal-content {
+        width: 95%;
+        max-width: 400px;
+        margin: 20px auto;
+        max-height: 90vh;
+        overflow-y: auto;
+        margin-top: 80px;
     }
 }
 

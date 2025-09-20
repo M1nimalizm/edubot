@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     checkAuthStatus();
     initializeTelegramWebApp();
+    initializeCustomSelects();
 });
 
 // Инициализация Telegram WebApp
@@ -268,6 +269,73 @@ document.addEventListener('click', function(e) {
         closeMobileMenu();
     }
 });
+
+// Кастомные выпадающие списки
+function initializeCustomSelects() {
+    const customSelects = document.querySelectorAll('.custom-select');
+    
+    customSelects.forEach(customSelect => {
+        const select = customSelect.querySelector('select');
+        const selected = customSelect.querySelector('.select-selected');
+        const items = customSelect.querySelector('.select-items');
+        const options = items.querySelectorAll('div');
+        
+        // Устанавливаем начальное значение
+        const firstOption = select.querySelector('option[value=""]');
+        if (firstOption) {
+            selected.textContent = firstOption.textContent;
+        }
+        
+        // Клик по выбранному элементу
+        selected.addEventListener('click', function(e) {
+            e.stopPropagation();
+            closeAllSelects();
+            customSelect.classList.add('select-arrow-active');
+            items.classList.remove('select-hide');
+        });
+        
+        // Клик по опции
+        options.forEach(option => {
+            option.addEventListener('click', function() {
+                const value = this.getAttribute('data-value');
+                const text = this.textContent;
+                
+                // Обновляем select
+                select.value = value;
+                
+                // Обновляем отображаемый текст
+                selected.textContent = text;
+                
+                // Обновляем стили
+                options.forEach(opt => opt.classList.remove('same-as-selected'));
+                this.classList.add('same-as-selected');
+                
+                // Закрываем список
+                customSelect.classList.remove('select-arrow-active');
+                items.classList.add('select-hide');
+                
+                // Триггерим событие change
+                select.dispatchEvent(new Event('change'));
+            });
+        });
+    });
+    
+    // Закрытие при клике вне
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.custom-select')) {
+            closeAllSelects();
+        }
+    });
+}
+
+function closeAllSelects() {
+    const customSelects = document.querySelectorAll('.custom-select');
+    customSelects.forEach(customSelect => {
+        customSelect.classList.remove('select-arrow-active');
+        const items = customSelect.querySelector('.select-items');
+        items.classList.add('select-hide');
+    });
+}
 
 // Валидация формы записи на пробное занятие
 function validateTrialForm(data) {
@@ -618,3 +686,70 @@ document.addEventListener('click', function(e) {
         closeMobileMenu();
     }
 });
+
+// Кастомные выпадающие списки
+function initializeCustomSelects() {
+    const customSelects = document.querySelectorAll('.custom-select');
+    
+    customSelects.forEach(customSelect => {
+        const select = customSelect.querySelector('select');
+        const selected = customSelect.querySelector('.select-selected');
+        const items = customSelect.querySelector('.select-items');
+        const options = items.querySelectorAll('div');
+        
+        // Устанавливаем начальное значение
+        const firstOption = select.querySelector('option[value=""]');
+        if (firstOption) {
+            selected.textContent = firstOption.textContent;
+        }
+        
+        // Клик по выбранному элементу
+        selected.addEventListener('click', function(e) {
+            e.stopPropagation();
+            closeAllSelects();
+            customSelect.classList.add('select-arrow-active');
+            items.classList.remove('select-hide');
+        });
+        
+        // Клик по опции
+        options.forEach(option => {
+            option.addEventListener('click', function() {
+                const value = this.getAttribute('data-value');
+                const text = this.textContent;
+                
+                // Обновляем select
+                select.value = value;
+                
+                // Обновляем отображаемый текст
+                selected.textContent = text;
+                
+                // Обновляем стили
+                options.forEach(opt => opt.classList.remove('same-as-selected'));
+                this.classList.add('same-as-selected');
+                
+                // Закрываем список
+                customSelect.classList.remove('select-arrow-active');
+                items.classList.add('select-hide');
+                
+                // Триггерим событие change
+                select.dispatchEvent(new Event('change'));
+            });
+        });
+    });
+    
+    // Закрытие при клике вне
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.custom-select')) {
+            closeAllSelects();
+        }
+    });
+}
+
+function closeAllSelects() {
+    const customSelects = document.querySelectorAll('.custom-select');
+    customSelects.forEach(customSelect => {
+        customSelect.classList.remove('select-arrow-active');
+        const items = customSelect.querySelector('.select-items');
+        items.classList.add('select-hide');
+    });
+}

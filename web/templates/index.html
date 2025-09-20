@@ -223,31 +223,56 @@
                 </div>
                 <div class="form-group">
                     <label for="grade">Класс *</label>
-                    <select id="grade" name="grade" required>
-                        <option value="">Выберите класс</option>
-                        <option value="10">10 класс</option>
-                        <option value="11">11 класс</option>
-                    </select>
+                    <div class="custom-select">
+                        <select id="grade" name="grade" required>
+                            <option value="">Выберите класс</option>
+                            <option value="10">10 класс</option>
+                            <option value="11">11 класс</option>
+                        </select>
+                        <div class="select-selected">Выберите класс</div>
+                        <div class="select-items select-hide">
+                            <div data-value="10">10 класс</div>
+                            <div data-value="11">11 класс</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="subject">Предмет *</label>
-                    <select id="subject" name="subject" required>
-                        <option value="">Выберите предмет</option>
-                        <option value="physics">Физика</option>
-                        <option value="math">Математика</option>
-                        <option value="both">Оба предмета</option>
-                    </select>
+                    <div class="custom-select">
+                        <select id="subject" name="subject" required>
+                            <option value="">Выберите предмет</option>
+                            <option value="physics">Физика</option>
+                            <option value="math">Математика</option>
+                            <option value="both">Оба предмета</option>
+                        </select>
+                        <div class="select-selected">Выберите предмет</div>
+                        <div class="select-items select-hide">
+                            <div data-value="physics">Физика</div>
+                            <div data-value="math">Математика</div>
+                            <div data-value="both">Оба предмета</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="level">Текущий уровень (1-5) *</label>
-                    <select id="level" name="level" required>
-                        <option value="">Выберите уровень</option>
-                        <option value="1">1 - Начальный</option>
-                        <option value="2">2 - Слабый</option>
-                        <option value="3">3 - Средний</option>
-                        <option value="4">4 - Хороший</option>
-                        <option value="5">5 - Отличный</option>
-                    </select>
+                    <div class="custom-select">
+                        <select id="level" name="level" required>
+                            <option value="">Выберите уровень</option>
+                            <option value="1">1 - Начальный</option>
+                            <option value="2">2 - Слабый</option>
+                            <option value="3">3 - Средний</option>
+                            <option value="4">4 - Хороший</option>
+                            <option value="5">5 - Отличный</option>
+                        </select>
+                        <div class="select-selected">Выберите уровень</div>
+                        <div class="select-items select-hide">
+                            <div data-value="1">1 - Начальный</div>
+                            <div data-value="2">2 - Слабый</div>
+                            <div data-value="3">3 - Средний</div>
+                            <div data-value="4">4 - Хороший</div>
+                            <div data-value="5">5 - Отличный</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="phone">Контактный телефон *</label>
