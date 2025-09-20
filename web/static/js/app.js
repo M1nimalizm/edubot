@@ -162,12 +162,17 @@ async function handleTrialSubmission(e) {
     submitBtn.disabled = true;
     
     try {
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        
         const response = await fetch('/api/public/trial-request', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': authToken ? `Bearer ${authToken}` : ''
-            },
+            headers: headers,
             body: JSON.stringify(data)
         });
         
@@ -175,8 +180,15 @@ async function handleTrialSubmission(e) {
             showNotification('Заявка успешно отправлена! Мы свяжемся с вами в ближайшее время.', 'success');
             closeTrialModal();
         } else {
-            const error = await response.json();
-            showNotification(error.error || 'Произошла ошибка при отправке заявки', 'error');
+            const errorText = await response.text();
+            console.error('Trial request error:', response.status, errorText);
+            
+            try {
+                const error = JSON.parse(errorText);
+                showNotification(error.error || 'Произошла ошибка при отправке заявки', 'error');
+            } catch (e) {
+                showNotification(`Ошибка сервера (${response.status}): ${errorText}`, 'error');
+            }
         }
     } catch (error) {
         console.error('Error submitting trial request:', error);
