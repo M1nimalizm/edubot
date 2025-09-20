@@ -149,17 +149,13 @@ func main() {
 		protected.GET("/content/viewed", contentHandler.GetViewedContent)
 	}
 
-	// Маршруты только для преподавателей
+	// Маршруты только для преподавателей (защищенные)
 	teacher := api.Group("/teacher")
 	teacher.Use(handlers.AuthMiddleware(authService))
 	teacher.Use(handlers.TeacherOnlyMiddleware())
 	{
-		// Управление заявками на пробные занятия
-		teacher.GET("/trial-requests", authHandler.GetTrialRequests)
-		teacher.GET("/stats", authHandler.GetStats)
-		teacher.POST("/invite-code", authHandler.GenerateInviteCode)
-
 		// Генерация кодов приглашения
+		teacher.POST("/invite-code", authHandler.GenerateInviteCode)
 		teacher.POST("/invite-codes", authHandler.GenerateInviteCode)
 
 		// Управление заданиями
