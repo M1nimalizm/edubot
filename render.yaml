@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: edubot
+    env: go
+    buildCommand: go build -o edubot cmd/main.go
+    startCommand: ./edubot
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0

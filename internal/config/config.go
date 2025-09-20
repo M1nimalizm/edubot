@@ -39,7 +39,7 @@ func Load() (*Config, error) {
 
 	config := &Config{
 		Port:               getEnv("PORT", "8080"),
-		Host:               getEnv("HOST", "localhost"),
+		Host:               getEnv("HOST", "0.0.0.0"),
 		DBPath:             getEnv("DB_PATH", "./data/edubot.db"),
 		TelegramBotToken:   getEnv("TELEGRAM_BOT_TOKEN", ""),
 		TelegramWebhookURL: getEnv("TELEGRAM_WEBHOOK_URL", ""),
