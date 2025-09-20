@@ -43,6 +43,27 @@ func (b *Bot) SetWebhook() error {
 	return nil
 }
 
+// SetCommands устанавливает команды бота
+func (b *Bot) SetCommands() error {
+	commands := []tgbotapi.BotCommand{
+		{
+			Command:     "start",
+			Description: "Начать работу с ботом",
+		},
+		{
+			Command:     "help",
+			Description: "Получить помощь по использованию",
+		},
+	}
+
+	setCommands := tgbotapi.NewSetMyCommands(commands...)
+	_, err := b.api.Request(setCommands)
+	if err != nil {
+		return fmt.Errorf("failed to set commands: %w", err)
+	}
+	return nil
+}
+
 // SendMessage отправляет сообщение пользователю
 func (b *Bot) SendMessage(chatID int64, text string) error {
 	msg := tgbotapi.NewMessage(chatID, text)
@@ -138,6 +159,13 @@ func (b *Bot) GetUpdates() (tgbotapi.UpdatesChannel, error) {
 
 // ProcessUpdate обрабатывает входящее обновление
 func (b *Bot) ProcessUpdate(update map[string]interface{}) {
+	// Проверяем, есть ли callback query (нажатие на inline-кнопку)
+	if callbackQuery, ok := update["callback_query"].(map[string]interface{}); ok {
+		b.processCallbackQuery(callbackQuery)
+		return
+	}
+
+	// Обрабатываем обычные сообщения
 	message, ok := update["message"].(map[string]interface{})
 	if !ok {
 		return
@@ -155,10 +183,112 @@ func (b *Bot) ProcessUpdate(update map[string]interface{}) {
 	// Обработка команд бота
 	switch text {
 	case "/start":
-		b.SendMessage(int64(chatID), "Добро пожаловать в EduBot! Переходите в приложение для продолжения.")
+		b.sendWelcomeMessage(int64(chatID))
 	case "/help":
-		b.SendMessage(int64(chatID), "Это бот для образовательной платформы EduBot. Используйте приложение для полного функционала.")
+		b.sendHelpMessage(int64(chatID))
 	default:
-		b.SendMessage(int64(chatID), "Используйте приложение EduBot для взаимодействия с платформой.")
+		b.SendMessage(int64(chatID), "Используйте команду /start для начала работы с ботом.")
 	}
+}
+
+// processCallbackQuery обрабатывает нажатия на inline-кнопки
+func (b *Bot) processCallbackQuery(callbackQuery map[string]interface{}) {
+	data, _ := callbackQuery["data"].(string)
+	from, _ := callbackQuery["from"].(map[string]interface{})
+	message, _ := callbackQuery["message"].(map[string]interface{})
+	chat, _ := message["chat"].(map[string]interface{})
+
+	userID, _ := from["id"].(float64)
+	chatID, _ := chat["id"].(float64)
+	callbackID, _ := callbackQuery["id"].(string)
+
+	log.Printf("Received callback: %s from user %d", data, int64(userID))
+
+	// Отвечаем на callback query
+	callback := tgbotapi.NewCallback(callbackID, "")
+	b.api.Request(callback)
+
+	// Обрабатываем данные кнопки
+	switch data {
+	case "help":
+		b.sendHelpMessage(int64(chatID))
+	case "start":
+		b.sendWelcomeMessage(int64(chatID))
+	default:
+		b.SendMessage(int64(chatID), "Используйте команду /start для начала работы с ботом.")
+	}
+}
+
+// sendWelcomeMessage отправляет приветственное сообщение с кнопкой
+func (b *Bot) sendWelcomeMessage(chatID int64) error {
+	text := `👋 Привет! Меня зовут Саша.
+
+🎓 Я преподаватель физики и математики с 5-летним опытом подготовки к ЕГЭ.
+
+📚 Чтобы познакомиться поближе, можешь перейти в приложение и узнать обо мне, моих методах обучения и записаться на пробное занятие.
+
+🚀 Начнем путь к успешной сдаче ЕГЭ вместе!`
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+
+	// Создаем клавиатуру с кнопкой "Открыть приложение"
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("ℹ️ Помощь", "help"),
+		),
+	)
+	msg.ReplyMarkup = keyboard
+
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send welcome message: %w", err)
+	}
+	return nil
+}
+
+// sendHelpMessage отправляет сообщение с помощью
+func (b *Bot) sendHelpMessage(chatID int64) error {
+	text := `ℹ️ <b>Помощь по использованию EduBot</b>
+
+🎯 <b>Основные функции:</b>
+• 📝 Запись на пробные занятия
+• 📚 Просмотр образовательных материалов
+• 📋 Получение заданий и их выполнение
+• 📊 Отслеживание прогресса обучения
+
+🚀 <b>Как начать:</b>
+1. Нажмите кнопку "Открыть приложение"
+2. Заполните форму записи на пробное занятие
+3. Дождитесь связи от преподавателя
+
+📱 <b>Доступ к приложению:</b>
+Используйте кнопку "Открыть приложение" или перейдите по ссылке:
+https://edubot-0g05.onrender.com
+
+❓ <b>Вопросы?</b>
+Напишите преподавателю через приложение или используйте команду /start`
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+
+	// Создаем клавиатуру с кнопками
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🏠 Главная", "start"),
+		),
+	)
+	msg.ReplyMarkup = keyboard
+
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send help message: %w", err)
+	}
+	return nil
 }

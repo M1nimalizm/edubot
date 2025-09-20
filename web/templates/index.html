@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="/static/js/contacts.js"></script>
     
     <style>
         /* Стили для Telegram WebApp */
@@ -190,17 +191,20 @@
             <h2 class="section-title">Контакты</h2>
             <div class="contact-content">
                 <div class="contact-info">
-                    <div class="contact-item">
+                    <div class="contact-item" onclick="callPhone('+79991234567')">
                         <i class="fas fa-phone"></i>
-                        <span>Телефон: +7 (XXX) XXX-XX-XX</span>
+                        <span>Телефон: +7 (999) 123-45-67</span>
+                        <small>Нажмите для звонка</small>
                     </div>
-                    <div class="contact-item">
+                    <div class="contact-item" onclick="openTelegram('@pugachev_teacher')">
                         <i class="fab fa-telegram"></i>
                         <span>Telegram: @pugachev_teacher</span>
+                        <small>Нажмите для перехода в Telegram</small>
                     </div>
-                    <div class="contact-item">
+                    <div class="contact-item" onclick="sendEmail('pugachev@edubot.ru')">
                         <i class="fas fa-envelope"></i>
                         <span>Email: pugachev@edubot.ru</span>
+                        <small>Нажмите для отправки письма</small>
                     </div>
                 </div>
             </div>

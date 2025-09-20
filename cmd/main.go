@@ -47,6 +47,11 @@ func main() {
 		log.Fatalf("Failed to initialize Telegram bot: %v", err)
 	}
 
+	// Устанавливаем команды бота
+	if err := telegramBot.SetCommands(); err != nil {
+		log.Printf("Failed to set bot commands: %v", err)
+	}
+
 	// Устанавливаем webhook если указан URL
 	if cfg.TelegramWebhookURL != "" {
 		if err := telegramBot.SetWebhook(); err != nil {
@@ -85,12 +90,12 @@ func main() {
 	// Статические файлы
 	router.Static("/static", "./web/static")
 	router.LoadHTMLGlob("web/templates/*")
-	
+
 	// Специальный endpoint для Telegram WebApp
 	router.GET("/telegram-check", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"status": "telegram_ready",
-			"webapp_url": "https://edubot-0g05.onrender.com",
+			"status":       "telegram_ready",
+			"webapp_url":   "https://edubot-0g05.onrender.com",
 			"bot_username": "EduBot_by_Pugachev_bot",
 		})
 	})

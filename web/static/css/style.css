@@ -763,6 +763,72 @@ section {
         flex-direction: column;
     }
     
+    /* Контакты на мобильных */
+    .contact {
+        padding: 60px 0 40px;
+    }
+    
+    .contact-content {
+        padding: 0 20px;
+    }
+    
+    .contact-info {
+        gap: 25px;
+    }
+    
+    .contact-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+        padding: 20px;
+        background: var(--gray-light);
+        border-radius: var(--border-radius);
+        margin: 0 10px;
+    }
+    
+    .contact-item i {
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+    
+    .contact-item span {
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--primary-color);
+        word-break: break-all;
+        display: block;
+        margin-bottom: 5px;
+    }
+    
+    .contact-item small {
+        font-size: 12px;
+        color: var(--gray-medium);
+        font-style: italic;
+    }
+    
+    .contact-item {
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    
+    .contact-item:hover {
+        background: var(--accent-color);
+        color: var(--white);
+        transform: translateY(-2px);
+    }
+    
+    .contact-item:hover i {
+        color: var(--white);
+    }
+    
+    .contact-item:hover span {
+        color: var(--white);
+    }
+    
+    .contact-item:hover small {
+        color: rgba(255, 255, 255, 0.8);
+    }
+    
     /* Модальные окна */
     .modal-content {
         width: 95%;
