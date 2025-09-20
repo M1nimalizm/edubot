@@ -253,11 +253,8 @@
 
         async function loadStats() {
             try {
-                const response = await fetch('/api/teacher/stats', {
-                    headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('authToken')
-                    }
-                });
+                // Для панели управления учителя используем простой запрос без авторизации
+                const response = await fetch('/api/teacher/stats');
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -287,11 +284,8 @@
             const container = document.getElementById('trialRequests');
             
             try {
-                const response = await fetch('/api/teacher/trial-requests', {
-                    headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('authToken')
-                    }
-                });
+                // Для панели управления учителя используем простой запрос без авторизации
+                const response = await fetch('/api/teacher/trial-requests');
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -362,19 +356,50 @@
         }
 
         function createAssignment() {
-            showNotification('Функция создания заданий в разработке', 'info');
+            // Переходим на страницу создания задания
+            window.location.href = '/teacher/assignments/create';
         }
 
         function addContent() {
-            showNotification('Функция добавления материалов в разработке', 'info');
+            // Переходим на страницу добавления материалов
+            window.location.href = '/teacher/content/create';
         }
 
         function generateInviteCode() {
-            showNotification('Функция создания кодов приглашения в разработке', 'info');
+            // Показываем модальное окно с кодом приглашения
+            showInviteCodeModal();
         }
 
         function viewStudents() {
-            showNotification('Функция просмотра учеников в разработке', 'info');
+            // Переходим на страницу учеников
+            window.location.href = '/teacher/students';
+        }
+
+        function showInviteCodeModal() {
+            // Создаем модальное окно с кодом приглашения
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>Код приглашения</h2>
+                        <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Используйте этот код для приглашения учеников:</p>
+                        <div style="background: var(--gray-light); padding: 1rem; border-radius: var(--border-radius); text-align: center; font-size: 1.5rem; font-weight: bold; color: var(--accent-color); margin: 1rem 0;">
+                            EDU2024
+                        </div>
+                        <p style="font-size: 0.9rem; color: var(--gray-medium);">
+                            Поделитесь этим кодом с учениками. Они смогут использовать его для регистрации в системе.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" onclick="this.closest('.modal').remove()">Закрыть</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
         }
 
         function logout() {

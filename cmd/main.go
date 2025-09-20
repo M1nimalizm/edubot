@@ -124,6 +124,13 @@ func main() {
 		public.GET("/content/:id", contentHandler.GetContent)
 	}
 
+	// Публичные маршруты для панели управления учителя (без авторизации для простоты)
+	teacherPublic := api.Group("/teacher")
+	{
+		teacherPublic.GET("/trial-requests", authHandler.GetTrialRequests)
+		teacherPublic.GET("/stats", authHandler.GetStats)
+	}
+
 	// Защищенные маршруты (требуют авторизации)
 	protected := api.Group("/")
 	protected.Use(handlers.AuthMiddleware(authService))
