@@ -71,6 +71,9 @@ function setupSmoothScrolling() {
                     top: offsetTop,
                     behavior: 'smooth'
                 });
+                
+                // Закрываем мобильное меню при клике на ссылку
+                closeMobileMenu();
             }
         });
     });
@@ -209,6 +212,31 @@ async function handleTrialSubmission(e) {
         submitBtn.disabled = false;
     }
 }
+
+// Мобильное меню
+function toggleMobileMenu() {
+    const navMenu = document.getElementById('navMenu');
+    if (navMenu) {
+        navMenu.classList.toggle('active');
+    }
+}
+
+function closeMobileMenu() {
+    const navMenu = document.getElementById('navMenu');
+    if (navMenu) {
+        navMenu.classList.remove('active');
+    }
+}
+
+// Закрытие мобильного меню при клике вне его
+document.addEventListener('click', function(e) {
+    const navMenu = document.getElementById('navMenu');
+    const mobileBtn = document.querySelector('.mobile-menu-btn');
+    
+    if (navMenu && !navMenu.contains(e.target) && !mobileBtn.contains(e.target)) {
+        closeMobileMenu();
+    }
+});
 
 // Валидация формы записи на пробное занятие
 function validateTrialForm(data) {
@@ -534,3 +562,28 @@ async function handleTeacherLogin(e) {
         submitBtn.disabled = false;
     }
 }
+
+// Мобильное меню
+function toggleMobileMenu() {
+    const navMenu = document.getElementById('navMenu');
+    if (navMenu) {
+        navMenu.classList.toggle('active');
+    }
+}
+
+function closeMobileMenu() {
+    const navMenu = document.getElementById('navMenu');
+    if (navMenu) {
+        navMenu.classList.remove('active');
+    }
+}
+
+// Закрытие мобильного меню при клике вне его
+document.addEventListener('click', function(e) {
+    const navMenu = document.getElementById('navMenu');
+    const mobileBtn = document.querySelector('.mobile-menu-btn');
+    
+    if (navMenu && !navMenu.contains(e.target) && !mobileBtn.contains(e.target)) {
+        closeMobileMenu();
+    }
+});
