@@ -16,8 +16,8 @@ services:
       - key: JWT_SECRET
         value: edubot_secret_key_2024
       - key: TEACHER_TELEGRAM_ID
-        value: 123456789
+        value: 584479424
       - key: TELEGRAM_BOT_TOKEN
-        value: your_bot_token_here
+        value: 8175784572:AAEgKw4eiOkNb5B92sWuasuK1WDLbkQIa-E
       - key: TELEGRAM_WEBHOOK_URL
         value: ""
