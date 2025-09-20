@@ -148,13 +148,14 @@ func (s *AuthService) SubmitTrialRequest(request *models.TrialRequest) error {
 
 	// Отправляем уведомление преподавателю
 	requestData := map[string]interface{}{
-		"name":       request.Name,
-		"grade":      request.Grade,
-		"subject":    request.Subject,
-		"level":      request.Level,
-		"phone":      request.Phone,
-		"comment":    request.Comment,
-		"created_at": request.CreatedAt.Format("02.01.2006 15:04"),
+		"name":          request.Name,
+		"grade":         request.Grade,
+		"subject":       request.Subject,
+		"level":         request.Level,
+		"contact_type":  request.ContactType,
+		"contact_value": request.ContactValue,
+		"comment":       request.Comment,
+		"created_at":    request.CreatedAt.Format("02.01.2006 15:04"),
 	}
 
 	if err := s.telegramBot.SendTrialRequestNotification(s.teacherTelegramID, requestData); err != nil {

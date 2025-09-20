@@ -186,12 +186,16 @@ async function handleTrialSubmission(e) {
     const rawData = Object.fromEntries(formData.entries());
     
     // Преобразуем типы данных
+    const contactType = rawData.contact_type || 'phone';
+    const contactValue = contactType === 'phone' ? rawData.phone : rawData.telegram;
+    
     const data = {
         name: rawData.name,
         grade: parseInt(rawData.grade),
         subject: rawData.subject,
         level: parseInt(rawData.level),
-        phone: rawData.phone,
+        contact_type: contactType,
+        contact_value: contactValue,
         comment: rawData.comment || ''
     };
     
@@ -364,8 +368,13 @@ function validateTrialForm(data) {
         errors.push('Выберите корректный уровень подготовки (1-5)');
     }
     
-    if (!data.phone || !isValidPhone(data.phone)) {
+    if (!data.contact_value || data.contact_value.trim().length < 3) {
+        const fieldName = data.contact_type === 'phone' ? 'номер телефона' : 'Telegram тег';
+        errors.push(`Введите корректный ${fieldName}`);
+    } else if (data.contact_type === 'phone' && !isValidPhone(data.contact_value)) {
         errors.push('Введите корректный номер телефона');
+    } else if (data.contact_type === 'telegram' && !data.contact_value.startsWith('@')) {
+        errors.push('Telegram тег должен начинаться с @');
     }
     
     if (errors.length > 0) {
@@ -630,7 +639,47 @@ document.addEventListener('DOMContentLoaded', function() {
     if (teacherLoginForm) {
         teacherLoginForm.addEventListener('submit', handleTeacherLogin);
     }
+    
+    // Инициализация выбора контакта
+    initializeContactChoice();
 });
+
+// Инициализация выбора контакта
+function initializeContactChoice() {
+    const phoneRadio = document.getElementById('contact_phone');
+    const telegramRadio = document.getElementById('contact_telegram');
+    const phoneInput = document.getElementById('phone');
+    const telegramInput = document.getElementById('telegram');
+    
+    if (phoneRadio && telegramRadio && phoneInput && telegramInput) {
+        // Обработка переключения между телефоном и Telegram
+        phoneRadio.addEventListener('change', function() {
+            if (this.checked) {
+                phoneInput.style.display = 'block';
+                telegramInput.style.display = 'none';
+                phoneInput.required = true;
+                telegramInput.required = false;
+            }
+        });
+        
+        telegramRadio.addEventListener('change', function() {
+            if (this.checked) {
+                phoneInput.style.display = 'none';
+                telegramInput.style.display = 'block';
+                phoneInput.required = false;
+                telegramInput.required = true;
+                
+                // Автозаполнение Telegram тега из Telegram WebApp
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+                    const user = window.Telegram.WebApp.initDataUnsafe.user;
+                    if (user && user.username) {
+                        telegramInput.value = '@' + user.username;
+                    }
+                }
+            }
+        });
+    }
+}
 
 async function handleTeacherLogin(e) {
     e.preventDefault();

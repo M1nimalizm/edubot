@@ -35,17 +35,18 @@ type User struct {
 
 // TrialRequest представляет заявку на пробное занятие
 type TrialRequest struct {
-	ID         uuid.UUID `json:"id" gorm:"type:text;primary_key"`
-	Name       string    `json:"name" gorm:"not null"`
-	Grade      int       `json:"grade" gorm:"not null"`
-	Subject    string    `json:"subject" gorm:"not null"` // "physics", "math", "both"
-	Level      int       `json:"level" gorm:"not null"`   // 1-5
-	Comment    string    `json:"comment"`
-	Phone      string    `json:"phone"`
-	TelegramID int64     `json:"telegram_id"`
-	Status     string    `json:"status" gorm:"default:'pending'"` // "pending", "contacted", "converted", "rejected"
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID           uuid.UUID `json:"id" gorm:"type:text;primary_key"`
+	Name         string    `json:"name" gorm:"not null"`
+	Grade        int       `json:"grade" gorm:"not null"`
+	Subject      string    `json:"subject" gorm:"not null"` // "physics", "math", "both"
+	Level        int       `json:"level" gorm:"not null"`   // 1-5
+	Comment      string    `json:"comment"`
+	ContactType  string    `json:"contact_type" gorm:"not null"` // "phone" or "telegram"
+	ContactValue string    `json:"contact_value" gorm:"not null"`
+	TelegramID   int64     `json:"telegram_id"`
+	Status       string    `json:"status" gorm:"default:'pending'"` // "pending", "contacted", "converted", "rejected"
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 // Assignment представляет домашнее задание

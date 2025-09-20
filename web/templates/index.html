@@ -191,20 +191,10 @@
             <h2 class="section-title">Контакты</h2>
             <div class="contact-content">
                 <div class="contact-info">
-                    <div class="contact-item" onclick="callPhone('+79991234567')">
-                        <i class="fas fa-phone"></i>
-                        <span>Телефон: +7 (999) 123-45-67</span>
-                        <small>Нажмите для звонка</small>
-                    </div>
-                    <div class="contact-item" onclick="openTelegram('@pugachev_teacher')">
+                    <div class="contact-item" onclick="openTelegram('@pugach3')">
                         <i class="fab fa-telegram"></i>
-                        <span>Telegram: @pugachev_teacher</span>
+                        <span>Telegram: @pugach3</span>
                         <small>Нажмите для перехода в Telegram</small>
-                    </div>
-                    <div class="contact-item" onclick="sendEmail('pugachev@edubot.ru')">
-                        <i class="fas fa-envelope"></i>
-                        <span>Email: pugachev@edubot.ru</span>
-                        <small>Нажмите для отправки письма</small>
                     </div>
                 </div>
             </div>
@@ -279,23 +269,32 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="phone">Контактный телефон *</label>
-                    <input type="tel" id="phone" name="phone" required>
+                    <label>Контакт для связи *</label>
+                    <div class="contact-choice">
+                        <div class="contact-option">
+                            <input type="radio" id="contact_phone" name="contact_type" value="phone" checked>
+                            <label for="contact_phone">
+                                <i class="fas fa-phone"></i>
+                                Телефон
+                            </label>
+                        </div>
+                        <div class="contact-option">
+                            <input type="radio" id="contact_telegram" name="contact_type" value="telegram">
+                            <label for="contact_telegram">
+                                <i class="fab fa-telegram"></i>
+                                Telegram
+                            </label>
+                        </div>
+                    </div>
+                    <div class="contact-input-group">
+                        <input type="tel" id="phone" name="phone" placeholder="+7 (999) 123-45-67" style="display: block;">
+                        <input type="text" id="telegram" name="telegram" placeholder="@username" style="display: none;">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="comment">Комментарий или вопросы</label>
                     <textarea id="comment" name="comment" rows="4"></textarea>
                 </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeTrialModal()">
-                        Отмена
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-paper-plane"></i>
-                        Отправить заявку
-                    </button>
-                </div>
-                
                 <!-- Мобильная кнопка отправки (фиксированная внизу) -->
                 <div class="mobile-submit-btn">
                     <button type="submit" class="btn btn-primary btn-mobile">

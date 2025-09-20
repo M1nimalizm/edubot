@@ -48,11 +48,19 @@ func (b *Bot) SetCommands() error {
 	commands := []tgbotapi.BotCommand{
 		{
 			Command:     "start",
-			Description: "Начать работу с ботом",
+			Description: "🚀 Начать работу с ботом",
 		},
 		{
 			Command:     "help",
-			Description: "Получить помощь по использованию",
+			Description: "ℹ️ Получить помощь по использованию",
+		},
+		{
+			Command:     "app",
+			Description: "📱 Открыть приложение EduBot",
+		},
+		{
+			Command:     "info",
+			Description: "👨‍🏫 Информация о преподавателе",
 		},
 	}
 
@@ -60,6 +68,46 @@ func (b *Bot) SetCommands() error {
 	_, err := b.api.Request(setCommands)
 	if err != nil {
 		return fmt.Errorf("failed to set commands: %w", err)
+	}
+	return nil
+}
+
+// SendWelcomeToNewUser отправляет приветственное сообщение новому пользователю
+func (b *Bot) SendWelcomeToNewUser(chatID int64, firstName string) error {
+	text := fmt.Sprintf(`👋 Привет, %s! Добро пожаловать в EduBot!
+
+🎓 Меня зовут Саша, я преподаватель физики и математики с 5-летним опытом подготовки к ЕГЭ.
+
+📚 В моем приложении ты можешь:
+• Узнать обо мне и моих методах обучения
+• Записаться на пробное занятие
+• Получить доступ к образовательным материалам
+• Отслеживать свой прогресс
+
+🚀 Начнем путь к успешной сдаче ЕГЭ вместе!
+
+💡 <b>Быстрая навигация:</b>
+• Используй /start для возврата в главное меню
+• Используй /help для получения помощи
+• Нажми кнопку ниже для перехода в приложение`, firstName)
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+
+	// Создаем клавиатуру с кнопкой "Открыть приложение"
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("ℹ️ Помощь", "help"),
+		),
+	)
+	msg.ReplyMarkup = keyboard
+
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send welcome message: %w", err)
 	}
 	return nil
 }
@@ -78,6 +126,18 @@ func (b *Bot) SendMessage(chatID int64, text string) error {
 
 // SendNotification отправляет уведомление преподавателю о новой заявке
 func (b *Bot) SendTrialRequestNotification(teacherID int64, requestData map[string]interface{}) error {
+	contactType := requestData["contact_type"].(string)
+	contactValue := requestData["contact_value"].(string)
+
+	var contactIcon, contactLabel string
+	if contactType == "phone" {
+		contactIcon = "📱"
+		contactLabel = "Телефон"
+	} else {
+		contactIcon = "📲"
+		contactLabel = "Telegram"
+	}
+
 	text := fmt.Sprintf(`
 🎓 <b>Новая заявка на пробное занятие!</b>
 
@@ -85,7 +145,7 @@ func (b *Bot) SendTrialRequestNotification(teacherID int64, requestData map[stri
 📚 <b>Класс:</b> %d
 📖 <b>Предмет:</b> %s
 ⭐ <b>Уровень:</b> %d/5
-📱 <b>Телефон:</b> %s
+%s <b>%s:</b> %s
 
 💬 <b>Комментарий:</b>
 %s
@@ -96,7 +156,9 @@ func (b *Bot) SendTrialRequestNotification(teacherID int64, requestData map[stri
 		requestData["grade"],
 		requestData["subject"],
 		requestData["level"],
-		requestData["phone"],
+		contactIcon,
+		contactLabel,
+		contactValue,
 		requestData["comment"],
 		requestData["created_at"],
 	)
@@ -183,9 +245,20 @@ func (b *Bot) ProcessUpdate(update map[string]interface{}) {
 	// Обработка команд бота
 	switch text {
 	case "/start":
-		b.sendWelcomeMessage(int64(chatID))
+		// Проверяем, новый ли это пользователь
+		firstName, _ := from["first_name"].(string)
+		if firstName == "" {
+			firstName = "друг"
+		}
+		
+		// Отправляем персонализированное приветствие
+		b.SendWelcomeToNewUser(int64(chatID), firstName)
 	case "/help":
 		b.sendHelpMessage(int64(chatID))
+	case "/app":
+		b.sendAppLink(int64(chatID))
+	case "/info":
+		b.sendTeacherInfo(int64(chatID))
 	default:
 		b.SendMessage(int64(chatID), "Используйте команду /start для начала работы с ботом.")
 	}
@@ -213,7 +286,14 @@ func (b *Bot) processCallbackQuery(callbackQuery map[string]interface{}) {
 	case "help":
 		b.sendHelpMessage(int64(chatID))
 	case "start":
-		b.sendWelcomeMessage(int64(chatID))
+		// Получаем имя пользователя для персонализации
+		firstName, _ := from["first_name"].(string)
+		if firstName == "" {
+			firstName = "друг"
+		}
+		b.SendWelcomeToNewUser(int64(chatID), firstName)
+	case "info":
+		b.sendTeacherInfo(int64(chatID))
 	default:
 		b.SendMessage(int64(chatID), "Используйте команду /start для начала работы с ботом.")
 	}
@@ -227,7 +307,12 @@ func (b *Bot) sendWelcomeMessage(chatID int64) error {
 
 📚 Чтобы познакомиться поближе, можешь перейти в приложение и узнать обо мне, моих методах обучения и записаться на пробное занятие.
 
-🚀 Начнем путь к успешной сдаче ЕГЭ вместе!`
+🚀 Начнем путь к успешной сдаче ЕГЭ вместе!
+
+💡 <b>Быстрая навигация:</b>
+• Используй /start для возврата в главное меню
+• Используй /help для получения помощи
+• Нажми кнопку ниже для перехода в приложение`
 
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = "HTML"
@@ -260,17 +345,99 @@ func (b *Bot) sendHelpMessage(chatID int64) error {
 • 📋 Получение заданий и их выполнение
 • 📊 Отслеживание прогресса обучения
 
-🚀 <b>Как начать:</b>
+🚀 <b>Доступные команды:</b>
+• /start - Начать работу с ботом
+• /help - Получить помощь
+• /app - Открыть приложение
+• /info - Информация о преподавателе
+
+📱 <b>Как начать:</b>
 1. Нажмите кнопку "Открыть приложение"
 2. Заполните форму записи на пробное занятие
 3. Дождитесь связи от преподавателя
 
-📱 <b>Доступ к приложению:</b>
-Используйте кнопку "Открыть приложение" или перейдите по ссылке:
-https://edubot-0g05.onrender.com
-
 ❓ <b>Вопросы?</b>
 Напишите преподавателю через приложение или используйте команду /start`
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+
+	// Создаем клавиатуру с кнопками
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("👨‍🏫 О преподавателе", "info"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🏠 Главная", "start"),
+		),
+	)
+	msg.ReplyMarkup = keyboard
+
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send help message: %w", err)
+	}
+	return nil
+}
+
+// sendAppLink отправляет ссылку на приложение
+func (b *Bot) sendAppLink(chatID int64) error {
+	text := `📱 <b>Открыть приложение EduBot</b>
+
+🚀 Переходите в приложение для:
+• Записи на пробное занятие
+• Просмотра образовательных материалов
+• Отслеживания прогресса обучения
+
+Нажмите кнопку ниже для перехода в приложение!`
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+
+	// Создаем клавиатуру с кнопкой "Открыть приложение"
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🏠 Главная", "start"),
+		),
+	)
+	msg.ReplyMarkup = keyboard
+
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send app link: %w", err)
+	}
+	return nil
+}
+
+// sendTeacherInfo отправляет информацию о преподавателе
+func (b *Bot) sendTeacherInfo(chatID int64) error {
+	text := `👨‍🏫 <b>Информация о преподавателе</b>
+
+🎓 <b>Александр Пугачев</b>
+• Преподаватель физики и математики
+• 5 лет опыта подготовки к ЕГЭ
+• Средний балл учеников: 85+
+
+📚 <b>Специализация:</b>
+• Физика (ЕГЭ)
+• Профильная математика (ЕГЭ)
+• Подготовка к олимпиадам
+
+🏆 <b>Достижения:</b>
+• Более 100 успешно подготовленных учеников
+• Средний балл ЕГЭ: 85+
+• Ученики поступают в ведущие вузы
+
+💬 <b>Контакты:</b>
+Telegram: @pugach3
+
+🚀 Хотите начать обучение? Переходите в приложение!`
 
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = "HTML"
@@ -288,7 +455,7 @@ https://edubot-0g05.onrender.com
 
 	_, err := b.api.Send(msg)
 	if err != nil {
-		return fmt.Errorf("failed to send help message: %w", err)
+		return fmt.Errorf("failed to send teacher info: %w", err)
 	}
 	return nil
 }

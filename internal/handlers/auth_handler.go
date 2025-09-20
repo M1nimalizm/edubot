@@ -43,12 +43,13 @@ type RegisterStudentRequest struct {
 
 // TrialRequestRequest представляет запрос на пробное занятие
 type TrialRequestRequest struct {
-	Name    string `json:"name" binding:"required"`
-	Grade   int    `json:"grade" binding:"required,min=10,max=11"`
-	Subject string `json:"subject" binding:"required"`
-	Level   int    `json:"level" binding:"required,min=1,max=5"`
-	Comment string `json:"comment"`
-	Phone   string `json:"phone" binding:"required"`
+	Name         string `json:"name" binding:"required"`
+	Grade        int    `json:"grade" binding:"required,min=10,max=11"`
+	Subject      string `json:"subject" binding:"required"`
+	Level        int    `json:"level" binding:"required,min=1,max=5"`
+	Comment      string `json:"comment"`
+	ContactType  string `json:"contact_type" binding:"required"`
+	ContactValue string `json:"contact_value" binding:"required"`
 }
 
 // TelegramAuth авторизует пользователя через Telegram
@@ -125,13 +126,14 @@ func (h *AuthHandler) SubmitTrialRequest(c *gin.Context) {
 	}
 
 	trialRequest := &models.TrialRequest{
-		Name:       req.Name,
-		Grade:      req.Grade,
-		Subject:    req.Subject,
-		Level:      req.Level,
-		Comment:    req.Comment,
-		Phone:      req.Phone,
-		TelegramID: telegramID,
+		Name:         req.Name,
+		Grade:        req.Grade,
+		Subject:      req.Subject,
+		Level:        req.Level,
+		Comment:      req.Comment,
+		ContactType:  req.ContactType,
+		ContactValue: req.ContactValue,
+		TelegramID:   telegramID,
 	}
 
 	if err := h.authService.SubmitTrialRequest(trialRequest); err != nil {
