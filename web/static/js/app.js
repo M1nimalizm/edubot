@@ -742,6 +742,13 @@ function hideDuplicateButtons() {
         button.style.visibility = 'hidden';
     });
     
+    // Скрываем кнопки с классом desktop-only на мобильных
+    const desktopButtons = document.querySelectorAll('.desktop-only');
+    desktopButtons.forEach(button => {
+        button.style.display = 'none';
+        button.style.visibility = 'hidden';
+    });
+    
     // Обработчик изменения размера окна
     window.addEventListener('resize', function() {
         const isMobile = window.innerWidth <= 768;

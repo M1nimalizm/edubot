@@ -932,6 +932,11 @@ section {
             display: block !important;
         }
         
+        /* Скрываем кнопки на десктопе на мобильных */
+        .desktop-only {
+            display: none !important;
+        }
+        
         /* Скрываем все кнопки внутри формы на мобильных */
         .modal-body button[type="submit"]:not(.btn-mobile) {
             display: none !important;
