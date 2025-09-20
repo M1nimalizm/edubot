@@ -21,6 +21,9 @@ func NewAssignmentRepository(db *gorm.DB) *AssignmentRepository {
 
 // Create создает новое задание
 func (r *AssignmentRepository) Create(assignment *models.Assignment) error {
+	if assignment.ID == uuid.Nil {
+		assignment.ID = uuid.New()
+	}
 	return r.db.Create(assignment).Error
 }
 
@@ -83,6 +86,7 @@ func (r *AssignmentRepository) Delete(id uuid.UUID) error {
 // AssignToUser назначает задание пользователю
 func (r *AssignmentRepository) AssignToUser(assignmentID, userID uuid.UUID) error {
 	userAssignment := models.UserAssignment{
+		ID:           uuid.New(),
 		UserID:       userID,
 		AssignmentID: assignmentID,
 		AssignedAt:   time.Now(),
@@ -108,6 +112,9 @@ func NewSubmissionRepository(db *gorm.DB) *SubmissionRepository {
 
 // Create создает новое решение
 func (r *SubmissionRepository) Create(submission *models.Submission) error {
+	if submission.ID == uuid.Nil {
+		submission.ID = uuid.New()
+	}
 	return r.db.Create(submission).Error
 }
 

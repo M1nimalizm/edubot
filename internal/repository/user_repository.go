@@ -22,6 +22,9 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 
 // Create создает нового пользователя
 func (r *UserRepository) Create(user *models.User) error {
+	if user.ID == uuid.Nil {
+		user.ID = uuid.New()
+	}
 	return r.db.Create(user).Error
 }
 
@@ -105,6 +108,9 @@ func NewTrialRequestRepository(db *gorm.DB) *TrialRequestRepository {
 
 // Create создает новую заявку на пробное занятие
 func (r *TrialRequestRepository) Create(request *models.TrialRequest) error {
+	if request.ID == uuid.Nil {
+		request.ID = uuid.New()
+	}
 	return r.db.Create(request).Error
 }
 

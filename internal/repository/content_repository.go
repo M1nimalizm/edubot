@@ -19,6 +19,9 @@ func NewContentRepository(db *gorm.DB) *ContentRepository {
 
 // Create создает новый контент
 func (r *ContentRepository) Create(content *models.Content) error {
+	if content.ID == uuid.Nil {
+		content.ID = uuid.New()
+	}
 	return r.db.Create(content).Error
 }
 
@@ -93,15 +96,16 @@ func (r *ContentRepository) MarkAsViewed(contentID, userID uuid.UUID) error {
 	// Проверяем, не просматривал ли пользователь этот контент ранее
 	var count int64
 	r.db.Model(&models.ContentView{}).Where("content_id = ? AND user_id = ?", contentID, userID).Count(&count)
-
+	
 	if count == 0 {
 		view := models.ContentView{
+			ID:        uuid.New(),
 			ContentID: contentID,
 			UserID:    userID,
 		}
 		return r.db.Create(&view).Error
 	}
-
+	
 	return nil
 }
 
@@ -127,6 +131,9 @@ func NewAttachmentRepository(db *gorm.DB) *AttachmentRepository {
 
 // Create создает новую запись о файле
 func (r *AttachmentRepository) Create(attachment *models.Attachment) error {
+	if attachment.ID == uuid.Nil {
+		attachment.ID = uuid.New()
+	}
 	return r.db.Create(attachment).Error
 }
 
