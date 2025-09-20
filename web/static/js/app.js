@@ -18,6 +18,9 @@ function initializeTelegramWebApp() {
     if (window.Telegram && window.Telegram.WebApp) {
         console.log('Telegram WebApp detected');
         
+        // Добавляем класс для Telegram WebApp
+        document.body.classList.add('telegram-webapp');
+        
         // Настраиваем WebApp
         window.Telegram.WebApp.ready();
         window.Telegram.WebApp.expand();
@@ -772,9 +775,9 @@ function hideDuplicateButtons() {
         button.style.visibility = 'hidden';
     });
     
-    // Скрываем кнопки с классом desktop-only на мобильных
-    const desktopButtons = document.querySelectorAll('.desktop-only');
-    desktopButtons.forEach(button => {
+    // Скрываем кнопки с классом mobile-hidden на мобильных
+    const mobileHiddenButtons = document.querySelectorAll('.mobile-hidden');
+    mobileHiddenButtons.forEach(button => {
         button.style.display = 'none';
         button.style.visibility = 'hidden';
     });

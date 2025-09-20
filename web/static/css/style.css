@@ -774,13 +774,19 @@ section {
     
     /* Отступы для контента */
     .hero {
-        margin-top: 80px;
+        margin-top: 60px;
         padding-top: 20px;
     }
     
-    /* Дополнительный отступ для всех секций на мобильных */
-    section {
-        padding-top: 100px;
+    /* Адаптивное позиционирование для Telegram WebApp */
+    .telegram-webapp .hero {
+        margin-top: 0;
+        padding-top: 20px;
+    }
+    
+    .telegram-webapp .navbar {
+        position: relative;
+        top: 0;
     }
     
     .hero-container {
@@ -937,8 +943,8 @@ section {
             display: block !important;
         }
         
-        /* Скрываем кнопки на десктопе на мобильных */
-        .desktop-only {
+        /* Скрываем кнопки на мобильных */
+        .mobile-hidden {
             display: none !important;
         }
         
