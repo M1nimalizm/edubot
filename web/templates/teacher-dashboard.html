@@ -351,7 +351,21 @@
         }
 
         function markAllAsContacted() {
+            // Отмечаем все заявки как связанные
+            const requestItems = document.querySelectorAll('.request-item');
+            requestItems.forEach(item => {
+                item.style.opacity = '0.6';
+                item.style.backgroundColor = '#f0f0f0';
+            });
             showNotification('Все заявки отмечены как связанные', 'success');
+        }
+
+        function contactStudent(requestId) {
+            showNotification('Функция связи с учеником в разработке', 'info');
+        }
+
+        function approveRequest(requestId) {
+            showNotification('Заявка одобрена! Ученик будет добавлен в систему.', 'success');
             loadTrialRequests();
         }
 

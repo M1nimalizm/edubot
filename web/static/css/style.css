@@ -771,6 +771,60 @@ section {
         max-height: 90vh;
         overflow-y: auto;
         margin-top: 80px;
+        padding-bottom: 80px; /* Отступ для мобильной кнопки */
+    }
+    
+    /* Мобильная кнопка отправки */
+    .mobile-submit-btn {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--white);
+        padding: 15px;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        display: none;
+    }
+    
+    .btn-mobile {
+        width: 100%;
+        padding: 15px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+    
+    /* Показываем мобильную кнопку только на мобильных устройствах */
+    @media (max-width: 768px) {
+        .mobile-submit-btn {
+            display: block;
+        }
+        
+        .form-actions {
+            display: none; /* Скрываем обычные кнопки на мобильных */
+        }
+        
+        /* Исправляем кастомные селекты на мобильных */
+        .select-items {
+            position: fixed !important;
+            top: auto !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            max-height: 50vh !important;
+            border-radius: 15px 15px 0 0 !important;
+            z-index: 9999 !important;
+        }
+        
+        .select-items div {
+            padding: 20px 16px !important;
+            font-size: 16px !important;
+            border-bottom: 1px solid var(--gray-light) !important;
+        }
+        
+        .select-items div:last-child {
+            border-bottom: none !important;
+        }
     }
 }
 

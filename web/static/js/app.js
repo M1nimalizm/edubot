@@ -292,6 +292,11 @@ function initializeCustomSelects() {
             closeAllSelects();
             customSelect.classList.add('select-arrow-active');
             items.classList.remove('select-hide');
+            
+            // На мобильных устройствах добавляем класс для стилизации
+            if (window.innerWidth <= 768) {
+                items.classList.add('mobile-select');
+            }
         });
         
         // Клик по опции
@@ -313,6 +318,7 @@ function initializeCustomSelects() {
                 // Закрываем список
                 customSelect.classList.remove('select-arrow-active');
                 items.classList.add('select-hide');
+                items.classList.remove('mobile-select');
                 
                 // Триггерим событие change
                 select.dispatchEvent(new Event('change'));
@@ -334,6 +340,7 @@ function closeAllSelects() {
         customSelect.classList.remove('select-arrow-active');
         const items = customSelect.querySelector('.select-items');
         items.classList.add('select-hide');
+        items.classList.remove('mobile-select');
     });
 }
 
@@ -709,6 +716,11 @@ function initializeCustomSelects() {
             closeAllSelects();
             customSelect.classList.add('select-arrow-active');
             items.classList.remove('select-hide');
+            
+            // На мобильных устройствах добавляем класс для стилизации
+            if (window.innerWidth <= 768) {
+                items.classList.add('mobile-select');
+            }
         });
         
         // Клик по опции
@@ -730,6 +742,7 @@ function initializeCustomSelects() {
                 // Закрываем список
                 customSelect.classList.remove('select-arrow-active');
                 items.classList.add('select-hide');
+                items.classList.remove('mobile-select');
                 
                 // Триггерим событие change
                 select.dispatchEvent(new Event('change'));
@@ -751,5 +764,6 @@ function closeAllSelects() {
         customSelect.classList.remove('select-arrow-active');
         const items = customSelect.querySelector('.select-items');
         items.classList.add('select-hide');
+        items.classList.remove('mobile-select');
     });
 }
