@@ -27,7 +27,7 @@ type User struct {
 	Phone      string         `json:"phone"`
 	Grade      int            `json:"grade"`    // 10 или 11 класс
 	Subjects   string         `json:"subjects"` // JSON массив предметов
-	InviteCode string         `json:"invite_code" gorm:"uniqueIndex"`
+	InviteCode *string        `json:"invite_code" gorm:"uniqueIndex"`
 	CreatedAt  time.Time      `json:"created_at"`
 	UpdatedAt  time.Time      `json:"updated_at"`
 	DeletedAt  gorm.DeletedAt `json:"-" gorm:"index"`

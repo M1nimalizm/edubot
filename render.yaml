@@ -20,4 +20,4 @@ services:
       - key: TELEGRAM_BOT_TOKEN
         value: 8175784572:AAEgKw4eiOkNb5B92sWuasuK1WDLbkQIa-E
       - key: TELEGRAM_WEBHOOK_URL
-        value: ""
+        value: "https://edubot-0g05.onrender.com/webhook"

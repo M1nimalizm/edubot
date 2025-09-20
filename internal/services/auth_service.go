@@ -76,6 +76,7 @@ func (s *AuthService) AuthenticateWithTelegram(authData *TelegramAuthData) (*Aut
 			LastName:   authData.LastName,
 			Username:   authData.Username,
 			Role:       models.RoleGuest, // По умолчанию гость
+			InviteCode: nil, // Пустой invite code
 		}
 
 		// Проверяем, является ли пользователь преподавателем

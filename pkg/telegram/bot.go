@@ -146,7 +146,7 @@ func (b *Bot) ProcessUpdate(update map[string]interface{}) {
 	text, _ := message["text"].(string)
 	from, _ := message["from"].(map[string]interface{})
 	chat, _ := message["chat"].(map[string]interface{})
-	
+
 	userID, _ := from["id"].(float64)
 	chatID, _ := chat["id"].(float64)
 
