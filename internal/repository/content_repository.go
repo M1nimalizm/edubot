@@ -96,7 +96,7 @@ func (r *ContentRepository) MarkAsViewed(contentID, userID uuid.UUID) error {
 	// Проверяем, не просматривал ли пользователь этот контент ранее
 	var count int64
 	r.db.Model(&models.ContentView{}).Where("content_id = ? AND user_id = ?", contentID, userID).Count(&count)
-	
+
 	if count == 0 {
 		view := models.ContentView{
 			ID:        uuid.New(),
@@ -105,7 +105,7 @@ func (r *ContentRepository) MarkAsViewed(contentID, userID uuid.UUID) error {
 		}
 		return r.db.Create(&view).Error
 	}
-	
+
 	return nil
 }
 

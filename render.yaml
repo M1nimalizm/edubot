@@ -9,3 +9,15 @@ services:
         value: 10000
       - key: HOST
         value: 0.0.0.0
+      - key: DB_PATH
+        value: /tmp/edubot.db
+      - key: UPLOAD_PATH
+        value: /tmp/uploads
+      - key: JWT_SECRET
+        value: edubot_secret_key_2024
+      - key: TEACHER_TELEGRAM_ID
+        value: 123456789
+      - key: TELEGRAM_BOT_TOKEN
+        value: your_bot_token_here
+      - key: TELEGRAM_WEBHOOK_URL
+        value: ""

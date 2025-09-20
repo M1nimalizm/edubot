@@ -38,13 +38,13 @@ func Load() (*Config, error) {
 	_ = godotenv.Load()
 
 	config := &Config{
-		Port:               getEnv("PORT", "8080"),
+		Port:               getEnv("PORT", "10000"),
 		Host:               getEnv("HOST", "0.0.0.0"),
-		DBPath:             getEnv("DB_PATH", "./data/edubot.db"),
+		DBPath:             getEnv("DB_PATH", "/tmp/edubot.db"),
 		TelegramBotToken:   getEnv("TELEGRAM_BOT_TOKEN", ""),
 		TelegramWebhookURL: getEnv("TELEGRAM_WEBHOOK_URL", ""),
-		UploadPath:         getEnv("UPLOAD_PATH", "./uploads"),
-		JWTSecret:          getEnv("JWT_SECRET", "default_secret_key"),
+		UploadPath:         getEnv("UPLOAD_PATH", "/tmp/uploads"),
+		JWTSecret:          getEnv("JWT_SECRET", "edubot_secret_key_2024"),
 		JWTExpiration:      24 * time.Hour,
 	}
 
