@@ -130,7 +130,7 @@ func (s *AuthService) RegisterStudent(telegramID int64, inviteCode string, phone
 	user.Phone = phone
 	user.Grade = grade
 	user.Subjects = subjects
-	user.InviteCode = inviteCode
+	user.InviteCode = &inviteCode
 
 	if err := s.userRepo.Update(user); err != nil {
 		return fmt.Errorf("failed to register student: %w", err)
