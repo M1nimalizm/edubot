@@ -33,33 +33,9 @@ function initializeTelegramWebApp() {
         const closeButtons = document.querySelectorAll('.telegram-hidden');
         closeButtons.forEach(btn => btn.style.display = 'none');
         
-        // Полностью скрываем Telegram MainButton, чтобы не дублировать нашу кнопку
-        forceHideTelegramMainButton();
-
-        // Дополнительно — периодическое скрытие на случай, если клиент Telegram снова покажет кнопку
-        setInterval(forceHideTelegramMainButton, 500);
-        document.addEventListener('visibilitychange', forceHideTelegramMainButton);
-        window.addEventListener('resize', forceHideTelegramMainButton);
-        
         console.log('Telegram WebApp initialized successfully');
     } else {
         console.log('Running outside Telegram WebApp');
-    }
-}
-
-// Принудительно скрывает Telegram MainButton всегда
-function forceHideTelegramMainButton() {
-    try {
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
-            const MB = window.Telegram.WebApp.MainButton;
-            MB.hide();
-            // На всякий случай убираем обработчик клика
-            if (MB.offClick) {
-                MB.offClick();
-            }
-        }
-    } catch (e) {
-        console.warn('Failed to force-hide Telegram MainButton:', e);
     }
 }
 
@@ -211,15 +187,7 @@ function closeTrialModal() {
             form.reset();
         }
 
-        // В Telegram WebApp возвращаем MainButton
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
-            try {
-                window.Telegram.WebApp.MainButton.setText('Записаться на пробное занятие');
-                window.Telegram.WebApp.MainButton.show();
-            } catch (e) {
-                console.warn('Failed to show Telegram MainButton:', e);
-            }
-        }
+        // Не возвращаем Telegram MainButton: он отключен в приложении
     }
 }
 
