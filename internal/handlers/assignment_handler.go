@@ -50,11 +50,7 @@ type CreateContentRequest struct {
 	Title       string `json:"title" binding:"required"`
 	Description string `json:"description"`
 	Type        string `json:"type" binding:"required"`
-	URL         string `json:"url"`
-	Content     string `json:"content"`
 	Subject     string `json:"subject" binding:"required"`
-	Grade       int    `json:"grade" binding:"required"`
-	Level       int    `json:"level" binding:"required"`
 }
 
 // Assignment endpoints
@@ -328,12 +324,9 @@ func (h *AssignmentHandler) CreateContent(c *gin.Context) {
 		Title:       req.Title,
 		Description: req.Description,
 		Type:        req.Type,
-		URL:         req.URL,
-		Content:     req.Content,
-		Subject:     req.Subject,
-		Grade:       req.Grade,
-		Level:       req.Level,
-		TeacherID:   teacherID.(uuid.UUID),
+		Category:    req.Subject, // Используем Subject как Category
+		CreatedBy:   teacherID.(uuid.UUID),
+		IsPublic:    true,
 	}
 	
 	if err := h.assignmentService.CreateContent(content); err != nil {
@@ -425,20 +418,8 @@ func (h *AssignmentHandler) UpdateContent(c *gin.Context) {
 	if req.Type != "" {
 		content.Type = req.Type
 	}
-	if req.URL != "" {
-		content.URL = req.URL
-	}
-	if req.Content != "" {
-		content.Content = req.Content
-	}
 	if req.Subject != "" {
-		content.Subject = req.Subject
-	}
-	if req.Grade != 0 {
-		content.Grade = req.Grade
-	}
-	if req.Level != 0 {
-		content.Level = req.Level
+		content.Category = req.Subject // Используем Subject как Category
 	}
 	
 	if err := h.assignmentService.UpdateContent(content); err != nil {

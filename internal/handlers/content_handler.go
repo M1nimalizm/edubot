@@ -21,15 +21,6 @@ func NewContentHandler(contentService *services.ContentService) *ContentHandler 
 	}
 }
 
-// CreateContentRequest представляет запрос на создание контента
-type CreateContentRequest struct {
-	Title       string `json:"title" binding:"required"`
-	Description string `json:"description"`
-	Type        string `json:"type" binding:"required"`
-	Category    string `json:"category" binding:"required"`
-	Tags        string `json:"tags"`
-	IsPublic    bool   `json:"is_public"`
-}
 
 // CreateContent создает новый контент (только для преподавателя)
 func (h *ContentHandler) CreateContent(c *gin.Context) {
