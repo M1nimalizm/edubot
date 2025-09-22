@@ -1,243 +1,233 @@
 package services
 
 import (
-	"fmt"
+	"errors"
 	"time"
-
+	"github.com/google/uuid"
 	"edubot/internal/models"
 	"edubot/internal/repository"
-	"edubot/pkg/storage"
 	"edubot/pkg/telegram"
-	"mime/multipart"
-
-	"github.com/google/uuid"
 )
 
-// AssignmentService представляет сервис для работы с заданиями
 type AssignmentService struct {
 	assignmentRepo *repository.AssignmentRepository
-	submissionRepo *repository.SubmissionRepository
-	attachmentRepo *repository.AttachmentRepository
 	userRepo       *repository.UserRepository
-	storage        *storage.Storage
 	telegramBot    *telegram.Bot
 }
 
-// NewAssignmentService создает новый сервис заданий
-func NewAssignmentService(
-	assignmentRepo *repository.AssignmentRepository,
-	submissionRepo *repository.SubmissionRepository,
-	attachmentRepo *repository.AttachmentRepository,
-	userRepo *repository.UserRepository,
-	storage *storage.Storage,
-	telegramBot *telegram.Bot,
-) *AssignmentService {
+func NewAssignmentService(assignmentRepo *repository.AssignmentRepository, userRepo *repository.UserRepository, telegramBot *telegram.Bot) *AssignmentService {
 	return &AssignmentService{
 		assignmentRepo: assignmentRepo,
-		submissionRepo: submissionRepo,
-		attachmentRepo: attachmentRepo,
 		userRepo:       userRepo,
-		storage:        storage,
 		telegramBot:    telegramBot,
 	}
 }
 
-// CreateAssignmentRequest представляет запрос на создание задания
-type CreateAssignmentRequest struct {
-	Title       string      `json:"title"`
-	Description string      `json:"description"`
-	Subject     string      `json:"subject"`
-	Deadline    time.Time   `json:"deadline"`
-	UserIDs     []uuid.UUID `json:"user_ids"`
-}
-
-// CreateAssignment создает новое задание
-func (s *AssignmentService) CreateAssignment(req *CreateAssignmentRequest, creatorID uuid.UUID) (*models.Assignment, error) {
+// Assignment methods
+func (s *AssignmentService) CreateAssignment(assignment *models.Assignment) error {
+	// Устанавливаем статус по умолчанию
+	assignment.Status = "assigned"
+	assignment.CreatedAt = time.Now()
+	
 	// Создаем задание
-	assignment := &models.Assignment{
-		Title:       req.Title,
-		Description: req.Description,
-		Subject:     req.Subject,
-		Deadline:    req.Deadline,
-		CreatedBy:   creatorID,
-	}
-
 	if err := s.assignmentRepo.Create(assignment); err != nil {
-		return nil, fmt.Errorf("failed to create assignment: %w", err)
+		return err
 	}
-
-	// Назначаем задание пользователям
-	for _, userID := range req.UserIDs {
-		if err := s.assignmentRepo.AssignToUser(assignment.ID, userID); err != nil {
-			// Логируем ошибку, но продолжаем
-			fmt.Printf("Failed to assign assignment to user %s: %v\n", userID, err)
-		}
+	
+	// Уведомляем ученика через Telegram
+	if assignment.Student.TelegramID != 0 {
+		s.telegramBot.SendAssignmentNotification(assignment.Student.TelegramID, assignment)
 	}
-
-	// Отправляем уведомления пользователям
-	s.notifyUsersAboutAssignment(assignment, req.UserIDs)
-
-	return assignment, nil
-}
-
-// GetAssignmentsForUser получает задания пользователя
-func (s *AssignmentService) GetAssignmentsForUser(userID uuid.UUID) ([]models.Assignment, error) {
-	return s.assignmentRepo.ListByUser(userID)
-}
-
-// GetAssignmentDetails получает детали задания
-func (s *AssignmentService) GetAssignmentDetails(assignmentID uuid.UUID, userID uuid.UUID) (*models.Assignment, error) {
-	assignment, err := s.assignmentRepo.GetByID(assignmentID)
-	if err != nil {
-		return nil, fmt.Errorf("assignment not found: %w", err)
-	}
-
-	// Загружаем решение пользователя если оно есть
-	submission, err := s.submissionRepo.GetByAssignmentAndUser(assignmentID, userID)
-	if err == nil {
-		assignment.Submissions = []models.Submission{*submission}
-	}
-
-	return assignment, nil
-}
-
-// SubmitSolution загружает решение задания
-func (s *AssignmentService) SubmitSolution(assignmentID, userID uuid.UUID, files []*multipart.FileHeader) (*models.Submission, error) {
-	// Проверяем, существует ли задание
-	assignment, err := s.assignmentRepo.GetByID(assignmentID)
-	if err != nil {
-		return nil, fmt.Errorf("assignment not found: %w", err)
-	}
-
-	// Проверяем дедлайн
-	if time.Now().After(assignment.Deadline) {
-		return nil, fmt.Errorf("assignment deadline has passed")
-	}
-
-	// Проверяем, не сдано ли уже решение
-	existingSubmission, err := s.submissionRepo.GetByAssignmentAndUser(assignmentID, userID)
-	if err == nil && existingSubmission != nil {
-		return nil, fmt.Errorf("solution already submitted")
-	}
-
-	// Создаем новое решение
-	submission := &models.Submission{
-		AssignmentID: assignmentID,
-		UserID:       userID,
-		Status:       "submitted",
-		SubmittedAt:  time.Now(),
-	}
-
-	if err := s.submissionRepo.Create(submission); err != nil {
-		return nil, fmt.Errorf("failed to create submission: %w", err)
-	}
-
-	// Сохраняем файлы
-	for _, file := range files {
-		filePath, err := s.storage.SaveFile(file, userID, "submissions")
-		if err != nil {
-			return nil, fmt.Errorf("failed to save file %s: %w", file.Filename, err)
-		}
-
-		attachment := &models.Attachment{
-			FileName:     file.Filename,
-			OriginalName: file.Filename,
-			FilePath:     filePath,
-			FileSize:     file.Size,
-			MimeType:     file.Header.Get("Content-Type"),
-			SubmissionID: &submission.ID,
-		}
-
-		if err := s.attachmentRepo.Create(attachment); err != nil {
-			return nil, fmt.Errorf("failed to create attachment: %w", err)
-		}
-	}
-
-	return submission, nil
-}
-
-// GradeSubmission оценивает решение
-func (s *AssignmentService) GradeSubmission(submissionID uuid.UUID, grade int, comments string) error {
-	if grade < 1 || grade > 5 {
-		return fmt.Errorf("grade must be between 1 and 5")
-	}
-
-	if err := s.submissionRepo.Grade(submissionID, grade, comments); err != nil {
-		return fmt.Errorf("failed to grade submission: %w", err)
-	}
-
-	// Получаем решение для отправки уведомления
-	submission, err := s.submissionRepo.GetByID(submissionID)
-	if err != nil {
-		return fmt.Errorf("failed to get submission: %w", err)
-	}
-
-	// Отправляем уведомление ученику
-	if err := s.telegramBot.SendGradeNotification(
-		submission.User.TelegramID,
-		submission.Assignment.Title,
-		grade,
-		comments,
-	); err != nil {
-		fmt.Printf("Failed to send grade notification: %v\n", err)
-	}
-
+	
 	return nil
 }
 
-// GetPendingSubmissions получает непроверенные решения
-func (s *AssignmentService) GetPendingSubmissions() ([]models.Submission, error) {
-	return s.submissionRepo.ListPending()
+func (s *AssignmentService) GetAssignmentByID(id uuid.UUID) (*models.Assignment, error) {
+	return s.assignmentRepo.GetByID(id)
 }
 
-// GetUpcomingDeadlines получает задания с приближающимися дедлайнами
-func (s *AssignmentService) GetUpcomingDeadlines(hours int) ([]models.Assignment, error) {
-	return s.assignmentRepo.ListUpcoming(hours)
+func (s *AssignmentService) GetAssignmentsByStudentID(studentID uuid.UUID) ([]models.Assignment, error) {
+	return s.assignmentRepo.GetByStudentID(studentID)
 }
 
-// SendDeadlineReminders отправляет напоминания о дедлайнах
-func (s *AssignmentService) SendDeadlineReminders() error {
-	assignments, err := s.GetUpcomingDeadlines(24) // За 24 часа
+func (s *AssignmentService) GetAssignmentsByTeacherID(teacherID uuid.UUID) ([]models.Assignment, error) {
+	return s.assignmentRepo.GetByTeacherID(teacherID)
+}
+
+func (s *AssignmentService) GetUpcomingDeadlines(studentID uuid.UUID, days int) ([]models.Assignment, error) {
+	return s.assignmentRepo.GetUpcomingDeadlines(studentID, days)
+}
+
+func (s *AssignmentService) UpdateAssignment(assignment *models.Assignment) error {
+	return s.assignmentRepo.Update(assignment)
+}
+
+func (s *AssignmentService) MarkAssignmentCompleted(assignmentID uuid.UUID, studentID uuid.UUID) error {
+	// Проверяем, что задание принадлежит ученику
+	assignment, err := s.assignmentRepo.GetByID(assignmentID)
 	if err != nil {
-		return fmt.Errorf("failed to get upcoming deadlines: %w", err)
+		return err
 	}
+	
+	if assignment.StudentID != studentID {
+		return errors.New("assignment does not belong to student")
+	}
+	
+	// Отмечаем как выполненное
+	if err := s.assignmentRepo.MarkCompleted(assignmentID); err != nil {
+		return err
+	}
+	
+	// Уведомляем учителя
+	if assignment.Teacher.TelegramID != 0 {
+		s.telegramBot.SendAssignmentCompletedNotification(assignment.Teacher.TelegramID, assignment)
+	}
+	
+	// Обновляем прогресс ученика
+	s.updateStudentProgress(studentID, assignment.Subject)
+	
+	return nil
+}
 
+func (s *AssignmentService) DeleteAssignment(assignmentID uuid.UUID, teacherID uuid.UUID) error {
+	// Проверяем, что задание принадлежит учителю
+	assignment, err := s.assignmentRepo.GetByID(assignmentID)
+	if err != nil {
+		return err
+	}
+	
+	if assignment.TeacherID != teacherID {
+		return errors.New("assignment does not belong to teacher")
+	}
+	
+	return s.assignmentRepo.Delete(assignmentID)
+}
+
+// Comment methods
+func (s *AssignmentService) AddComment(comment *models.Comment) error {
+	comment.CreatedAt = time.Now()
+	
+	if err := s.assignmentRepo.CreateComment(comment); err != nil {
+		return err
+	}
+	
+	// Уведомляем получателя комментария
+	assignment, err := s.assignmentRepo.GetByID(comment.AssignmentID)
+	if err != nil {
+		return err
+	}
+	
+	var recipientTelegramID int64
+	if comment.AuthorType == "teacher" {
+		recipientTelegramID = assignment.Student.TelegramID
+	} else {
+		recipientTelegramID = assignment.Teacher.TelegramID
+	}
+	
+	if recipientTelegramID != 0 {
+		s.telegramBot.SendCommentNotification(recipientTelegramID, comment, assignment)
+	}
+	
+	return nil
+}
+
+func (s *AssignmentService) GetCommentsByAssignmentID(assignmentID uuid.UUID) ([]models.Comment, error) {
+	return s.assignmentRepo.GetCommentsByAssignmentID(assignmentID)
+}
+
+func (s *AssignmentService) UpdateComment(comment *models.Comment) error {
+	return s.assignmentRepo.UpdateComment(comment)
+}
+
+func (s *AssignmentService) DeleteComment(commentID uuid.UUID) error {
+	return s.assignmentRepo.DeleteComment(commentID)
+}
+
+// Content methods
+func (s *AssignmentService) CreateContent(content *models.Content) error {
+	content.CreatedAt = time.Now()
+	return s.assignmentRepo.CreateContent(content)
+}
+
+func (s *AssignmentService) GetContentByID(id uuid.UUID) (*models.Content, error) {
+	return s.assignmentRepo.GetContentByID(id)
+}
+
+func (s *AssignmentService) GetContentBySubject(subject string, grade int) ([]models.Content, error) {
+	return s.assignmentRepo.GetContentBySubject(subject, grade)
+}
+
+func (s *AssignmentService) GetContentByTeacherID(teacherID uuid.UUID) ([]models.Content, error) {
+	return s.assignmentRepo.GetContentByTeacherID(teacherID)
+}
+
+func (s *AssignmentService) UpdateContent(content *models.Content) error {
+	return s.assignmentRepo.UpdateContent(content)
+}
+
+func (s *AssignmentService) DeleteContent(contentID uuid.UUID, teacherID uuid.UUID) error {
+	// Проверяем, что контент принадлежит учителю
+	content, err := s.assignmentRepo.GetContentByID(contentID)
+	if err != nil {
+		return err
+	}
+	
+	if content.TeacherID != teacherID {
+		return errors.New("content does not belong to teacher")
+	}
+	
+	return s.assignmentRepo.DeleteContent(contentID)
+}
+
+// Progress methods
+func (s *AssignmentService) GetStudentProgress(studentID uuid.UUID) ([]models.StudentProgress, error) {
+	return s.assignmentRepo.GetProgressByStudentID(studentID)
+}
+
+func (s *AssignmentService) GetStudentProgressBySubject(studentID uuid.UUID, subject string) (*models.StudentProgress, error) {
+	return s.assignmentRepo.GetProgressBySubject(studentID, subject)
+}
+
+func (s *AssignmentService) updateStudentProgress(studentID uuid.UUID, subject string) {
+	// Получаем или создаем прогресс
+	progress, err := s.assignmentRepo.GetProgressBySubject(studentID, subject)
+	if err != nil {
+		// Создаем новый прогресс
+		progress = &models.StudentProgress{
+			StudentID: studentID,
+			Subject:   subject,
+			Level:     1,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		s.assignmentRepo.CreateProgress(progress)
+	}
+	
+	// Подсчитываем статистику
+	assignments, err := s.assignmentRepo.GetByStudentID(studentID)
+	if err != nil {
+		return
+	}
+	
+	var completed, total int
 	for _, assignment := range assignments {
-		hoursLeft := int(time.Until(assignment.Deadline).Hours())
-
-		// Отправляем напоминания всем назначенным пользователям
-		for _, userAssignment := range assignment.UserAssignments {
-			if err := s.telegramBot.SendDeadlineReminder(
-				userAssignment.User.TelegramID,
-				assignment.Title,
-				hoursLeft,
-			); err != nil {
-				fmt.Printf("Failed to send deadline reminder to user %d: %v\n",
-					userAssignment.User.TelegramID, err)
+		if assignment.Subject == subject {
+			total++
+			if assignment.Status == "completed" {
+				completed++
 			}
 		}
 	}
-
-	return nil
-}
-
-// notifyUsersAboutAssignment отправляет уведомления о новом задании
-func (s *AssignmentService) notifyUsersAboutAssignment(assignment *models.Assignment, userIDs []uuid.UUID) {
-	for _, userID := range userIDs {
-		user, err := s.userRepo.GetByID(userID)
-		if err != nil {
-			fmt.Printf("Failed to get user %s: %v\n", userID, err)
-			continue
-		}
-
-		if err := s.telegramBot.SendAssignmentNotification(
-			user.TelegramID,
-			assignment.Title,
-			assignment.Subject,
-			assignment.Deadline.Format("02.01.2006 15:04"),
-		); err != nil {
-			fmt.Printf("Failed to send assignment notification to user %d: %v\n",
-				user.TelegramID, err)
-		}
+	
+	// Обновляем прогресс
+	progress.CompletedAssignments = completed
+	progress.TotalAssignments = total
+	progress.LastActivity = time.Now()
+	progress.UpdatedAt = time.Now()
+	
+	if total > 0 {
+		progress.AverageScore = float64(completed) / float64(total) * 100
 	}
+	
+	s.assignmentRepo.UpdateProgress(progress)
 }

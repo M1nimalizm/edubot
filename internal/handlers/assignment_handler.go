@@ -4,233 +4,486 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-
-	"edubot/internal/services"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"edubot/internal/models"
+	"edubot/internal/services"
 )
 
-// AssignmentHandler представляет обработчик заданий
 type AssignmentHandler struct {
 	assignmentService *services.AssignmentService
 }
 
-// NewAssignmentHandler создает новый обработчик заданий
 func NewAssignmentHandler(assignmentService *services.AssignmentService) *AssignmentHandler {
 	return &AssignmentHandler{
 		assignmentService: assignmentService,
 	}
 }
 
-// CreateAssignmentRequest представляет запрос на создание задания
+// Request structures
 type CreateAssignmentRequest struct {
-	Title       string      `json:"title" binding:"required"`
-	Description string      `json:"description"`
-	Subject     string      `json:"subject" binding:"required"`
-	Deadline    time.Time   `json:"deadline" binding:"required"`
-	UserIDs     []uuid.UUID `json:"user_ids"`
+	Title       string    `json:"title" binding:"required"`
+	Description string    `json:"description"`
+	Subject     string    `json:"subject" binding:"required"`
+	Grade       int       `json:"grade" binding:"required"`
+	Level       int       `json:"level" binding:"required"`
+	StudentID   uuid.UUID `json:"student_id" binding:"required"`
+	DueDate     time.Time `json:"due_date" binding:"required"`
 }
 
-// GradeSubmissionRequest представляет запрос на оценку решения
-type GradeSubmissionRequest struct {
-	Grade    int    `json:"grade" binding:"required,min=1,max=5"`
-	Comments string `json:"comments"`
+type UpdateAssignmentRequest struct {
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Subject     string    `json:"subject"`
+	Grade       int       `json:"grade"`
+	Level       int       `json:"level"`
+	DueDate     time.Time `json:"due_date"`
+	Status      string    `json:"status"`
 }
 
-// CreateAssignment создает новое задание (только для преподавателя)
+type AddCommentRequest struct {
+	Content     string `json:"content" binding:"required"`
+	AuthorType  string `json:"author_type" binding:"required"`
+}
+
+type CreateContentRequest struct {
+	Title       string `json:"title" binding:"required"`
+	Description string `json:"description"`
+	Type        string `json:"type" binding:"required"`
+	URL         string `json:"url"`
+	Content     string `json:"content"`
+	Subject     string `json:"subject" binding:"required"`
+	Grade       int    `json:"grade" binding:"required"`
+	Level       int    `json:"level" binding:"required"`
+}
+
+// Assignment endpoints
 func (h *AssignmentHandler) CreateAssignment(c *gin.Context) {
 	var req CreateAssignmentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	// Получаем ID создателя из контекста
-	userIDStr, exists := c.Get("user_id")
+	
+	// Получаем ID учителя из контекста (из middleware)
+	teacherID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
-
-	creatorID, err := uuid.Parse(userIDStr.(string))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	assignment, err := h.assignmentService.CreateAssignment(&services.CreateAssignmentRequest{
+	
+	assignment := &models.Assignment{
 		Title:       req.Title,
 		Description: req.Description,
 		Subject:     req.Subject,
-		Deadline:    req.Deadline,
-		UserIDs:     req.UserIDs,
-	}, creatorID)
-	if err != nil {
+		Grade:       req.Grade,
+		Level:       req.Level,
+		TeacherID:   teacherID.(uuid.UUID),
+		StudentID:   req.StudentID,
+		DueDate:     req.DueDate,
+	}
+	
+	if err := h.assignmentService.CreateAssignment(assignment); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
+	
 	c.JSON(http.StatusCreated, assignment)
 }
 
-// GetAssignments получает список заданий пользователя
-func (h *AssignmentHandler) GetAssignments(c *gin.Context) {
-	// Получаем ID пользователя из контекста
-	userIDStr, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
-		return
-	}
-
-	userID, err := uuid.Parse(userIDStr.(string))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	assignments, err := h.assignmentService.GetAssignmentsForUser(userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, assignments)
-}
-
-// GetAssignment получает детали задания
 func (h *AssignmentHandler) GetAssignment(c *gin.Context) {
-	assignmentIDStr := c.Param("id")
-	assignmentID, err := uuid.Parse(assignmentIDStr)
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid assignment ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid assignment ID"})
 		return
 	}
-
-	// Получаем ID пользователя из контекста
-	userIDStr, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
-		return
-	}
-
-	userID, err := uuid.Parse(userIDStr.(string))
+	
+	assignment, err := h.assignmentService.GetAssignmentByID(id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "assignment not found"})
 		return
 	}
-
-	assignment, err := h.assignmentService.GetAssignmentDetails(assignmentID, userID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
-	}
-
+	
 	c.JSON(http.StatusOK, assignment)
 }
 
-// SubmitSolution загружает решение задания
-func (h *AssignmentHandler) SubmitSolution(c *gin.Context) {
-	assignmentIDStr := c.Param("id")
-	assignmentID, err := uuid.Parse(assignmentIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid assignment ID"})
-		return
-	}
-
-	// Получаем ID пользователя из контекста
-	userIDStr, exists := c.Get("user_id")
+func (h *AssignmentHandler) GetStudentAssignments(c *gin.Context) {
+	studentID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
-
-	userID, err := uuid.Parse(userIDStr.(string))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	// Получаем файлы из формы
-	form, err := c.MultipartForm()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse multipart form"})
-		return
-	}
-
-	files := form.File["files"]
-	if len(files) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "No files provided"})
-		return
-	}
-
-	submission, err := h.assignmentService.SubmitSolution(assignmentID, userID, files)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, submission)
-}
-
-// GetPendingSubmissions получает непроверенные решения (только для преподавателя)
-func (h *AssignmentHandler) GetPendingSubmissions(c *gin.Context) {
-	submissions, err := h.assignmentService.GetPendingSubmissions()
+	
+	assignments, err := h.assignmentService.GetAssignmentsByStudentID(studentID.(uuid.UUID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	c.JSON(http.StatusOK, submissions)
+	
+	c.JSON(http.StatusOK, assignments)
 }
 
-// GradeSubmission оценивает решение (только для преподавателя)
-func (h *AssignmentHandler) GradeSubmission(c *gin.Context) {
-	submissionIDStr := c.Param("id")
-	submissionID, err := uuid.Parse(submissionIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid submission ID"})
+func (h *AssignmentHandler) GetTeacherAssignments(c *gin.Context) {
+	teacherID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	
+	assignments, err := h.assignmentService.GetAssignmentsByTeacherID(teacherID.(uuid.UUID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	c.JSON(http.StatusOK, assignments)
+}
 
-	var req GradeSubmissionRequest
+func (h *AssignmentHandler) GetUpcomingDeadlines(c *gin.Context) {
+	studentID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	
+	daysStr := c.DefaultQuery("days", "7")
+	days, err := strconv.Atoi(daysStr)
+	if err != nil {
+		days = 7
+	}
+	
+	assignments, err := h.assignmentService.GetUpcomingDeadlines(studentID.(uuid.UUID), days)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	c.JSON(http.StatusOK, assignments)
+}
+
+func (h *AssignmentHandler) UpdateAssignment(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid assignment ID"})
+		return
+	}
+	
+	var req UpdateAssignmentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	
+	assignment, err := h.assignmentService.GetAssignmentByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "assignment not found"})
+		return
+	}
+	
+	// Обновляем поля
+	if req.Title != "" {
+		assignment.Title = req.Title
+	}
+	if req.Description != "" {
+		assignment.Description = req.Description
+	}
+	if req.Subject != "" {
+		assignment.Subject = req.Subject
+	}
+	if req.Grade != 0 {
+		assignment.Grade = req.Grade
+	}
+	if req.Level != 0 {
+		assignment.Level = req.Level
+	}
+	if !req.DueDate.IsZero() {
+		assignment.DueDate = req.DueDate
+	}
+	if req.Status != "" {
+		assignment.Status = req.Status
+	}
+	
+	if err := h.assignmentService.UpdateAssignment(assignment); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	c.JSON(http.StatusOK, assignment)
+}
 
-	if err := h.assignmentService.GradeSubmission(submissionID, req.Grade, req.Comments); err != nil {
+func (h *AssignmentHandler) MarkAssignmentCompleted(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid assignment ID"})
+		return
+	}
+	
+	studentID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	
+	if err := h.assignmentService.MarkAssignmentCompleted(id, studentID.(uuid.UUID)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{"message": "assignment marked as completed"})
+}
+
+func (h *AssignmentHandler) DeleteAssignment(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid assignment ID"})
+		return
+	}
+	
+	teacherID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	
+	if err := h.assignmentService.DeleteAssignment(id, teacherID.(uuid.UUID)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{"message": "assignment deleted"})
+}
+
+// Comment endpoints
+func (h *AssignmentHandler) AddComment(c *gin.Context) {
+	assignmentIDStr := c.Param("assignment_id")
+	assignmentID, err := uuid.Parse(assignmentIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid assignment ID"})
+		return
+	}
+	
+	var req AddCommentRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Submission graded successfully"})
-}
-
-// GetUpcomingDeadlines получает задания с приближающимися дедлайнами
-func (h *AssignmentHandler) GetUpcomingDeadlines(c *gin.Context) {
-	hoursStr := c.DefaultQuery("hours", "24")
-	hours, err := strconv.Atoi(hoursStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid hours parameter"})
+	
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	
+	comment := &models.Comment{
+		Content:       req.Content,
+		AuthorType:    req.AuthorType,
+		AssignmentID: assignmentID,
+		AuthorID:      userID.(uuid.UUID),
+	}
+	
+	if err := h.assignmentService.AddComment(comment); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	c.JSON(http.StatusCreated, comment)
+}
 
-	assignments, err := h.assignmentService.GetUpcomingDeadlines(hours)
+func (h *AssignmentHandler) GetComments(c *gin.Context) {
+	assignmentIDStr := c.Param("assignment_id")
+	assignmentID, err := uuid.Parse(assignmentIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid assignment ID"})
+		return
+	}
+	
+	comments, err := h.assignmentService.GetCommentsByAssignmentID(assignmentID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	c.JSON(http.StatusOK, assignments)
+	
+	c.JSON(http.StatusOK, comments)
 }
 
-// SendDeadlineReminders отправляет напоминания о дедлайнах (только для преподавателя)
-func (h *AssignmentHandler) SendDeadlineReminders(c *gin.Context) {
-	if err := h.assignmentService.SendDeadlineReminders(); err != nil {
+// Content endpoints
+func (h *AssignmentHandler) CreateContent(c *gin.Context) {
+	var req CreateContentRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	teacherID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	
+	content := &models.Content{
+		Title:       req.Title,
+		Description: req.Description,
+		Type:        req.Type,
+		URL:         req.URL,
+		Content:     req.Content,
+		Subject:     req.Subject,
+		Grade:       req.Grade,
+		Level:       req.Level,
+		TeacherID:   teacherID.(uuid.UUID),
+	}
+	
+	if err := h.assignmentService.CreateContent(content); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	
+	c.JSON(http.StatusCreated, content)
+}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Deadline reminders sent successfully"})
+func (h *AssignmentHandler) GetContent(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid content ID"})
+		return
+	}
+	
+	content, err := h.assignmentService.GetContentByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "content not found"})
+		return
+	}
+	
+	c.JSON(http.StatusOK, content)
+}
+
+func (h *AssignmentHandler) GetContentBySubject(c *gin.Context) {
+	subject := c.Param("subject")
+	gradeStr := c.Param("grade")
+	grade, err := strconv.Atoi(gradeStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid grade"})
+		return
+	}
+	
+	content, err := h.assignmentService.GetContentBySubject(subject, grade)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	c.JSON(http.StatusOK, content)
+}
+
+func (h *AssignmentHandler) GetTeacherContent(c *gin.Context) {
+	teacherID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	
+	content, err := h.assignmentService.GetContentByTeacherID(teacherID.(uuid.UUID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	c.JSON(http.StatusOK, content)
+}
+
+func (h *AssignmentHandler) UpdateContent(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid content ID"})
+		return
+	}
+	
+	var req CreateContentRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	content, err := h.assignmentService.GetContentByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "content not found"})
+		return
+	}
+	
+	// Обновляем поля
+	if req.Title != "" {
+		content.Title = req.Title
+	}
+	if req.Description != "" {
+		content.Description = req.Description
+	}
+	if req.Type != "" {
+		content.Type = req.Type
+	}
+	if req.URL != "" {
+		content.URL = req.URL
+	}
+	if req.Content != "" {
+		content.Content = req.Content
+	}
+	if req.Subject != "" {
+		content.Subject = req.Subject
+	}
+	if req.Grade != 0 {
+		content.Grade = req.Grade
+	}
+	if req.Level != 0 {
+		content.Level = req.Level
+	}
+	
+	if err := h.assignmentService.UpdateContent(content); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	c.JSON(http.StatusOK, content)
+}
+
+func (h *AssignmentHandler) DeleteContent(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid content ID"})
+		return
+	}
+	
+	teacherID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	
+	if err := h.assignmentService.DeleteContent(id, teacherID.(uuid.UUID)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{"message": "content deleted"})
+}
+
+// Progress endpoints
+func (h *AssignmentHandler) GetStudentProgress(c *gin.Context) {
+	studentID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	
+	progress, err := h.assignmentService.GetStudentProgress(studentID.(uuid.UUID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	c.JSON(http.StatusOK, progress)
 }

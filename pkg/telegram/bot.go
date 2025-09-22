@@ -459,3 +459,95 @@ Telegram: @pugach3
 	}
 	return nil
 }
+
+// SendAssignmentNotification отправляет уведомление о новом задании
+func (b *Bot) SendAssignmentNotification(chatID int64, assignment interface{}) error {
+	text := `📝 <b>Новое задание!</b>
+
+🎯 <b>Предмет:</b> %s
+📚 <b>Класс:</b> %d
+⭐ <b>Уровень:</b> %d/5
+📅 <b>Срок сдачи:</b> %s
+
+📖 <b>Описание:</b>
+%s
+
+🚀 Переходите в приложение для выполнения задания!`
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+
+	// Создаем клавиатуру с кнопкой "Открыть приложение"
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("📝 Выполнить задание", "https://edubot-0g05.onrender.com"),
+		),
+	)
+	msg.ReplyMarkup = keyboard
+
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send assignment notification: %w", err)
+	}
+	return nil
+}
+
+// SendAssignmentCompletedNotification отправляет уведомление о выполненном задании
+func (b *Bot) SendAssignmentCompletedNotification(chatID int64, assignment interface{}) error {
+	text := `✅ <b>Задание выполнено!</b>
+
+🎯 <b>Предмет:</b> %s
+📚 <b>Класс:</b> %d
+⭐ <b>Уровень:</b> %d/5
+
+👨‍🎓 Ученик выполнил задание. Проверьте работу в приложении!`
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+
+	// Создаем клавиатуру с кнопкой "Открыть приложение"
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("📝 Проверить задание", "https://edubot-0g05.onrender.com"),
+		),
+	)
+	msg.ReplyMarkup = keyboard
+
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send assignment completed notification: %w", err)
+	}
+	return nil
+}
+
+// SendCommentNotification отправляет уведомление о новом комментарии
+func (b *Bot) SendCommentNotification(chatID int64, comment interface{}, assignment interface{}) error {
+	text := `💬 <b>Новый комментарий к заданию!</b>
+
+🎯 <b>Предмет:</b> %s
+📚 <b>Класс:</b> %d
+
+💭 <b>Комментарий:</b>
+%s
+
+👤 <b>От:</b> %s
+
+🚀 Переходите в приложение для просмотра!`
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+
+	// Создаем клавиатуру с кнопкой "Открыть приложение"
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("💬 Посмотреть комментарий", "https://edubot-0g05.onrender.com"),
+		),
+	)
+	msg.ReplyMarkup = keyboard
+
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send comment notification: %w", err)
+	}
+	return nil
+}

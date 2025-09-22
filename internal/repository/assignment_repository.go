@@ -2,187 +2,159 @@ package repository
 
 import (
 	"time"
-
-	"edubot/internal/models"
-
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"edubot/internal/models"
 )
 
-// AssignmentRepository представляет репозиторий для работы с заданиями
 type AssignmentRepository struct {
 	db *gorm.DB
 }
 
-// NewAssignmentRepository создает новый репозиторий заданий
 func NewAssignmentRepository(db *gorm.DB) *AssignmentRepository {
 	return &AssignmentRepository{db: db}
 }
 
-// Create создает новое задание
+// Assignment CRUD
 func (r *AssignmentRepository) Create(assignment *models.Assignment) error {
-	if assignment.ID == uuid.Nil {
-		assignment.ID = uuid.New()
-	}
 	return r.db.Create(assignment).Error
 }
 
-// GetByID получает задание по ID
 func (r *AssignmentRepository) GetByID(id uuid.UUID) (*models.Assignment, error) {
 	var assignment models.Assignment
-	err := r.db.Preload("Creator").Preload("Attachments").Preload("UserAssignments.User").
-		First(&assignment, "id = ?", id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &assignment, nil
+	err := r.db.Preload("Teacher").Preload("Student").Preload("Comments.Author").
+		Where("id = ?", id).First(&assignment).Error
+	return &assignment, err
 }
 
-// List получает список всех заданий
-func (r *AssignmentRepository) List() ([]models.Assignment, error) {
+func (r *AssignmentRepository) GetByStudentID(studentID uuid.UUID) ([]models.Assignment, error) {
 	var assignments []models.Assignment
-	err := r.db.Preload("Creator").Preload("Attachments").Order("created_at DESC").Find(&assignments).Error
+	err := r.db.Preload("Teacher").Preload("Comments.Author").
+		Where("student_id = ?", studentID).
+		Order("due_date ASC").Find(&assignments).Error
 	return assignments, err
 }
 
-// ListBySubject получает задания по предмету
-func (r *AssignmentRepository) ListBySubject(subject string) ([]models.Assignment, error) {
+func (r *AssignmentRepository) GetByTeacherID(teacherID uuid.UUID) ([]models.Assignment, error) {
 	var assignments []models.Assignment
-	err := r.db.Where("subject = ?", subject).Preload("Creator").Preload("Attachments").
+	err := r.db.Preload("Student").Preload("Comments.Author").
+		Where("teacher_id = ?", teacherID).
 		Order("created_at DESC").Find(&assignments).Error
 	return assignments, err
 }
 
-// ListByUser получает задания пользователя
-func (r *AssignmentRepository) ListByUser(userID uuid.UUID) ([]models.Assignment, error) {
+func (r *AssignmentRepository) GetUpcomingDeadlines(studentID uuid.UUID, days int) ([]models.Assignment, error) {
 	var assignments []models.Assignment
-	err := r.db.Joins("JOIN user_assignments ON assignments.id = user_assignments.assignment_id").
-		Where("user_assignments.user_id = ?", userID).
-		Preload("Creator").Preload("Attachments").Preload("Submissions", "user_id = ?", userID).
-		Order("assignments.created_at DESC").Find(&assignments).Error
+	deadline := time.Now().AddDate(0, 0, days)
+	
+	err := r.db.Preload("Teacher").
+		Where("student_id = ? AND due_date <= ? AND status != 'completed'", studentID, deadline).
+		Order("due_date ASC").Find(&assignments).Error
 	return assignments, err
 }
 
-// ListUpcoming получает задания с приближающимися дедлайнами
-func (r *AssignmentRepository) ListUpcoming(hours int) ([]models.Assignment, error) {
-	var assignments []models.Assignment
-	deadline := time.Now().Add(time.Duration(hours) * time.Hour)
-
-	err := r.db.Where("deadline <= ? AND deadline > ?", deadline, time.Now()).
-		Preload("Creator").Preload("UserAssignments.User").Find(&assignments).Error
-	return assignments, err
-}
-
-// Update обновляет задание
 func (r *AssignmentRepository) Update(assignment *models.Assignment) error {
 	return r.db.Save(assignment).Error
 }
 
-// Delete удаляет задание
-func (r *AssignmentRepository) Delete(id uuid.UUID) error {
-	return r.db.Delete(&models.Assignment{}, "id = ?", id).Error
+func (r *AssignmentRepository) UpdateStatus(id uuid.UUID, status string) error {
+	return r.db.Model(&models.Assignment{}).
+		Where("id = ?", id).
+		Update("status", status).Error
 }
 
-// AssignToUser назначает задание пользователю
-func (r *AssignmentRepository) AssignToUser(assignmentID, userID uuid.UUID) error {
-	userAssignment := models.UserAssignment{
-		ID:           uuid.New(),
-		UserID:       userID,
-		AssignmentID: assignmentID,
-		AssignedAt:   time.Now(),
-	}
-	return r.db.Create(&userAssignment).Error
-}
-
-// UnassignFromUser снимает назначение задания с пользователя
-func (r *AssignmentRepository) UnassignFromUser(assignmentID, userID uuid.UUID) error {
-	return r.db.Where("assignment_id = ? AND user_id = ?", assignmentID, userID).
-		Delete(&models.UserAssignment{}).Error
-}
-
-// SubmissionRepository представляет репозиторий для работы с решениями
-type SubmissionRepository struct {
-	db *gorm.DB
-}
-
-// NewSubmissionRepository создает новый репозиторий решений
-func NewSubmissionRepository(db *gorm.DB) *SubmissionRepository {
-	return &SubmissionRepository{db: db}
-}
-
-// Create создает новое решение
-func (r *SubmissionRepository) Create(submission *models.Submission) error {
-	if submission.ID == uuid.Nil {
-		submission.ID = uuid.New()
-	}
-	return r.db.Create(submission).Error
-}
-
-// GetByID получает решение по ID
-func (r *SubmissionRepository) GetByID(id uuid.UUID) (*models.Submission, error) {
-	var submission models.Submission
-	err := r.db.Preload("Assignment").Preload("User").Preload("Files").
-		First(&submission, "id = ?", id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &submission, nil
-}
-
-// GetByAssignmentAndUser получает решение по заданию и пользователю
-func (r *SubmissionRepository) GetByAssignmentAndUser(assignmentID, userID uuid.UUID) (*models.Submission, error) {
-	var submission models.Submission
-	err := r.db.Where("assignment_id = ? AND user_id = ?", assignmentID, userID).
-		Preload("Assignment").Preload("User").Preload("Files").First(&submission).Error
-	if err != nil {
-		return nil, err
-	}
-	return &submission, nil
-}
-
-// ListByAssignment получает все решения по заданию
-func (r *SubmissionRepository) ListByAssignment(assignmentID uuid.UUID) ([]models.Submission, error) {
-	var submissions []models.Submission
-	err := r.db.Where("assignment_id = ?", assignmentID).
-		Preload("User").Preload("Files").Order("submitted_at DESC").Find(&submissions).Error
-	return submissions, err
-}
-
-// ListByUser получает все решения пользователя
-func (r *SubmissionRepository) ListByUser(userID uuid.UUID) ([]models.Submission, error) {
-	var submissions []models.Submission
-	err := r.db.Where("user_id = ?", userID).
-		Preload("Assignment").Preload("Files").Order("submitted_at DESC").Find(&submissions).Error
-	return submissions, err
-}
-
-// ListPending получает непроверенные решения
-func (r *SubmissionRepository) ListPending() ([]models.Submission, error) {
-	var submissions []models.Submission
-	err := r.db.Where("status = ?", "submitted").
-		Preload("Assignment").Preload("User").Preload("Files").
-		Order("submitted_at ASC").Find(&submissions).Error
-	return submissions, err
-}
-
-// Update обновляет решение
-func (r *SubmissionRepository) Update(submission *models.Submission) error {
-	return r.db.Save(submission).Error
-}
-
-// Grade оценивает решение
-func (r *SubmissionRepository) Grade(id uuid.UUID, grade int, comments string) error {
+func (r *AssignmentRepository) MarkCompleted(id uuid.UUID) error {
 	now := time.Now()
-	return r.db.Model(&models.Submission{}).Where("id = ?", id).
+	return r.db.Model(&models.Assignment{}).
+		Where("id = ?", id).
 		Updates(map[string]interface{}{
-			"status":    "graded",
-			"grade":     grade,
-			"comments":  comments,
-			"graded_at": &now,
+			"status": "completed",
+			"completed_at": &now,
 		}).Error
 }
 
-// Delete удаляет решение
-func (r *SubmissionRepository) Delete(id uuid.UUID) error {
-	return r.db.Delete(&models.Submission{}, "id = ?", id).Error
+func (r *AssignmentRepository) Delete(id uuid.UUID) error {
+	return r.db.Delete(&models.Assignment{}, id).Error
+}
+
+// Comment CRUD
+func (r *AssignmentRepository) CreateComment(comment *models.Comment) error {
+	return r.db.Create(comment).Error
+}
+
+func (r *AssignmentRepository) GetCommentsByAssignmentID(assignmentID uuid.UUID) ([]models.Comment, error) {
+	var comments []models.Comment
+	err := r.db.Preload("Author").
+		Where("assignment_id = ?", assignmentID).
+		Order("created_at ASC").Find(&comments).Error
+	return comments, err
+}
+
+func (r *AssignmentRepository) UpdateComment(comment *models.Comment) error {
+	return r.db.Save(comment).Error
+}
+
+func (r *AssignmentRepository) DeleteComment(id uuid.UUID) error {
+	return r.db.Delete(&models.Comment{}, id).Error
+}
+
+// Content CRUD
+func (r *AssignmentRepository) CreateContent(content *models.Content) error {
+	return r.db.Create(content).Error
+}
+
+func (r *AssignmentRepository) GetContentByID(id uuid.UUID) (*models.Content, error) {
+	var content models.Content
+	err := r.db.Preload("Teacher").
+		Where("id = ?", id).First(&content).Error
+	return &content, err
+}
+
+func (r *AssignmentRepository) GetContentBySubject(subject string, grade int) ([]models.Content, error) {
+	var content []models.Content
+	err := r.db.Preload("Teacher").
+		Where("subject = ? AND grade = ?", subject, grade).
+		Order("created_at DESC").Find(&content).Error
+	return content, err
+}
+
+func (r *AssignmentRepository) GetContentByTeacherID(teacherID uuid.UUID) ([]models.Content, error) {
+	var content []models.Content
+	err := r.db.Preload("Teacher").
+		Where("teacher_id = ?", teacherID).
+		Order("created_at DESC").Find(&content).Error
+	return content, err
+}
+
+func (r *AssignmentRepository) UpdateContent(content *models.Content) error {
+	return r.db.Save(content).Error
+}
+
+func (r *AssignmentRepository) DeleteContent(id uuid.UUID) error {
+	return r.db.Delete(&models.Content{}, id).Error
+}
+
+// Student Progress
+func (r *AssignmentRepository) CreateProgress(progress *models.StudentProgress) error {
+	return r.db.Create(progress).Error
+}
+
+func (r *AssignmentRepository) GetProgressByStudentID(studentID uuid.UUID) ([]models.StudentProgress, error) {
+	var progress []models.StudentProgress
+	err := r.db.Preload("Student").
+		Where("student_id = ?", studentID).
+		Find(&progress).Error
+	return progress, err
+}
+
+func (r *AssignmentRepository) UpdateProgress(progress *models.StudentProgress) error {
+	return r.db.Save(progress).Error
+}
+
+func (r *AssignmentRepository) GetProgressBySubject(studentID uuid.UUID, subject string) (*models.StudentProgress, error) {
+	var progress models.StudentProgress
+	err := r.db.Preload("Student").
+		Where("student_id = ? AND subject = ?", studentID, subject).
+		First(&progress).Error
+	return &progress, err
 }

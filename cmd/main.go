@@ -63,19 +63,14 @@ func main() {
 	userRepo := repository.NewUserRepository(db.DB)
 	trialRepo := repository.NewTrialRequestRepository(db.DB)
 	assignmentRepo := repository.NewAssignmentRepository(db.DB)
-	submissionRepo := repository.NewSubmissionRepository(db.DB)
-	contentRepo := repository.NewContentRepository(db.DB)
-	attachmentRepo := repository.NewAttachmentRepository(db.DB)
 
 	// Создаем сервисы
 	authService := services.NewAuthService(userRepo, trialRepo, telegramBot, cfg.JWTSecret, cfg.TeacherTelegramID)
-	assignmentService := services.NewAssignmentService(assignmentRepo, submissionRepo, attachmentRepo, userRepo, fileStorage, telegramBot)
-	contentService := services.NewContentService(contentRepo, attachmentRepo, fileStorage)
+	assignmentService := services.NewAssignmentService(assignmentRepo, userRepo, telegramBot)
 
 	// Создаем обработчики
 	authHandler := handlers.NewAuthHandler(authService)
 	assignmentHandler := handlers.NewAssignmentHandler(assignmentService)
-	contentHandler := handlers.NewContentHandler(contentService)
 
 	// Настраиваем Gin
 	if gin.Mode() == gin.ReleaseMode {
@@ -122,11 +117,6 @@ func main() {
 	{
 		public.POST("/auth/telegram", authHandler.TelegramAuth)
 		public.POST("/trial-request", handlers.GuestMiddleware(authService), authHandler.SubmitTrialRequest)
-		public.GET("/content", contentHandler.ListContent)
-		public.GET("/content/categories", contentHandler.GetContentCategories)
-		public.GET("/content/types", contentHandler.GetContentTypes)
-		public.GET("/content/search", contentHandler.SearchContent)
-		public.GET("/content/:id", contentHandler.GetContent)
 	}
 
 	// Публичные маршруты для панели управления учителя (без авторизации для простоты)
@@ -144,14 +134,22 @@ func main() {
 		protected.GET("/profile", authHandler.GetProfile)
 		protected.POST("/register-student", authHandler.RegisterStudent)
 
-		// Задания
-		protected.GET("/assignments", assignmentHandler.GetAssignments)
+		// Задания для учеников
+		protected.GET("/assignments", assignmentHandler.GetStudentAssignments)
 		protected.GET("/assignments/:id", assignmentHandler.GetAssignment)
-		protected.POST("/assignments/:id/submit", assignmentHandler.SubmitSolution)
+		protected.POST("/assignments/:id/complete", assignmentHandler.MarkAssignmentCompleted)
 		protected.GET("/assignments/upcoming", assignmentHandler.GetUpcomingDeadlines)
 
-		// Просмотренный контент
-		protected.GET("/content/viewed", contentHandler.GetViewedContent)
+		// Комментарии к заданиям
+		protected.GET("/assignments/:assignment_id/comments", assignmentHandler.GetComments)
+		protected.POST("/assignments/:assignment_id/comments", assignmentHandler.AddComment)
+
+		// Контент
+		protected.GET("/content/:id", assignmentHandler.GetContent)
+		protected.GET("/content/subject/:subject/grade/:grade", assignmentHandler.GetContentBySubject)
+
+		// Прогресс ученика
+		protected.GET("/progress", assignmentHandler.GetStudentProgress)
 	}
 
 	// Маршруты только для преподавателей (защищенные)
@@ -165,15 +163,15 @@ func main() {
 
 		// Управление заданиями
 		teacher.POST("/assignments", assignmentHandler.CreateAssignment)
-		teacher.GET("/assignments/pending", assignmentHandler.GetPendingSubmissions)
-		teacher.POST("/submissions/:id/grade", assignmentHandler.GradeSubmission)
-		teacher.POST("/assignments/reminders", assignmentHandler.SendDeadlineReminders)
+		teacher.GET("/assignments", assignmentHandler.GetTeacherAssignments)
+		teacher.PUT("/assignments/:id", assignmentHandler.UpdateAssignment)
+		teacher.DELETE("/assignments/:id", assignmentHandler.DeleteAssignment)
 
 		// Управление контентом
-		teacher.POST("/content", contentHandler.CreateContent)
-		teacher.PUT("/content/:id", contentHandler.UpdateContent)
-		teacher.DELETE("/content/:id", contentHandler.DeleteContent)
-		teacher.GET("/content/stats", contentHandler.GetContentStats)
+		teacher.POST("/content", assignmentHandler.CreateContent)
+		teacher.GET("/content", assignmentHandler.GetTeacherContent)
+		teacher.PUT("/content/:id", assignmentHandler.UpdateContent)
+		teacher.DELETE("/content/:id", assignmentHandler.DeleteContent)
 	}
 
 	// Webhook для Telegram

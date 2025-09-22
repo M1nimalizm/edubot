@@ -127,6 +127,16 @@ body {
     color: var(--white);
 }
 
+/* Яркая кнопка в hero, чтобы лучше читалась на градиенте */
+.hero .btn-primary {
+    background: #FF8A00; /* яркий акцент */
+    color: #ffffff;
+    box-shadow: 0 8px 30px rgba(255, 138, 0, 0.45);
+}
+.hero .btn-primary:hover {
+    background: #ff990f;
+}
+
 /* Убираем спец-стиль отключения — по требованию ничего не скрываем */
 
 .btn-primary:hover {
@@ -189,7 +199,9 @@ body {
         font-size: 16px;
         font-weight: 700;
         border-radius: var(--border-radius);
-        box-shadow: 0 8px 30px rgba(255, 153, 0, 0.35);
+        background: #FF8A00;
+        color: #ffffff;
+        box-shadow: 0 10px 32px rgba(255, 138, 0, 0.5);
     }
 }
 

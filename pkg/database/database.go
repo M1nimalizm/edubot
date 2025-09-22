@@ -48,11 +48,9 @@ func (d *Database) Migrate() error {
 		&models.User{},
 		&models.TrialRequest{},
 		&models.Assignment{},
-		&models.UserAssignment{},
-		&models.Submission{},
-		&models.Attachment{},
+		&models.Comment{},
 		&models.Content{},
-		&models.ContentView{},
+		&models.StudentProgress{},
 	)
 }
 
