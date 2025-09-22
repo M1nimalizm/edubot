@@ -191,8 +191,7 @@ func main() {
 	teacher.Use(handlers.AuthMiddleware(authService))
 	teacher.Use(handlers.TeacherOnlyMiddleware())
 	{
-		// Генерация кодов приглашения
-		teacher.POST("/invite-code", authHandler.GenerateInviteCode)
+		// Генерация кодов приглашения (дублирующий маршрут убран)
 		teacher.POST("/invite-codes", authHandler.GenerateInviteCode)
 
 		// Управление учениками
