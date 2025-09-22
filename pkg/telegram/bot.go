@@ -463,14 +463,14 @@ Telegram: @pugach3
 // (удалено дублирующееся определение SendAssignmentNotification)
 
 // SendAssignmentCompletedNotification отправляет уведомление о выполненном задании
-func (b *Bot) SendAssignmentCompletedNotification(chatID int64, assignment interface{}) error {
-	text := `✅ <b>Задание выполнено!</b>
+func (b *Bot) SendAssignmentCompletedNotification(chatID int64, title, subject, deadline string) error {
+	text := fmt.Sprintf(`✅ <b>Задание выполнено!</b>
 
-🎯 <b>Предмет:</b> %s
-📚 <b>Класс:</b> %d
-⭐ <b>Уровень:</b> %d/5
+📋 <b>Название:</b> %s
+📖 <b>Предмет:</b> %s
+⏰ <b>Дедлайн был:</b> %s
 
-👨‍🎓 Ученик выполнил задание. Проверьте работу в приложении!`
+👨‍🎓 Ученик выполнил задание. Проверьте работу в приложении!`, title, subject, deadline)
 
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = "HTML"
@@ -491,18 +491,16 @@ func (b *Bot) SendAssignmentCompletedNotification(chatID int64, assignment inter
 }
 
 // SendCommentNotification отправляет уведомление о новом комментарии
-func (b *Bot) SendCommentNotification(chatID int64, comment interface{}, assignment interface{}) error {
-	text := `💬 <b>Новый комментарий к заданию!</b>
+func (b *Bot) SendCommentNotification(chatID int64, content, title, subject string) error {
+	text := fmt.Sprintf(`💬 <b>Новый комментарий к заданию!</b>
 
-🎯 <b>Предмет:</b> %s
-📚 <b>Класс:</b> %d
+📋 <b>Задание:</b> %s
+📖 <b>Предмет:</b> %s
 
 💭 <b>Комментарий:</b>
 %s
 
-👤 <b>От:</b> %s
-
-🚀 Переходите в приложение для просмотра!`
+🚀 Переходите в приложение для просмотра!`, title, subject, content)
 
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = "HTML"

@@ -73,6 +73,20 @@ func (r *AssignmentRepository) MarkCompleted(id uuid.UUID) error {
 		}).Error
 }
 
+func (r *AssignmentRepository) GetByStudentID(studentID uuid.UUID) ([]models.Assignment, error) {
+	var assignments []models.Assignment
+	err := r.db.Where("student_id = ?", studentID).
+		Order("due_date ASC").Find(&assignments).Error
+	return assignments, err
+}
+
+func (r *AssignmentRepository) GetByTeacherID(teacherID uuid.UUID) ([]models.Assignment, error) {
+	var assignments []models.Assignment
+	err := r.db.Where("teacher_id = ?", teacherID).
+		Order("created_at DESC").Find(&assignments).Error
+	return assignments, err
+}
+
 func (r *AssignmentRepository) Delete(id uuid.UUID) error {
 	return r.db.Delete(&models.Assignment{}, id).Error
 }

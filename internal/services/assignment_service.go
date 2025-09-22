@@ -25,20 +25,16 @@ func NewAssignmentService(assignmentRepo *repository.AssignmentRepository, userR
 
 // Assignment methods
 func (s *AssignmentService) CreateAssignment(assignment *models.Assignment) error {
-	// Устанавливаем статус по умолчанию
-	assignment.Status = "assigned"
 	assignment.CreatedAt = time.Now()
-	
-	// Создаем задание
 	if err := s.assignmentRepo.Create(assignment); err != nil {
 		return err
 	}
-	
-	// Уведомляем ученика через Telegram
-	if assignment.Student.TelegramID != 0 {
-		s.telegramBot.SendAssignmentNotification(assignment.Student.TelegramID, assignment)
+
+	// Загружаем ученика для уведомления
+	student, err := s.userRepo.GetByID(assignment.StudentID)
+	if err == nil && student.TelegramID != 0 {
+		s.telegramBot.SendAssignmentNotification(student.TelegramID, assignment.Title, assignment.Subject, assignment.DueDate.Format("02.01.2006 15:04"))
 	}
-	
 	return nil
 }
 
@@ -63,29 +59,23 @@ func (s *AssignmentService) UpdateAssignment(assignment *models.Assignment) erro
 }
 
 func (s *AssignmentService) MarkAssignmentCompleted(assignmentID uuid.UUID, studentID uuid.UUID) error {
-	// Проверяем, что задание принадлежит ученику
 	assignment, err := s.assignmentRepo.GetByID(assignmentID)
 	if err != nil {
 		return err
 	}
-	
 	if assignment.StudentID != studentID {
 		return errors.New("assignment does not belong to student")
 	}
-	
-	// Отмечаем как выполненное
 	if err := s.assignmentRepo.MarkCompleted(assignmentID); err != nil {
 		return err
 	}
-	
-	// Уведомляем учителя
-	if assignment.Teacher.TelegramID != 0 {
-		s.telegramBot.SendAssignmentCompletedNotification(assignment.Teacher.TelegramID, assignment)
+
+	teacher, err := s.userRepo.GetByID(assignment.TeacherID)
+	if err == nil && teacher.TelegramID != 0 {
+		s.telegramBot.SendAssignmentCompletedNotification(teacher.TelegramID, assignment.Title, assignment.Subject, assignment.DueDate.Format("02.01.2006 15:04"))
 	}
-	
-	// Обновляем прогресс ученика
+
 	s.updateStudentProgress(studentID, assignment.Subject)
-	
 	return nil
 }
 
@@ -106,28 +96,31 @@ func (s *AssignmentService) DeleteAssignment(assignmentID uuid.UUID, teacherID u
 // Comment methods
 func (s *AssignmentService) AddComment(comment *models.Comment) error {
 	comment.CreatedAt = time.Now()
-	
 	if err := s.assignmentRepo.CreateComment(comment); err != nil {
 		return err
 	}
-	
-	// Уведомляем получателя комментария
+
 	assignment, err := s.assignmentRepo.GetByID(comment.AssignmentID)
 	if err != nil {
 		return err
 	}
-	
+
 	var recipientTelegramID int64
 	if comment.AuthorType == "teacher" {
-		recipientTelegramID = assignment.Student.TelegramID
+		student, err := s.userRepo.GetByID(assignment.StudentID)
+		if err == nil {
+			recipientTelegramID = student.TelegramID
+		}
 	} else {
-		recipientTelegramID = assignment.Teacher.TelegramID
+		teacher, err := s.userRepo.GetByID(assignment.TeacherID)
+		if err == nil {
+			recipientTelegramID = teacher.TelegramID
+		}
 	}
-	
+
 	if recipientTelegramID != 0 {
-		s.telegramBot.SendCommentNotification(recipientTelegramID, comment, assignment)
+		s.telegramBot.SendCommentNotification(recipientTelegramID, comment.Content, assignment.Title, assignment.Subject)
 	}
-	
 	return nil
 }
 

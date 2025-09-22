@@ -55,7 +55,13 @@ type Assignment struct {
 	Title       string         `json:"title" gorm:"not null"`
 	Description string         `json:"description"`
 	Subject     string         `json:"subject" gorm:"not null"` // "physics", "math"
-	Deadline    time.Time      `json:"deadline"`
+	Grade       int            `json:"grade" gorm:"not null"`   // 10, 11
+	Level       int            `json:"level" gorm:"not null"`   // 1-5
+	TeacherID   uuid.UUID      `json:"teacher_id" gorm:"type:text;not null"`
+	StudentID   uuid.UUID      `json:"student_id" gorm:"type:text;not null"`
+	DueDate     time.Time      `json:"due_date"`
+	CompletedAt *time.Time     `json:"completed_at,omitempty"`
+	Status      string         `json:"status" gorm:"default:'assigned'"` // assigned, completed, overdue
 	CreatedBy   uuid.UUID      `json:"created_by" gorm:"type:text"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
@@ -63,6 +69,8 @@ type Assignment struct {
 
 	// Связи
 	Creator         User             `json:"creator" gorm:"foreignKey:CreatedBy"`
+	Teacher         User             `json:"teacher" gorm:"foreignKey:TeacherID"`
+	Student         User             `json:"student" gorm:"foreignKey:StudentID"`
 	Attachments     []Attachment     `json:"attachments" gorm:"foreignKey:AssignmentID"`
 	Submissions     []Submission     `json:"submissions" gorm:"foreignKey:AssignmentID"`
 	UserAssignments []UserAssignment `json:"user_assignments" gorm:"foreignKey:AssignmentID"`
