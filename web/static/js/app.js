@@ -173,6 +173,7 @@ function openTrialModal() {
     if (modal) {
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
+        document.body.classList.add('modal-open');
         
         // Фокус на первом поле формы
         const firstInput = modal.querySelector('input, select');
@@ -202,6 +203,7 @@ function closeTrialModal() {
     if (modal) {
         modal.classList.remove('active');
         document.body.style.overflow = '';
+        document.body.classList.remove('modal-open');
         
         // Очистка формы
         const form = document.getElementById('trialForm');
@@ -259,9 +261,9 @@ async function handleTrialSubmission(e) {
     }
     
     // Показываем индикатор загрузки
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const mobileBtn = document.querySelector('.btn-mobile');
-    const mobileBtnText = mobileBtn.querySelector('.btn-text');
+    const submitBtn = form.querySelector('.modal-footer button[type="submit"]');
+    const mobileBtn = null;
+    const mobileBtnText = null;
     
     let originalText, originalMobileText;
     

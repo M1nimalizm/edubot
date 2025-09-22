@@ -903,70 +903,36 @@ section {
         max-height: 90vh;
         overflow-y: auto;
         margin-top: 80px;
-        padding-bottom: 80px; /* Отступ для мобильной кнопки */
+        padding-bottom: 16px;
     }
     
-    /* Мобильная кнопка отправки */
-    .mobile-submit-btn {
-        position: fixed;
+    /* Липкий футер внутри модалки */
+    .modal-footer {
+        position: sticky;
         bottom: 0;
-        left: 0;
-        right: 0;
         background: var(--white);
-        padding: 15px;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-        z-index: 1000;
-        display: none;
+        padding-top: 12px;
+        margin-top: 12px;
+        border-top: 1px solid var(--gray-light);
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+    }
+    .modal-footer .btn {
+        min-width: 240px;
     }
     
-    .btn-mobile {
-        width: 100%;
-        padding: 15px;
-        font-size: 16px;
-        font-weight: 600;
-        background: var(--accent-color);
-        color: var(--white);
-        border: none;
-        border-radius: var(--border-radius);
-        cursor: pointer;
-        transition: var(--transition);
-    }
-    
-    .btn-mobile:hover {
-        background: var(--primary-color);
-        transform: translateY(-2px);
-    }
-    
-    /* Показываем мобильную кнопку только на мобильных устройствах */
+    /* Мобильные стили */
     @media (max-width: 768px) {
-        .mobile-submit-btn {
-            display: block !important;
-        }
-        
-        /* Скрываем ВСЕ кнопки на мобильных кроме мобильной */
-        .btn-primary:not(.btn-mobile) {
+        /* Скрываем внешние CTA, когда форма открыта (управляется классом на body) */
+        body.modal-open nav .btn-primary,
+        body.modal-open .hero .btn-primary {
             display: none !important;
         }
         
-        /* Дополнительно скрываем кнопки в навигации и hero */
-        nav .btn-primary:not(.btn-mobile),
-        .hero .btn-primary:not(.btn-mobile) {
-            display: none !important;
-        }
-        
-        /* Скрываем все кнопки внутри формы на мобильных */
-        .modal-body button[type="submit"]:not(.btn-mobile) {
-            display: none !important;
-        }
-        
-        /* Дополнительная защита от дублирующих кнопок */
-        .modal-content button[type="submit"]:not(.btn-mobile) {
-            display: none !important;
-        }
-        
-        /* Скрываем все кнопки с классом btn-primary кроме мобильной */
-        .modal-content .btn-primary:not(.btn-mobile) {
-            display: none !important;
+        /* Кнопка отправки в футере модалки занимает всю ширину */
+        .modal-footer .btn.btn-primary {
+            width: 100%;
         }
         
         /* Исправляем кастомные селекты на мобильных */
@@ -1009,11 +975,10 @@ section {
         
         /* Дополнительные стили для мобильных устройств */
         .mobile-device .modal-content {
-            margin-bottom: 100px; /* Отступ для мобильной кнопки */
+            margin-bottom: 16px;
         }
-        
         .mobile-device .modal-body {
-            padding-bottom: 120px; /* Дополнительный отступ */
+            padding-bottom: 16px;
         }
         
         /* Улучшаем отображение выбранных значений в селектах */
