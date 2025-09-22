@@ -128,6 +128,19 @@ func main() {
 		})
 	})
 
+	// Страницы для учеников
+	router.GET("/student-dashboard", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "student-dashboard.html", gin.H{
+			"title": "Мои задания - EduBot",
+		})
+	})
+
+	router.GET("/student-progress", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "student-progress.html", gin.H{
+			"title": "Мой прогресс - EduBot",
+		})
+	})
+
 	// API маршруты
 	api := router.Group("/api")
 

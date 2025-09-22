@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой прогресс - EduBot</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .progress-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .progress-overview {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        
+        .overview-item {
+            text-align: center;
+        }
+        
+        .overview-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .overview-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .overview-label {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .subjects-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .subject-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .subject-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .subject-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .subject-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .subject-level {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            transition: width 0.3s ease;
+        }
+        
+        .subject-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .achievements-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+        }
+        
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .achievement-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .achievement-card.earned {
+            border-color: var(--accent-color);
+            background: #fff8e1;
+        }
+        
+        .achievement-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .achievement-card.earned .achievement-icon {
+            color: var(--accent-color);
+        }
+        
+        .achievement-card:not(.earned) .achievement-icon {
+            color: #ccc;
+        }
+        
+        .achievement-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .achievement-card.earned .achievement-title {
+            color: var(--text-color);
+        }
+        
+        .achievement-card:not(.earned) .achievement-title {
+            color: #999;
+        }
+        
+        .achievement-description {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .overview-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .subject-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .achievements-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>EduBot - Мой прогресс</span>
+            </div>
+            <div class="nav-menu">
+                <a href="/student-dashboard" class="nav-link">Мои задания</a>
+                <a href="/" class="nav-link">На главную</a>
+                <button class="btn btn-outline" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <div class="progress-container">
+            <div class="page-header">
+                <h1><i class="fas fa-chart-line"></i> Мой прогресс</h1>
+                <button class="btn btn-primary" onclick="refreshProgress()">
+                    <i class="fas fa-sync-alt"></i> Обновить
+                </button>
+            </div>
+            
+            <!-- Общий обзор -->
+            <div class="progress-overview">
+                <h2>Общий обзор</h2>
+                <div class="overview-grid">
+                    <div class="overview-item">
+                        <div class="overview-icon">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div class="overview-value" id="totalAssignments">0</div>
+                        <div class="overview-label">Всего заданий</div>
+                    </div>
+                    <div class="overview-item">
+                        <div class="overview-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="overview-value" id="completedAssignments">0</div>
+                        <div class="overview-label">Выполнено</div>
+                    </div>
+                    <div class="overview-item">
+                        <div class="overview-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="overview-value" id="completionRate">0%</div>
+                        <div class="overview-label">Процент выполнения</div>
+                    </div>
+                    <div class="overview-item">
+                        <div class="overview-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="overview-value" id="averageScore">0</div>
+                        <div class="overview-label">Средний балл</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Прогресс по предметам -->
+            <div class="subjects-section">
+                <h2>Прогресс по предметам</h2>
+                <div id="subjectsList">
+                    <div class="loading">Загрузка прогресса...</div>
+                </div>
+            </div>
+            
+            <!-- Достижения -->
+            <div class="achievements-section">
+                <h2>Достижения</h2>
+                <div class="achievements-grid" id="achievementsGrid">
+                    <div class="achievement-card earned">
+                        <div class="achievement-icon">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <div class="achievement-title">Первый шаг</div>
+                        <div class="achievement-description">Зарегистрировался в системе</div>
+                    </div>
+                    <div class="achievement-card" id="firstAssignment">
+                        <div class="achievement-icon">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                        <div class="achievement-title">Первое задание</div>
+                        <div class="achievement-description">Выполнил первое задание</div>
+                    </div>
+                    <div class="achievement-card" id="fiveAssignments">
+                        <div class="achievement-icon">
+                            <i class="fas fa-medal"></i>
+                        </div>
+                        <div class="achievement-title">Пятерка</div>
+                        <div class="achievement-description">Выполнил 5 заданий</div>
+                    </div>
+                    <div class="achievement-card" id="tenAssignments">
+                        <div class="achievement-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="achievement-title">Десятка</div>
+                        <div class="achievement-description">Выполнил 10 заданий</div>
+                    </div>
+                    <div class="achievement-card" id="perfectScore">
+                        <div class="achievement-icon">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div class="achievement-title">Отличник</div>
+                        <div class="achievement-description">100% выполненных заданий</div>
+                    </div>
+                    <div class="achievement-card" id="streak">
+                        <div class="achievement-icon">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="achievement-title">Серия</div>
+                        <div class="achievement-description">Выполнил задания 3 дня подряд</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let progressData = null;
+
+        // Загружаем данные при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProgress();
+        });
+
+        // Загрузка данных о прогрессе
+        async function loadProgress() {
+            try {
+                const response = await fetch('/api/progress');
+                if (response.ok) {
+                    progressData = await response.json();
+                    updateOverview();
+                    displaySubjects();
+                    updateAchievements();
+                } else {
+                    showError('Ошибка загрузки прогресса');
+                }
+            } catch (error) {
+                console.error('Error loading progress:', error);
+                showError('Ошибка загрузки прогресса');
+            }
+        }
+
+        // Обновление общего обзора
+        function updateOverview() {
+            if (!progressData || progressData.length === 0) {
+                document.getElementById('totalAssignments').textContent = '0';
+                document.getElementById('completedAssignments').textContent = '0';
+                document.getElementById('completionRate').textContent = '0%';
+                document.getElementById('averageScore').textContent = '0';
+                return;
+            }
+
+            const total = progressData.reduce((sum, subject) => sum + subject.total_assignments, 0);
+            const completed = progressData.reduce((sum, subject) => sum + subject.completed_assignments, 0);
+            const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+            const averageScore = progressData.reduce((sum, subject) => sum + subject.average_score, 0) / progressData.length;
+
+            document.getElementById('totalAssignments').textContent = total;
+            document.getElementById('completedAssignments').textContent = completed;
+            document.getElementById('completionRate').textContent = completionRate + '%';
+            document.getElementById('averageScore').textContent = Math.round(averageScore);
+        }
+
+        // Отображение прогресса по предметам
+        function displaySubjects() {
+            const subjectsList = document.getElementById('subjectsList');
+            
+            if (!progressData || progressData.length === 0) {
+                subjectsList.innerHTML = '<div class="no-data"><i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 1rem;"></i><p>Данные о прогрессе отсутствуют</p></div>';
+                return;
+            }
+
+            subjectsList.innerHTML = progressData.map(subject => {
+                const progressPercent = subject.total_assignments > 0 ? 
+                    Math.round((subject.completed_assignments / subject.total_assignments) * 100) : 0;
+
+                return `
+                    <div class="subject-card">
+                        <div class="subject-header">
+                            <div class="subject-name">${subject.subject}</div>
+                            <div class="subject-level">Уровень ${subject.level}</div>
+                        </div>
+                        
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progressPercent}%"></div>
+                        </div>
+                        
+                        <div class="subject-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">${subject.completed_assignments}</div>
+                                <div class="stat-label">Выполнено</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${subject.total_assignments}</div>
+                                <div class="stat-label">Всего</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${Math.round(subject.average_score)}%</div>
+                                <div class="stat-label">Успеваемость</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Обновление достижений
+        function updateAchievements() {
+            if (!progressData || progressData.length === 0) return;
+
+            const totalCompleted = progressData.reduce((sum, subject) => sum + subject.completed_assignments, 0);
+            const totalAssignments = progressData.reduce((sum, subject) => sum + subject.total_assignments, 0);
+            const completionRate = totalAssignments > 0 ? (totalCompleted / totalAssignments) * 100 : 0;
+
+            // Первое задание
+            if (totalCompleted >= 1) {
+                document.getElementById('firstAssignment').classList.add('earned');
+            }
+
+            // Пять заданий
+            if (totalCompleted >= 5) {
+                document.getElementById('fiveAssignments').classList.add('earned');
+            }
+
+            // Десять заданий
+            if (totalCompleted >= 10) {
+                document.getElementById('tenAssignments').classList.add('earned');
+            }
+
+            // Отличник (100% выполненных)
+            if (completionRate >= 100) {
+                document.getElementById('perfectScore').classList.add('earned');
+            }
+
+            // Серия (упрощенная версия - если есть активность)
+            if (totalCompleted > 0) {
+                document.getElementById('streak').classList.add('earned');
+            }
+        }
+
+        // Обновление прогресса
+        function refreshProgress() {
+            loadProgress();
+        }
+
+        // Вспомогательные функции
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/';
+        }
+
+        function showError(message) {
+            alert('❌ ' + message);
+        }
+    </script>
+</body>
+</html>

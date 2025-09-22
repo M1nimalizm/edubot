@@ -919,3 +919,57 @@ function closeAllSelects() {
         items.classList.remove('mobile-select');
     });
 }
+
+
+// Функции для входа ученика
+function openStudentLoginModal() {
+    document.getElementById('studentLoginModal').style.display = 'block';
+}
+
+function closeStudentLoginModal() {
+    document.getElementById('studentLoginModal').style.display = 'none';
+    document.getElementById('studentLoginForm').reset();
+}
+
+// Обработка формы входа ученика
+document.addEventListener('DOMContentLoaded', function() {
+    const studentLoginForm = document.getElementById('studentLoginForm');
+    if (studentLoginForm) {
+        studentLoginForm.addEventListener('submit', handleStudentLogin);
+    }
+});
+
+async function handleStudentLogin(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const loginData = {
+        inviteCode: formData.get('inviteCode'),
+        telegramId: formData.get('telegramId')
+    };
+    
+    try {
+        const response = await fetch('/api/register-student', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(loginData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            localStorage.setItem('authToken', result.token);
+            showSuccess('Добро пожаловать! Вы успешно зарегистрированы.');
+            setTimeout(() => {
+                window.location.href = '/student-dashboard';
+            }, 1500);
+        } else {
+            const error = await response.json();
+            showError(error.error || 'Ошибка входа');
+        }
+    } catch (error) {
+        console.error('Error during student login:', error);
+        showError('Ошибка входа');
+    }
+}
