@@ -127,12 +127,7 @@ body {
     color: var(--white);
 }
 
-/* Неактивная CTA в хедере на десктопе при открытой модалке */
-nav .btn.btn-primary.disabled {
-    pointer-events: none;
-    opacity: 0.6;
-    filter: grayscale(0.2);
-}
+/* Убираем спец-стиль отключения — по требованию ничего не скрываем */
 
 .btn-primary:hover {
     background: #34495E;
@@ -955,11 +950,7 @@ section {
     
     /* Мобильные стили */
     @media (max-width: 768px) {
-        /* Скрываем внешние CTA, когда форма открыта (управляется классом на body) */
-        body.modal-open nav .btn-primary,
-        body.modal-open .hero .btn-primary {
-            display: none !important;
-        }
+        /* Не скрываем внешние CTA при открытой форме */
         
         /* Кнопка отправки в футере модалки занимает всю ширину */
         .modal-footer .btn.btn-primary {

@@ -151,15 +151,7 @@ function openTrialModal() {
         document.body.style.overflow = 'hidden';
         document.body.classList.add('modal-open');
 
-        // На десктопе делаем верхнюю CTA неактивной, чтобы не дублировалась
-        if (window.innerWidth > 768) {
-            const headerCta = document.querySelector('nav .btn.btn-primary[onclick="openTrialModal()"]');
-            if (headerCta) {
-                headerCta.classList.add('disabled');
-                headerCta.setAttribute('aria-disabled', 'true');
-                headerCta.setAttribute('tabindex', '-1');
-            }
-        }
+        // Ничего не отключаем и не скрываем — по требованию
         
         // Фокус на первом поле формы
         const firstInput = modal.querySelector('input, select');
@@ -191,15 +183,7 @@ function closeTrialModal() {
         document.body.style.overflow = '';
         document.body.classList.remove('modal-open');
 
-        // Возвращаем активность верхней CTA на десктопе
-        if (window.innerWidth > 768) {
-            const headerCta = document.querySelector('nav .btn.btn-primary[onclick="openTrialModal()"]');
-            if (headerCta) {
-                headerCta.classList.remove('disabled');
-                headerCta.removeAttribute('aria-disabled');
-                headerCta.removeAttribute('tabindex');
-            }
-        }
+        // Ничего не меняем — кнопки остаются как были
         
         // Очистка формы
         const form = document.getElementById('trialForm');
@@ -787,28 +771,7 @@ function initializeMobileUX() {
 
 // Функция для скрытия дублирующих кнопок
 function hideDuplicateButtons() {
-    // Находим все кнопки submit кроме мобильной
-    const submitButtons = document.querySelectorAll('button[type="submit"]:not(.btn-mobile)');
-    submitButtons.forEach(button => {
-        button.style.display = 'none';
-        button.style.visibility = 'hidden';
-    });
-    
-    // Находим ВСЕ кнопки с классом btn-primary кроме мобильной
-    const primaryButtons = document.querySelectorAll('.btn-primary:not(.btn-mobile)');
-    primaryButtons.forEach(button => {
-        button.style.display = 'none';
-        button.style.visibility = 'hidden';
-    });
-    
-    // Дополнительно скрываем кнопки в навигации и hero
-    const navButtons = document.querySelectorAll('nav .btn-primary:not(.btn-mobile)');
-    const heroButtons = document.querySelectorAll('.hero .btn-primary:not(.btn-mobile)');
-    
-    [...navButtons, ...heroButtons].forEach(button => {
-        button.style.display = 'none';
-        button.style.visibility = 'hidden';
-    });
+    // Не скрываем никаких кнопок
     
     // Обработчик изменения размера окна
     window.addEventListener('resize', function() {
