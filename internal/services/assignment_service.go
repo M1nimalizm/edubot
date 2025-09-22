@@ -165,7 +165,7 @@ func (s *AssignmentService) DeleteContent(contentID uuid.UUID, teacherID uuid.UU
 		return err
 	}
 	
-	if content.TeacherID != teacherID {
+	if content.CreatedBy != teacherID {
 		return errors.New("content does not belong to teacher")
 	}
 	

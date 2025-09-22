@@ -106,14 +106,14 @@ func (r *AssignmentRepository) CreateContent(content *models.Content) error {
 
 func (r *AssignmentRepository) GetContentByID(id uuid.UUID) (*models.Content, error) {
 	var content models.Content
-	err := r.db.Preload("Teacher").
+	err := r.db.Preload("Creator").
 		Where("id = ?", id).First(&content).Error
 	return &content, err
 }
 
 func (r *AssignmentRepository) GetContentBySubject(subject string, grade int) ([]models.Content, error) {
 	var content []models.Content
-	err := r.db.Preload("Teacher").
+	err := r.db.Preload("Creator").
 		Where("subject = ? AND grade = ?", subject, grade).
 		Order("created_at DESC").Find(&content).Error
 	return content, err
@@ -121,8 +121,8 @@ func (r *AssignmentRepository) GetContentBySubject(subject string, grade int) ([
 
 func (r *AssignmentRepository) GetContentByTeacherID(teacherID uuid.UUID) ([]models.Content, error) {
 	var content []models.Content
-	err := r.db.Preload("Teacher").
-		Where("teacher_id = ?", teacherID).
+	err := r.db.Preload("Creator").
+		Where("created_by = ?", teacherID).
 		Order("created_at DESC").Find(&content).Error
 	return content, err
 }
