@@ -261,6 +261,36 @@ func (s *AuthService) GetStudents() ([]models.User, error) {
 	return s.userRepo.ListByRole("student")
 }
 
+// RegisterStudentByCode регистрирует ученика только по коду приглашения
+func (s *AuthService) RegisterStudentByCode(inviteCode string) (*models.User, string, error) {
+	// Проверяем код приглашения
+	if inviteCode == "" {
+		return nil, "", fmt.Errorf("invite code is required")
+	}
+
+	// Создаем нового пользователя-ученика
+	user := &models.User{
+		ID:         uuid.New(),
+		TelegramID: 0, // Временно 0, будет заполнено позже
+		Role:       models.RoleStudent,
+		InviteCode: &inviteCode,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+
+	if err := s.userRepo.Create(user); err != nil {
+		return nil, "", fmt.Errorf("failed to create user: %w", err)
+	}
+
+	// Генерируем JWT токен
+	token, err := s.generateJWT(user)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	return user, token, nil
+}
+
 // validateTelegramAuth валидирует данные авторизации Telegram (упрощенная версия)
 func (s *AuthService) validateTelegramAuth(authData *TelegramAuthData) bool {
 	// В реальном приложении здесь должна быть проверка подписи

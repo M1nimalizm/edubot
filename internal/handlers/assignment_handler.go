@@ -308,23 +308,43 @@ func (h *AssignmentHandler) GetComments(c *gin.Context) {
 
 // Content endpoints
 func (h *AssignmentHandler) CreateContent(c *gin.Context) {
-	var req CreateContentRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	
+	// Получаем ID учителя из контекста
 	teacherID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 	
+	// Парсим multipart форму
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse multipart form"})
+		return
+	}
+	
+	// Получаем данные формы
+	title := c.PostForm("title")
+	description := c.PostForm("description")
+	contentType := c.PostForm("type")
+	subject := c.PostForm("subject")
+	
+	if title == "" || contentType == "" || subject == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Title, type and subject are required"})
+		return
+	}
+	
+	// Получаем файлы
+	files := form.File["files"]
+	if len(files) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No files provided"})
+		return
+	}
+	
 	content := &models.Content{
-		Title:       req.Title,
-		Description: req.Description,
-		Type:        req.Type,
-		Category:    req.Subject, // Используем Subject как Category
+		Title:       title,
+		Description: description,
+		Type:        contentType,
+		Category:    subject,
 		CreatedBy:   teacherID.(uuid.UUID),
 		IsPublic:    true,
 	}

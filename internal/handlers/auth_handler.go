@@ -41,6 +41,11 @@ type RegisterStudentRequest struct {
 	Subjects   string `json:"subjects" binding:"required"`
 }
 
+// RegisterStudentByCodeRequest представляет запрос регистрации ученика только по коду
+type RegisterStudentByCodeRequest struct {
+	InviteCode string `json:"invite_code" binding:"required"`
+}
+
 // TrialRequestRequest представляет запрос на пробное занятие
 type TrialRequestRequest struct {
 	Name         string `json:"name" binding:"required"`
@@ -144,15 +149,8 @@ func (h *AuthHandler) SubmitTrialRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Trial request submitted successfully"})
 }
 
-// GenerateInviteCode генерирует код приглашения (только для преподавателя)
+// GenerateInviteCode генерирует код приглашения
 func (h *AuthHandler) GenerateInviteCode(c *gin.Context) {
-	// Проверяем роль пользователя
-	userRole, exists := c.Get("user_role")
-	if !exists || userRole != "teacher" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
-		return
-	}
-
 	code, err := h.authService.GenerateInviteCode()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -204,4 +202,26 @@ func (h *AuthHandler) GetStudents(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, students)
+}
+
+// RegisterStudentByCode регистрирует ученика только по коду приглашения
+func (h *AuthHandler) RegisterStudentByCode(c *gin.Context) {
+	var req RegisterStudentByCodeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Создаем временного пользователя и регистрируем его как ученика
+	user, token, err := h.authService.RegisterStudentByCode(req.InviteCode)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Student registered successfully",
+		"user":    user,
+		"token":   token,
+	})
 }

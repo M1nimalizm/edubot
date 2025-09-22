@@ -944,12 +944,11 @@ async function handleStudentLogin(event) {
     
     const formData = new FormData(event.target);
     const loginData = {
-        inviteCode: formData.get('inviteCode'),
-        telegramId: formData.get('telegramId')
+        inviteCode: formData.get('inviteCode')
     };
     
     try {
-        const response = await fetch('/api/register-student', {
+        const response = await fetch('/api/public/register-student', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -972,4 +971,53 @@ async function handleStudentLogin(event) {
         console.error('Error during student login:', error);
         showError('Ошибка входа');
     }
+}
+
+
+// Централизованная анимация успеха
+function showSuccess(message) {
+    // Удаляем предыдущие уведомления
+    const existingToasts = document.querySelectorAll('.success-toast');
+    existingToasts.forEach(toast => toast.remove());
+    
+    // Создаем новое уведомление
+    const toast = document.createElement('div');
+    toast.className = 'success-toast';
+    toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+    
+    document.body.appendChild(toast);
+    
+    // Автоматически скрываем через 3 секунды
+    setTimeout(() => {
+        toast.style.animation = 'successSlideOut 0.3s ease-in';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
+}
+
+function showError(message) {
+    // Удаляем предыдущие уведомления
+    const existingToasts = document.querySelectorAll('.success-toast');
+    existingToasts.forEach(toast => toast.remove());
+    
+    // Создаем новое уведомление об ошибке
+    const toast = document.createElement('div');
+    toast.className = 'success-toast';
+    toast.style.background = '#f44336';
+    toast.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+    
+    document.body.appendChild(toast);
+    
+    // Автоматически скрываем через 4 секунды
+    setTimeout(() => {
+        toast.style.animation = 'successSlideOut 0.3s ease-in';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, 4000);
 }

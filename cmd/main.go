@@ -149,6 +149,7 @@ func main() {
 	{
 		public.POST("/auth/telegram", authHandler.TelegramAuth)
 		public.POST("/trial-request", handlers.GuestMiddleware(authService), authHandler.SubmitTrialRequest)
+		public.POST("/register-student", authHandler.RegisterStudentByCode)
 	}
 
 	// Публичные маршруты для панели управления учителя (без авторизации для простоты)
@@ -156,6 +157,7 @@ func main() {
 	{
 		teacherPublic.GET("/trial-requests", authHandler.GetTrialRequests)
 		teacherPublic.GET("/stats", authHandler.GetStats)
+		teacherPublic.POST("/invite-code", authHandler.GenerateInviteCode)
 	}
 
 	// Защищенные маршруты (требуют авторизации)
