@@ -460,37 +460,7 @@ Telegram: @pugach3
 	return nil
 }
 
-// SendAssignmentNotification отправляет уведомление о новом задании
-func (b *Bot) SendAssignmentNotification(chatID int64, assignment interface{}) error {
-	text := `📝 <b>Новое задание!</b>
-
-🎯 <b>Предмет:</b> %s
-📚 <b>Класс:</b> %d
-⭐ <b>Уровень:</b> %d/5
-📅 <b>Срок сдачи:</b> %s
-
-📖 <b>Описание:</b>
-%s
-
-🚀 Переходите в приложение для выполнения задания!`
-
-	msg := tgbotapi.NewMessage(chatID, text)
-	msg.ParseMode = "HTML"
-
-	// Создаем клавиатуру с кнопкой "Открыть приложение"
-	keyboard := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("📝 Выполнить задание", "https://edubot-0g05.onrender.com"),
-		),
-	)
-	msg.ReplyMarkup = keyboard
-
-	_, err := b.api.Send(msg)
-	if err != nil {
-		return fmt.Errorf("failed to send assignment notification: %w", err)
-	}
-	return nil
-}
+// (удалено дублирующееся определение SendAssignmentNotification)
 
 // SendAssignmentCompletedNotification отправляет уведомление о выполненном задании
 func (b *Bot) SendAssignmentCompletedNotification(chatID int64, assignment interface{}) error {
