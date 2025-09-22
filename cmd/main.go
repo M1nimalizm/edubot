@@ -36,7 +36,7 @@ func main() {
 	}
 
 	// Инициализируем файловое хранилище
-	fileStorage, err := storage.NewStorage(cfg.UploadPath, cfg.MaxFileSize, cfg.MaxUserStorage)
+	_, err = storage.NewStorage(cfg.UploadPath, cfg.MaxFileSize, cfg.MaxUserStorage)
 	if err != nil {
 		log.Fatalf("Failed to initialize storage: %v", err)
 	}
