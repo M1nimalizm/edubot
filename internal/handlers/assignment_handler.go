@@ -255,7 +255,7 @@ func (h *AssignmentHandler) DeleteAssignment(c *gin.Context) {
 
 // Comment endpoints
 func (h *AssignmentHandler) AddComment(c *gin.Context) {
-	assignmentIDStr := c.Param("assignment_id")
+	assignmentIDStr := c.Param("id")
 	assignmentID, err := uuid.Parse(assignmentIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid assignment ID"})
@@ -290,7 +290,7 @@ func (h *AssignmentHandler) AddComment(c *gin.Context) {
 }
 
 func (h *AssignmentHandler) GetComments(c *gin.Context) {
-	assignmentIDStr := c.Param("assignment_id")
+	assignmentIDStr := c.Param("id")
 	assignmentID, err := uuid.Parse(assignmentIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid assignment ID"})

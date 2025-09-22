@@ -141,8 +141,8 @@ func main() {
 		protected.GET("/assignments/upcoming", assignmentHandler.GetUpcomingDeadlines)
 
 		// Комментарии к заданиям
-		protected.GET("/assignments/:assignment_id/comments", assignmentHandler.GetComments)
-		protected.POST("/assignments/:assignment_id/comments", assignmentHandler.AddComment)
+		protected.GET("/assignments/:id/comments", assignmentHandler.GetComments)
+		protected.POST("/assignments/:id/comments", assignmentHandler.AddComment)
 
 		// Контент
 		protected.GET("/content/:id", assignmentHandler.GetContent)

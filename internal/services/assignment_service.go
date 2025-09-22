@@ -1,12 +1,13 @@
 package services
 
 import (
-	"errors"
-	"time"
-	"github.com/google/uuid"
 	"edubot/internal/models"
 	"edubot/internal/repository"
 	"edubot/pkg/telegram"
+	"errors"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type AssignmentService struct {
@@ -85,11 +86,11 @@ func (s *AssignmentService) DeleteAssignment(assignmentID uuid.UUID, teacherID u
 	if err != nil {
 		return err
 	}
-	
+
 	if assignment.TeacherID != teacherID {
 		return errors.New("assignment does not belong to teacher")
 	}
-	
+
 	return s.assignmentRepo.Delete(assignmentID)
 }
 
@@ -165,11 +166,11 @@ func (s *AssignmentService) DeleteContent(contentID uuid.UUID, teacherID uuid.UU
 	if err != nil {
 		return err
 	}
-	
+
 	if content.CreatedBy != teacherID {
 		return errors.New("content does not belong to teacher")
 	}
-	
+
 	return s.assignmentRepo.DeleteContent(contentID)
 }
 
@@ -197,13 +198,13 @@ func (s *AssignmentService) updateStudentProgress(studentID uuid.UUID, subject s
 		}
 		s.assignmentRepo.CreateProgress(progress)
 	}
-	
+
 	// Подсчитываем статистику
 	assignments, err := s.assignmentRepo.GetByStudentID(studentID)
 	if err != nil {
 		return
 	}
-	
+
 	var completed, total int
 	for _, assignment := range assignments {
 		if assignment.Subject == subject {
@@ -213,16 +214,16 @@ func (s *AssignmentService) updateStudentProgress(studentID uuid.UUID, subject s
 			}
 		}
 	}
-	
+
 	// Обновляем прогресс
 	progress.CompletedAssignments = completed
 	progress.TotalAssignments = total
 	progress.LastActivity = time.Now()
 	progress.UpdatedAt = time.Now()
-	
+
 	if total > 0 {
 		progress.AverageScore = float64(completed) / float64(total) * 100
 	}
-	
+
 	s.assignmentRepo.UpdateProgress(progress)
 }
