@@ -21,8 +21,8 @@ func NewContentHandler(contentService *services.ContentService) *ContentHandler 
 	}
 }
 
-// CreateContentRequest представляет запрос на создание контента
-type CreateContentRequest struct {
+// CreateContentWithFilesRequest представляет запрос на создание контента с файлами
+type CreateContentWithFilesRequest struct {
 	Title       string `json:"title" binding:"required"`
 	Description string `json:"description"`
 	Type        string `json:"type" binding:"required"`
@@ -33,7 +33,7 @@ type CreateContentRequest struct {
 
 // CreateContent создает новый контент (только для преподавателя)
 func (h *ContentHandler) CreateContent(c *gin.Context) {
-	var req CreateContentRequest
+	var req CreateContentWithFilesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -191,7 +191,7 @@ func (h *ContentHandler) UpdateContent(c *gin.Context) {
 		return
 	}
 
-	var req CreateContentRequest
+	var req CreateContentWithFilesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
