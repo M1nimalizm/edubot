@@ -150,6 +150,16 @@ function openTrialModal() {
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
         document.body.classList.add('modal-open');
+
+        // На десктопе делаем верхнюю CTA неактивной, чтобы не дублировалась
+        if (window.innerWidth > 768) {
+            const headerCta = document.querySelector('nav .btn.btn-primary[onclick="openTrialModal()"]');
+            if (headerCta) {
+                headerCta.classList.add('disabled');
+                headerCta.setAttribute('aria-disabled', 'true');
+                headerCta.setAttribute('tabindex', '-1');
+            }
+        }
         
         // Фокус на первом поле формы
         const firstInput = modal.querySelector('input, select');
@@ -180,6 +190,16 @@ function closeTrialModal() {
         modal.classList.remove('active');
         document.body.style.overflow = '';
         document.body.classList.remove('modal-open');
+
+        // Возвращаем активность верхней CTA на десктопе
+        if (window.innerWidth > 768) {
+            const headerCta = document.querySelector('nav .btn.btn-primary[onclick="openTrialModal()"]');
+            if (headerCta) {
+                headerCta.classList.remove('disabled');
+                headerCta.removeAttribute('aria-disabled');
+                headerCta.removeAttribute('tabindex');
+            }
+        }
         
         // Очистка формы
         const form = document.getElementById('trialForm');

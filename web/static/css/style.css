@@ -127,6 +127,13 @@ body {
     color: var(--white);
 }
 
+/* Неактивная CTA в хедере на десктопе при открытой модалке */
+nav .btn.btn-primary.disabled {
+    pointer-events: none;
+    opacity: 0.6;
+    filter: grayscale(0.2);
+}
+
 .btn-primary:hover {
     background: #34495E;
     box-shadow: var(--shadow-hover);
@@ -165,6 +172,30 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 60px;
     align-items: center;
+}
+
+/* Мобильный CTA в hero */
+.mobile-hero-cta {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-hero-cta {
+        position: sticky;
+        bottom: 16px;
+        z-index: 20;
+        display: block;
+        width: 100%;
+        padding: 0 16px;
+    }
+    .mobile-hero-cta .btn {
+        width: 100%;
+        padding: 14px 16px;
+        font-size: 16px;
+        font-weight: 700;
+        border-radius: var(--border-radius);
+        box-shadow: 0 8px 30px rgba(255, 153, 0, 0.35);
+    }
 }
 
 .hero-title {
