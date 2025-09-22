@@ -167,6 +167,15 @@ function openTrialModal() {
         setTimeout(() => {
             hideDuplicateButtons();
         }, 100);
+
+        // В Telegram WebApp скрываем MainButton, чтобы не было двух кнопок
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
+            try {
+                window.Telegram.WebApp.MainButton.hide();
+            } catch (e) {
+                console.warn('Failed to hide Telegram MainButton:', e);
+            }
+        }
     }
 }
 
@@ -181,6 +190,16 @@ function closeTrialModal() {
         const form = document.getElementById('trialForm');
         if (form) {
             form.reset();
+        }
+
+        // В Telegram WebApp возвращаем MainButton
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
+            try {
+                window.Telegram.WebApp.MainButton.setText('Записаться на пробное занятие');
+                window.Telegram.WebApp.MainButton.show();
+            } catch (e) {
+                console.warn('Failed to show Telegram MainButton:', e);
+            }
         }
     }
 }
