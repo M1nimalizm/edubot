@@ -33,12 +33,12 @@ function initializeTelegramWebApp() {
         const closeButtons = document.querySelectorAll('.telegram-hidden');
         closeButtons.forEach(btn => btn.style.display = 'none');
         
-        // Настраиваем главную кнопку
-        window.Telegram.WebApp.MainButton.setText('Записаться на пробное занятие');
-        window.Telegram.WebApp.MainButton.onClick(function() {
-            openTrialModal();
-        });
-        window.Telegram.WebApp.MainButton.show();
+        // Полностью скрываем Telegram MainButton, чтобы не дублировать нашу кнопку
+        try {
+            window.Telegram.WebApp.MainButton.hide();
+        } catch (e) {
+            console.warn('Failed to hide Telegram MainButton at init:', e);
+        }
         
         console.log('Telegram WebApp initialized successfully');
     } else {
