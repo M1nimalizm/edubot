@@ -95,6 +95,7 @@ func (s *AssignmentService) DeleteAssignment(assignmentID uuid.UUID, teacherID u
 
 // Comment methods
 func (s *AssignmentService) AddComment(comment *models.Comment) error {
+	comment.ID = uuid.New()
 	comment.CreatedAt = time.Now()
 	if err := s.assignmentRepo.CreateComment(comment); err != nil {
 		return err
@@ -187,6 +188,7 @@ func (s *AssignmentService) updateStudentProgress(studentID uuid.UUID, subject s
 	if err != nil {
 		// Создаем новый прогресс
 		progress = &models.StudentProgress{
+			ID:        uuid.New(),
 			StudentID: studentID,
 			Subject:   subject,
 			Level:     1,

@@ -8,12 +8,12 @@ import (
 
 // Comment - комментарий к существующему Assignment
 type Comment struct {
-	ID         uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID         uuid.UUID `json:"id" gorm:"type:text;primary_key"`
 	Content    string    `json:"content" gorm:"not null"`
 	AuthorType string    `json:"author_type" gorm:"not null"` // teacher, student
 
-    AssignmentID uuid.UUID `json:"assignment_id" gorm:"type:uuid;not null"`
-	AuthorID uuid.UUID `json:"author_id" gorm:"type:uuid;not null"`
+    AssignmentID uuid.UUID `json:"assignment_id" gorm:"type:text;not null"`
+	AuthorID uuid.UUID `json:"author_id" gorm:"type:text;not null"`
 
 	CreatedAt time.Time `json:"created_at"`
 
@@ -25,8 +25,8 @@ type Comment struct {
 
 // StudentProgress - прогресс ученика
 type StudentProgress struct {
-	ID                    uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	StudentID             uuid.UUID `json:"student_id" gorm:"type:uuid;not null"`
+	ID                    uuid.UUID `json:"id" gorm:"type:text;primary_key"`
+	StudentID             uuid.UUID `json:"student_id" gorm:"type:text;not null"`
 	Subject               string    `json:"subject" gorm:"not null"`
 	Level                 int       `json:"level" gorm:"not null"`
 	CompletedAssignments  int       `json:"completed_assignments" gorm:"default:0"`
