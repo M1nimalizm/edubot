@@ -787,16 +787,18 @@ function hideDuplicateButtons() {
         button.style.visibility = 'hidden';
     });
     
-    // Находим все кнопки с классом btn-primary кроме мобильной
+    // Находим ВСЕ кнопки с классом btn-primary кроме мобильной
     const primaryButtons = document.querySelectorAll('.btn-primary:not(.btn-mobile)');
     primaryButtons.forEach(button => {
         button.style.display = 'none';
         button.style.visibility = 'hidden';
     });
     
-    // Дополнительное скрытие кнопок на мобильных
-    const allPrimaryButtons = document.querySelectorAll('.btn-primary:not(.btn-mobile)');
-    allPrimaryButtons.forEach(button => {
+    // Дополнительно скрываем кнопки в навигации и hero
+    const navButtons = document.querySelectorAll('nav .btn-primary:not(.btn-mobile)');
+    const heroButtons = document.querySelectorAll('.hero .btn-primary:not(.btn-mobile)');
+    
+    [...navButtons, ...heroButtons].forEach(button => {
         button.style.display = 'none';
         button.style.visibility = 'hidden';
     });

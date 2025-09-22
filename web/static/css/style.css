@@ -943,8 +943,14 @@ section {
             display: block !important;
         }
         
-        /* Скрываем кнопки на мобильных */
+        /* Скрываем ВСЕ кнопки на мобильных кроме мобильной */
         .btn-primary:not(.btn-mobile) {
+            display: none !important;
+        }
+        
+        /* Дополнительно скрываем кнопки в навигации и hero */
+        nav .btn-primary:not(.btn-mobile),
+        .hero .btn-primary:not(.btn-mobile) {
             display: none !important;
         }
         
