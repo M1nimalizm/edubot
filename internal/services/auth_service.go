@@ -256,6 +256,11 @@ func (s *AuthService) GetStats() (map[string]interface{}, error) {
 	}, nil
 }
 
+// GetStudents получает список всех учеников
+func (s *AuthService) GetStudents() ([]models.User, error) {
+	return s.userRepo.ListByRole("student")
+}
+
 // validateTelegramAuth валидирует данные авторизации Telegram (упрощенная версия)
 func (s *AuthService) validateTelegramAuth(authData *TelegramAuthData) bool {
 	// В реальном приложении здесь должна быть проверка подписи

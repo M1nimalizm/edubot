@@ -194,3 +194,14 @@ func (h *AuthHandler) GetStats(c *gin.Context) {
 
 	c.JSON(http.StatusOK, stats)
 }
+
+// GetStudents получает список учеников для учителя
+func (h *AuthHandler) GetStudents(c *gin.Context) {
+	students, err := h.authService.GetStudents()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, students)
+}

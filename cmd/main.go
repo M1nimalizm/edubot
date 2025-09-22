@@ -109,6 +109,25 @@ func main() {
 		})
 	})
 
+	// Страницы для учителя
+	router.GET("/teacher/assignments/create", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "teacher-assignments.html", gin.H{
+			"title": "Создание задания - EduBot",
+		})
+	})
+
+	router.GET("/teacher/content/create", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "teacher-content.html", gin.H{
+			"title": "Добавление материалов - EduBot",
+		})
+	})
+
+	router.GET("/teacher/students", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "teacher-students.html", gin.H{
+			"title": "Ученики - EduBot",
+		})
+	})
+
 	// API маршруты
 	api := router.Group("/api")
 
@@ -160,6 +179,9 @@ func main() {
 		// Генерация кодов приглашения
 		teacher.POST("/invite-code", authHandler.GenerateInviteCode)
 		teacher.POST("/invite-codes", authHandler.GenerateInviteCode)
+
+		// Управление учениками
+		teacher.GET("/students", authHandler.GetStudents)
 
 		// Управление заданиями
 		teacher.POST("/assignments", assignmentHandler.CreateAssignment)

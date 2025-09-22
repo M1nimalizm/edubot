@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавление материалов - EduBot</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .content-form {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        
+        .form-section h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .file-upload {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            background: #fafafa;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        .file-upload:hover {
+            border-color: var(--primary-color);
+        }
+        
+        .file-upload.dragover {
+            border-color: var(--primary-color);
+            background: #f0f8ff;
+        }
+        
+        .file-list {
+            margin-top: 1rem;
+        }
+        
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .file-size {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>EduBot - Добавление материалов</span>
+            </div>
+            <div class="nav-menu">
+                <a href="/teacher-dashboard" class="nav-link">Панель управления</a>
+                <a href="/" class="nav-link">На главную</a>
+                <button class="btn btn-outline" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <div class="content-form">
+            <h1><i class="fas fa-file-alt"></i> Добавление нового материала</h1>
+            
+            <form id="contentForm">
+                <!-- Основная информация -->
+                <div class="form-section">
+                    <h3><i class="fas fa-info-circle"></i> Основная информация</h3>
+                    
+                    <div class="form-group">
+                        <label for="title">Название материала *</label>
+                        <input type="text" id="title" name="title" required placeholder="Введите название материала">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Описание</label>
+                        <textarea id="description" name="description" placeholder="Опишите материал..."></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="type">Тип материала *</label>
+                            <select id="type" name="type" required>
+                                <option value="">Выберите тип</option>
+                                <option value="video">Видео</option>
+                                <option value="document">Документ</option>
+                                <option value="image">Изображение</option>
+                                <option value="test">Тест</option>
+                                <option value="presentation">Презентация</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="category">Категория *</label>
+                            <select id="category" name="category" required>
+                                <option value="">Выберите категорию</option>
+                                <option value="tips">Советы и подсказки</option>
+                                <option value="solutions">Решения задач</option>
+                                <option value="tests">Тесты</option>
+                                <option value="demos">Демонстрации</option>
+                                <option value="reference">Справочные материалы</option>
+                                <option value="homework">Домашние задания</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tags">Теги (через запятую)</label>
+                        <input type="text" id="tags" name="tags" placeholder="например: алгебра, уравнения, 9 класс">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="isPublic" name="isPublic" checked>
+                            Публичный материал (доступен всем ученикам)
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Загрузка файлов -->
+                <div class="form-section">
+                    <h3><i class="fas fa-upload"></i> Загрузка файлов</h3>
+                    
+                    <div class="file-upload" id="fileUpload" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #666; margin-bottom: 1rem;"></i>
+                        <p>Нажмите для выбора файлов или перетащите их сюда</p>
+                        <p style="font-size: 0.9rem; color: #666;">Поддерживаемые форматы: PDF, DOC, DOCX, MP4, AVI, JPG, PNG, PPT, PPTX</p>
+                    </div>
+                    
+                    <input type="file" id="fileInput" multiple style="display: none;" onchange="handleFileSelect(event)">
+                    
+                    <div class="file-list" id="fileList"></div>
+                </div>
+                
+                <!-- Кнопки -->
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline" onclick="goBack()">
+                        <i class="fas fa-arrow-left"></i> Назад
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Добавить материал
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        let selectedFiles = [];
+
+        // Обработка drag & drop
+        const fileUpload = document.getElementById('fileUpload');
+        
+        fileUpload.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+        
+        fileUpload.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+        
+        fileUpload.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            handleFileSelect({ target: { files: e.dataTransfer.files } });
+        });
+
+        // Обработка выбора файлов
+        function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+            files.forEach(file => {
+                if (!selectedFiles.find(f => f.name === file.name)) {
+                    selectedFiles.push(file);
+                }
+            });
+            displayFiles();
+        }
+
+        // Отображение выбранных файлов
+        function displayFiles() {
+            const fileList = document.getElementById('fileList');
+            
+            if (selectedFiles.length === 0) {
+                fileList.innerHTML = '';
+                return;
+            }
+
+            fileList.innerHTML = selectedFiles.map((file, index) => `
+                <div class="file-item">
+                    <div class="file-info">
+                        <i class="fas fa-file"></i>
+                        <span>${file.name}</span>
+                        <span class="file-size">(${formatFileSize(file.size)})</span>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="removeFile(${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Удаление файла
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            displayFiles();
+        }
+
+        // Форматирование размера файла
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Обработка отправки формы
+        document.getElementById('contentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (selectedFiles.length === 0) {
+                showError('Выберите хотя бы один файл');
+                return;
+            }
+
+            const formData = new FormData();
+            
+            // Добавляем данные формы
+            formData.append('title', document.getElementById('title').value);
+            formData.append('description', document.getElementById('description').value);
+            formData.append('type', document.getElementById('type').value);
+            formData.append('category', document.getElementById('category').value);
+            formData.append('tags', document.getElementById('tags').value);
+            formData.append('isPublic', document.getElementById('isPublic').checked);
+
+            // Добавляем файлы
+            selectedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+
+            try {
+                const response = await fetch('/api/teacher/content', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    showSuccess('Материал успешно добавлен!');
+                    setTimeout(() => {
+                        window.location.href = '/teacher-dashboard';
+                    }, 1500);
+                } else {
+                    const error = await response.json();
+                    showError(error.error || 'Ошибка добавления материала');
+                }
+            } catch (error) {
+                console.error('Error creating content:', error);
+                showError('Ошибка добавления материала');
+            }
+        });
+
+        // Вспомогательные функции
+        function goBack() {
+            window.location.href = '/teacher-dashboard';
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/';
+        }
+
+        function showSuccess(message) {
+            alert('✅ ' + message);
+        }
+
+        function showError(message) {
+            alert('❌ ' + message);
+        }
+    </script>
+</body>
+</html>

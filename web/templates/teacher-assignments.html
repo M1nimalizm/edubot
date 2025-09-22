@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создание заданий - EduBot</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .assignment-form {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        
+        .form-section h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+        
+        .students-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+        }
+        
+        .student-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .student-item:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .student-item.selected {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .student-item:last-child {
+            border-bottom: none;
+        }
+        
+        .student-name {
+            font-weight: 600;
+        }
+        
+        .student-details {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>EduBot - Создание заданий</span>
+            </div>
+            <div class="nav-menu">
+                <a href="/teacher-dashboard" class="nav-link">Панель управления</a>
+                <a href="/" class="nav-link">На главную</a>
+                <button class="btn btn-outline" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <div class="assignment-form">
+            <h1><i class="fas fa-plus-circle"></i> Создание нового задания</h1>
+            
+            <form id="assignmentForm">
+                <!-- Основная информация -->
+                <div class="form-section">
+                    <h3><i class="fas fa-info-circle"></i> Основная информация</h3>
+                    
+                    <div class="form-group">
+                        <label for="title">Название задания *</label>
+                        <input type="text" id="title" name="title" required placeholder="Введите название задания">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Описание задания</label>
+                        <textarea id="description" name="description" placeholder="Опишите задание подробно..."></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="subject">Предмет *</label>
+                            <select id="subject" name="subject" required>
+                                <option value="">Выберите предмет</option>
+                                <option value="математика">Математика</option>
+                                <option value="русский язык">Русский язык</option>
+                                <option value="английский язык">Английский язык</option>
+                                <option value="физика">Физика</option>
+                                <option value="химия">Химия</option>
+                                <option value="биология">Биология</option>
+                                <option value="история">История</option>
+                                <option value="обществознание">Обществознание</option>
+                                <option value="география">География</option>
+                                <option value="литература">Литература</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="grade">Класс *</label>
+                            <select id="grade" name="grade" required>
+                                <option value="">Выберите класс</option>
+                                <option value="1">1 класс</option>
+                                <option value="2">2 класс</option>
+                                <option value="3">3 класс</option>
+                                <option value="4">4 класс</option>
+                                <option value="5">5 класс</option>
+                                <option value="6">6 класс</option>
+                                <option value="7">7 класс</option>
+                                <option value="8">8 класс</option>
+                                <option value="9">9 класс</option>
+                                <option value="10">10 класс</option>
+                                <option value="11">11 класс</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="level">Уровень сложности *</label>
+                            <select id="level" name="level" required>
+                                <option value="">Выберите уровень</option>
+                                <option value="1">Базовый</option>
+                                <option value="2">Средний</option>
+                                <option value="3">Продвинутый</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="dueDate">Срок выполнения</label>
+                            <input type="datetime-local" id="dueDate" name="dueDate">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Выбор ученика -->
+                <div class="form-section">
+                    <h3><i class="fas fa-user-graduate"></i> Выбор ученика</h3>
+                    
+                    <div class="form-group">
+                        <label>Поиск ученика</label>
+                        <input type="text" id="studentSearch" placeholder="Введите имя или Telegram ID ученика" onkeyup="searchStudents()">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Выберите ученика *</label>
+                        <div class="students-list" id="studentsList">
+                            <div class="loading">Загрузка учеников...</div>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" id="selectedStudentId" name="studentId">
+                </div>
+                
+                <!-- Кнопки -->
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline" onclick="goBack()">
+                        <i class="fas fa-arrow-left"></i> Назад
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Создать задание
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        let students = [];
+        let selectedStudent = null;
+
+        // Загружаем учеников при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStudents();
+        });
+
+        // Загрузка списка учеников
+        async function loadStudents() {
+            try {
+                const response = await fetch('/api/teacher/students');
+                if (response.ok) {
+                    students = await response.json();
+                    displayStudents(students);
+                } else {
+                    showError('Ошибка загрузки учеников');
+                }
+            } catch (error) {
+                console.error('Error loading students:', error);
+                showError('Ошибка загрузки учеников');
+            }
+        }
+
+        // Отображение списка учеников
+        function displayStudents(studentList) {
+            const studentsList = document.getElementById('studentsList');
+            
+            if (studentList.length === 0) {
+                studentsList.innerHTML = '<div class="student-item">Ученики не найдены</div>';
+                return;
+            }
+
+            studentsList.innerHTML = studentList.map(student => `
+                <div class="student-item" onclick="selectStudent('${student.id}', '${student.first_name} ${student.last_name}', '${student.telegram_id}')">
+                    <div class="student-name">${student.first_name} ${student.last_name}</div>
+                    <div class="student-details">Telegram ID: ${student.telegram_id} | Класс: ${student.grade}</div>
+                </div>
+            `).join('');
+        }
+
+        // Поиск учеников
+        function searchStudents() {
+            const searchTerm = document.getElementById('studentSearch').value.toLowerCase();
+            const filteredStudents = students.filter(student => 
+                student.first_name.toLowerCase().includes(searchTerm) ||
+                student.last_name.toLowerCase().includes(searchTerm) ||
+                student.telegram_id.toString().includes(searchTerm)
+            );
+            displayStudents(filteredStudents);
+        }
+
+        // Выбор ученика
+        function selectStudent(studentId, studentName, telegramId) {
+            selectedStudent = { id: studentId, name: studentName, telegramId: telegramId };
+            document.getElementById('selectedStudentId').value = studentId;
+            
+            // Обновляем визуальное выделение
+            document.querySelectorAll('.student-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.closest('.student-item').classList.add('selected');
+        }
+
+        // Обработка отправки формы
+        document.getElementById('assignmentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!selectedStudent) {
+                showError('Выберите ученика');
+                return;
+            }
+
+            const formData = new FormData(this);
+            const assignmentData = {
+                title: formData.get('title'),
+                description: formData.get('description'),
+                subject: formData.get('subject'),
+                grade: parseInt(formData.get('grade')),
+                level: parseInt(formData.get('level')),
+                studentId: formData.get('studentId'),
+                dueDate: formData.get('dueDate') || null
+            };
+
+            try {
+                const response = await fetch('/api/teacher/assignments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(assignmentData)
+                });
+
+                if (response.ok) {
+                    showSuccess('Задание успешно создано!');
+                    setTimeout(() => {
+                        window.location.href = '/teacher-dashboard';
+                    }, 1500);
+                } else {
+                    const error = await response.json();
+                    showError(error.error || 'Ошибка создания задания');
+                }
+            } catch (error) {
+                console.error('Error creating assignment:', error);
+                showError('Ошибка создания задания');
+            }
+        });
+
+        // Вспомогательные функции
+        function goBack() {
+            window.location.href = '/teacher-dashboard';
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/';
+        }
+
+        function showSuccess(message) {
+            // Простое уведомление об успехе
+            alert('✅ ' + message);
+        }
+
+        function showError(message) {
+            // Простое уведомление об ошибке
+            alert('❌ ' + message);
+        }
+    </script>
+</body>
+</html>

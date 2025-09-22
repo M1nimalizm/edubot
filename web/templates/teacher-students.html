@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ученики - EduBot</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .students-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .search-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .search-row {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 1rem;
+            align-items: end;
+        }
+        
+        .form-group {
+            margin-bottom: 0;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        
+        .students-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .student-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .student-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .student-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .student-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .student-info h3 {
+            margin: 0;
+            color: var(--text-color);
+        }
+        
+        .student-details {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .student-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .student-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .no-students {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .search-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .students-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .student-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .student-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>EduBot - Ученики</span>
+            </div>
+            <div class="nav-menu">
+                <a href="/teacher-dashboard" class="nav-link">Панель управления</a>
+                <a href="/" class="nav-link">На главную</a>
+                <button class="btn btn-outline" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <div class="students-container">
+            <div class="page-header">
+                <h1><i class="fas fa-users"></i> Мои ученики</h1>
+                <button class="btn btn-primary" onclick="generateInviteCode()">
+                    <i class="fas fa-key"></i> Создать код приглашения
+                </button>
+            </div>
+            
+            <!-- Поиск и фильтры -->
+            <div class="search-section">
+                <div class="search-row">
+                    <div class="form-group">
+                        <label for="searchInput">Поиск ученика</label>
+                        <input type="text" id="searchInput" placeholder="Имя, фамилия или Telegram ID" onkeyup="filterStudents()">
+                    </div>
+                    <div class="form-group">
+                        <label for="gradeFilter">Класс</label>
+                        <select id="gradeFilter" onchange="filterStudents()">
+                            <option value="">Все классы</option>
+                            <option value="1">1 класс</option>
+                            <option value="2">2 класс</option>
+                            <option value="3">3 класс</option>
+                            <option value="4">4 класс</option>
+                            <option value="5">5 класс</option>
+                            <option value="6">6 класс</option>
+                            <option value="7">7 класс</option>
+                            <option value="8">8 класс</option>
+                            <option value="9">9 класс</option>
+                            <option value="10">10 класс</option>
+                            <option value="11">11 класс</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="subjectFilter">Предмет</label>
+                        <select id="subjectFilter" onchange="filterStudents()">
+                            <option value="">Все предметы</option>
+                            <option value="математика">Математика</option>
+                            <option value="русский язык">Русский язык</option>
+                            <option value="английский язык">Английский язык</option>
+                            <option value="физика">Физика</option>
+                            <option value="химия">Химия</option>
+                            <option value="биология">Биология</option>
+                            <option value="история">История</option>
+                            <option value="обществознание">Обществознание</option>
+                            <option value="география">География</option>
+                            <option value="литература">Литература</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Список учеников -->
+            <div class="students-grid" id="studentsGrid">
+                <div class="loading">Загрузка учеников...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Модальное окно для кода приглашения -->
+    <div id="inviteModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-key"></i> Код приглашения</h3>
+                <button class="modal-close" onclick="closeInviteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Поделитесь этим кодом с учениками для регистрации:</p>
+                <div class="invite-code">
+                    <input type="text" id="inviteCode" readonly>
+                    <button class="btn btn-outline" onclick="copyInviteCode()">
+                        <i class="fas fa-copy"></i> Копировать
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allStudents = [];
+        let filteredStudents = [];
+
+        // Загружаем учеников при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStudents();
+        });
+
+        // Загрузка списка учеников
+        async function loadStudents() {
+            try {
+                const response = await fetch('/api/teacher/students');
+                if (response.ok) {
+                    allStudents = await response.json();
+                    filteredStudents = [...allStudents];
+                    displayStudents();
+                } else {
+                    showError('Ошибка загрузки учеников');
+                }
+            } catch (error) {
+                console.error('Error loading students:', error);
+                showError('Ошибка загрузки учеников');
+            }
+        }
+
+        // Отображение учеников
+        function displayStudents() {
+            const studentsGrid = document.getElementById('studentsGrid');
+            
+            if (filteredStudents.length === 0) {
+                studentsGrid.innerHTML = '<div class="no-students"><i class="fas fa-user-graduate" style="font-size: 3rem; margin-bottom: 1rem;"></i><p>Ученики не найдены</p></div>';
+                return;
+            }
+
+            studentsGrid.innerHTML = filteredStudents.map(student => `
+                <div class="student-card">
+                    <div class="student-header">
+                        <div class="student-avatar">
+                            ${student.first_name.charAt(0)}${student.last_name.charAt(0)}
+                        </div>
+                        <div class="student-info">
+                            <h3>${student.first_name} ${student.last_name}</h3>
+                            <div class="student-details">
+                                Telegram: @${student.username || 'не указан'}<br>
+                                Класс: ${student.grade || 'не указан'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="student-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${student.completed_assignments || 0}</div>
+                            <div class="stat-label">Выполнено</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${student.total_assignments || 0}</div>
+                            <div class="stat-label">Всего заданий</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${student.average_score || 0}%</div>
+                            <div class="stat-label">Успеваемость</div>
+                        </div>
+                    </div>
+                    
+                    <div class="student-actions">
+                        <button class="btn btn-primary btn-sm" onclick="viewStudentProgress('${student.id}')">
+                            <i class="fas fa-chart-line"></i> Прогресс
+                        </button>
+                        <button class="btn btn-outline btn-sm" onclick="createAssignmentForStudent('${student.id}', '${student.first_name} ${student.last_name}')">
+                            <i class="fas fa-plus"></i> Задание
+                        </button>
+                        <button class="btn btn-outline btn-sm" onclick="sendMessage('${student.telegram_id}')">
+                            <i class="fas fa-paper-plane"></i> Написать
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Фильтрация учеников
+        function filterStudents() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const gradeFilter = document.getElementById('gradeFilter').value;
+            const subjectFilter = document.getElementById('subjectFilter').value;
+
+            filteredStudents = allStudents.filter(student => {
+                const matchesSearch = !searchTerm || 
+                    student.first_name.toLowerCase().includes(searchTerm) ||
+                    student.last_name.toLowerCase().includes(searchTerm) ||
+                    student.username?.toLowerCase().includes(searchTerm) ||
+                    student.telegram_id.toString().includes(searchTerm);
+
+                const matchesGrade = !gradeFilter || student.grade?.toString() === gradeFilter;
+                const matchesSubject = !subjectFilter || student.subjects?.includes(subjectFilter);
+
+                return matchesSearch && matchesGrade && matchesSubject;
+            });
+
+            displayStudents();
+        }
+
+        // Создание кода приглашения
+        async function generateInviteCode() {
+            try {
+                const response = await fetch('/api/teacher/invite-code', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('inviteCode').value = data.invite_code;
+                    document.getElementById('inviteModal').style.display = 'block';
+                } else {
+                    showError('Ошибка создания кода приглашения');
+                }
+            } catch (error) {
+                console.error('Error generating invite code:', error);
+                showError('Ошибка создания кода приглашения');
+            }
+        }
+
+        // Копирование кода приглашения
+        function copyInviteCode() {
+            const inviteCode = document.getElementById('inviteCode');
+            inviteCode.select();
+            document.execCommand('copy');
+            showSuccess('Код скопирован в буфер обмена!');
+        }
+
+        // Закрытие модального окна
+        function closeInviteModal() {
+            document.getElementById('inviteModal').style.display = 'none';
+        }
+
+        // Просмотр прогресса ученика
+        function viewStudentProgress(studentId) {
+            window.location.href = `/teacher/students/${studentId}/progress`;
+        }
+
+        // Создание задания для ученика
+        function createAssignmentForStudent(studentId, studentName) {
+            window.location.href = `/teacher/assignments/create?student=${studentId}&name=${encodeURIComponent(studentName)}`;
+        }
+
+        // Отправка сообщения ученику
+        function sendMessage(telegramId) {
+            const message = prompt('Введите сообщение для ученика:');
+            if (message) {
+                // Здесь будет API для отправки сообщения
+                showSuccess('Сообщение отправлено!');
+            }
+        }
+
+        // Вспомогательные функции
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/';
+        }
+
+        function showSuccess(message) {
+            alert('✅ ' + message);
+        }
+
+        function showError(message) {
+            alert('❌ ' + message);
+        }
+    </script>
+</body>
+</html>
