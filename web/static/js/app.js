@@ -36,33 +36,27 @@ function initializeTelegramWebApp() {
         console.log('Telegram WebApp initialized successfully');
 
         // Авто-авторизация через Telegram WebApp
-        try {
-            const tgUser = window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
-            if (tgUser) {
-                const telegramData = {
-                    id: tgUser.id,
-                    first_name: tgUser.first_name || '',
-                    last_name: tgUser.last_name || '',
-                    username: tgUser.username || '',
-                    photo_url: tgUser.photo_url || '',
-                    auth_date: Math.floor(Date.now() / 1000),
-                    hash: ''
-                };
-                // Не дублируем: авторизуемся только если нет токена
-                if (!localStorage.getItem('authToken')) {
-                    authenticateWithTelegram(telegramData).then(() => {
-                        handleInviteLinkPostAuth();
-                    }).catch(() => {});
-                } else {
-                    handleInviteLinkPostAuth();
-                }
-            }
-        } catch (e) {
-            console.warn('Telegram auto-auth failed:', e);
+        // Жёсткая авто-авторизация в WebApp: если есть initDataUnsafe.user — авторизуемся без вопросов
+        const tgUser = window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
+        if (tgUser) {
+            const telegramData = {
+                id: tgUser.id,
+                first_name: tgUser.first_name || '',
+                last_name: tgUser.last_name || '',
+                username: tgUser.username || '',
+                photo_url: tgUser.photo_url || '',
+                auth_date: Math.floor(Date.now() / 1000),
+                hash: ''
+            };
+            authenticateWithTelegram(telegramData)
+                .then(() => handleInviteLinkPostAuth())
+                .catch(() => {});
         }
     } else {
         console.log('Running outside Telegram WebApp');
-        // Вне Telegram: если есть инвайт в URL, просто префилим форму
+        // Вне Telegram: показываем кнопку входа (Telegram Login)
+        const btn = document.getElementById('studentLoginBtn');
+        if (btn) btn.style.display = 'inline-flex';
         prefillInviteFromURL();
     }
 }
@@ -1001,48 +995,47 @@ function openStudentLoginModal() {
 
 function closeStudentLoginModal() {
     document.getElementById('studentLoginModal').style.display = 'none';
-    document.getElementById('studentLoginForm').reset();
 }
 
-// Обработка формы входа ученика
-document.addEventListener('DOMContentLoaded', function() {
-    const studentLoginForm = document.getElementById('studentLoginForm');
-    if (studentLoginForm) {
-        studentLoginForm.addEventListener('submit', handleStudentLogin);
-    }
-});
+// Telegram Login Widget для десктопа
+function openStudentTelegramLogin() {
+    openStudentLoginModal();
+    const container = document.getElementById('telegramLoginContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    // Встраиваем Telegram Login Widget
+    const script = document.createElement('script');
+    // Замените на реальный bot_username
+    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+    script.setAttribute('data-telegram-login', 'EduBot_by_Pugachev_bot');
+    script.setAttribute('data-size', 'large');
+    script.setAttribute('data-request-access', 'write');
+    script.setAttribute('data-userpic', 'false');
+    script.setAttribute('data-radius', '8');
+    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+    container.appendChild(script);
+}
 
-async function handleStudentLogin(event) {
-    event.preventDefault();
-    
-    const formData = new FormData(event.target);
-    const loginData = {
-        inviteCode: formData.get('inviteCode')
+window.onTelegramAuth = async function(user) {
+    // Конвертируем в формат нашего API
+    const telegramData = {
+        id: user.id,
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        username: user.username || '',
+        photo_url: user.photo_url || '',
+        auth_date: Math.floor(Date.now() / 1000),
+        hash: user.hash || ''
     };
-    
+
     try {
-        const response = await fetch('/api/public/register-student', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(loginData)
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            localStorage.setItem('authToken', result.token);
-            showSuccess('Добро пожаловать! Вы успешно зарегистрированы.');
-            setTimeout(() => {
-                window.location.href = '/student-dashboard';
-            }, 1500);
-        } else {
-            const error = await response.json();
-            showError(error.error || 'Ошибка входа');
-        }
-    } catch (error) {
-        console.error('Error during student login:', error);
-        showError('Ошибка входа');
+        await authenticateWithTelegram(telegramData);
+        handleInviteLinkPostAuth();
+        closeStudentLoginModal();
+        showSuccess('Вход выполнен');
+        setTimeout(() => window.location.href = '/student-dashboard', 1000);
+    } catch (e) {
+        showError('Ошибка авторизации через Telegram');
     }
 }
 

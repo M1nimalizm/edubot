@@ -58,7 +58,7 @@
                     <i class="fas fa-chalkboard-teacher"></i>
                     Вход для учителя
                 </button>
-                <button class="btn btn-primary" onclick="openStudentLoginModal()" style="margin-right: 10px;">
+                <button id="studentLoginBtn" class="btn btn-primary" onclick="openStudentTelegramLogin()" style="margin-right: 10px;">
                     <i class="fas fa-user-graduate"></i>
                     Вход для ученика
                 </button>
@@ -350,8 +350,8 @@
         </div>
     </footer>
 
-    <!-- Модальное окно входа для ученика -->
-    <div id="studentLoginModal" class="modal">
+    <!-- Модальное окно входа для ученика через Telegram -->
+    <div id="studentLoginModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-user-graduate"></i> Вход для ученика</h3>
@@ -359,22 +359,11 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form id="studentLoginForm" class="modal-body">
-                <div class="form-group">
-                    <label for="studentInviteCode">Код приглашения</label>
-                    <input type="text" id="studentInviteCode" name="inviteCode" required 
-                           placeholder="Введите код приглашения от учителя">
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeStudentLoginModal()">
-                        Отмена
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-sign-in-alt"></i>
-                        Войти
-                    </button>
-                </div>
-            </form>
+            <div class="modal-body" style="text-align:center;">
+                <p>Авторизация через Telegram</p>
+                <div id="telegramLoginContainer"></div>
+                <p style="font-size: 0.9rem; color: #666; margin-top: 10px;">Нажмите кнопку Telegram, чтобы войти</p>
+            </div>
         </div>
     </div>
 
