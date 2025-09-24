@@ -25,7 +25,7 @@ func (r *UserRepository) Create(user *models.User) error {
 	if user.ID == uuid.Nil {
 		user.ID = uuid.New()
 	}
-	return r.db.Create(user).Error
+    return r.db.Create(user).Error
 }
 
 // GetByID получает пользователя по ID
