@@ -69,12 +69,12 @@ function initializeTelegramWebApp() {
                 .catch(() => {});
         }
 
-        // В WebApp скрываем любые элементы логина
+        // В WebApp скрываем любые элементы логина (и вообще не используем логин сейчас)
         try {
             const loginBtn = document.getElementById('studentLoginBtn');
-            if (loginBtn) loginBtn.style.display = 'none';
+            if (loginBtn) loginBtn.remove();
             const studentLoginModal = document.getElementById('studentLoginModal');
-            if (studentLoginModal) studentLoginModal.style.display = 'none';
+            if (studentLoginModal) studentLoginModal.remove();
         } catch {}
     } else {
         console.log('Running outside Telegram WebApp');
@@ -1068,8 +1068,7 @@ function closeAllSelects() {
 // Функции для входа ученика
 function openStudentLoginModal() {
     // В WebApp ничего не показываем — авторизация автоматическая
-    if (window.Telegram && window.Telegram.WebApp) return;
-    document.getElementById('studentLoginModal').style.display = 'block';
+    return; // временно отключено
 }
 
 function closeStudentLoginModal() {
@@ -1079,46 +1078,10 @@ function closeStudentLoginModal() {
 // Telegram Login Widget для десктопа
 function openStudentTelegramLogin() {
     // В WebApp не открываем Login Widget
-    if (window.Telegram && window.Telegram.WebApp) return;
-    openStudentLoginModal();
-    const container = document.getElementById('telegramLoginContainer');
-    if (!container) return;
-    container.innerHTML = '';
-    // Встраиваем Telegram Login Widget
-    const script = document.createElement('script');
-    // Замените на реальный bot_username
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.setAttribute('data-telegram-login', 'EduBot_by_Pugachev_bot');
-    script.setAttribute('data-size', 'large');
-    script.setAttribute('data-request-access', 'write');
-    script.setAttribute('data-userpic', 'false');
-    script.setAttribute('data-radius', '8');
-    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-    container.appendChild(script);
+    return; // временно отключено
 }
 
-window.onTelegramAuth = async function(user) {
-    // Конвертируем в формат нашего API
-    const telegramData = {
-        id: user.id,
-        first_name: user.first_name || '',
-        last_name: user.last_name || '',
-        username: user.username || '',
-        photo_url: user.photo_url || '',
-        auth_date: Math.floor(Date.now() / 1000),
-        hash: user.hash || ''
-    };
-
-    try {
-        await authenticateWithTelegram(telegramData);
-        handleInviteLinkPostAuth();
-        closeStudentLoginModal();
-        showSuccess('Вход выполнен');
-        setTimeout(() => window.location.href = '/student-dashboard', 1000);
-    } catch (e) {
-        showError('Ошибка авторизации через Telegram');
-    }
-}
+window.onTelegramAuth = function() { return; } // временно отключено
 
 
 // Централизованная анимация успеха

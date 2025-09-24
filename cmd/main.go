@@ -153,17 +153,11 @@ func main() {
 	api := router.Group("/api")
 
 	// Публичные маршруты (доступны гостям)
-	public := api.Group("/public")
-	{
-		public.POST("/auth/telegram", authHandler.TelegramAuth)
-		public.POST("/trial-request", handlers.GuestMiddleware(authService), authHandler.SubmitTrialRequest)
-		public.POST("/register-student", authHandler.RegisterStudentByCode)
-		// Публичная точка для обработки инвайт-ссылок (просто валидируем код и отдаём 200)
-		public.GET("/invite/:code", func(c *gin.Context) {
-			// Фронт после Telegram-логина вызовет /api/public/register-student
-			c.JSON(http.StatusOK, gin.H{"invite_code": c.Param("code")})
-		})
-	}
+    // Публичные маршруты: временно отключены авторизация и регистрация
+    public := api.Group("/public")
+    {
+        // intentionally empty
+    }
 
 	// Публичные маршруты для панели управления учителя (без авторизации для простоты)
 	teacherPublic := api.Group("/teacher")
@@ -225,7 +219,8 @@ func main() {
 	}
 
     // Выбор роли после Telegram-авторизации (без пароля)
-    api.POST("/auth/select-role", handlers.AuthMiddleware(authService), authHandler.SelectRole)
+    // Отключено: выбор роли/учительская авторизация
+    // api.POST("/auth/select-role", handlers.AuthMiddleware(authService), authHandler.SelectRole)
 
 	// Webhook для Telegram
 	router.GET("/webhook", func(c *gin.Context) {
