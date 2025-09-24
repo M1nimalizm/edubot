@@ -46,6 +46,11 @@ type RegisterStudentByCodeRequest struct {
 	InviteCode string `json:"invite_code" binding:"required"`
 }
 
+// TeacherUpgradeRequest апгрейд до учителя
+type TeacherUpgradeRequest struct {
+    Password string `json:"password" binding:"required"`
+}
+
 // CreateStudentByTeacherRequest запрос на создание ученика преподавателем
 type CreateStudentByTeacherRequest struct {
     FirstName  string `json:"first_name" binding:"required"`
@@ -263,4 +268,28 @@ func (h *AuthHandler) RegisterStudentByCode(c *gin.Context) {
 		"user":    user,
 		"token":   token,
 	})
+}
+
+// UpgradeToTeacher апгрейдит текущего пользователя до роли teacher по паролю и allowlist
+func (h *AuthHandler) UpgradeToTeacher(c *gin.Context) {
+    var req TeacherUpgradeRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    // Из AuthMiddleware
+    userAny, exists := c.Get("user")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        return
+    }
+    user := userAny.(*models.User)
+
+    if err := h.authService.UpgradeToTeacher(user, req.Password); err != nil {
+        c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"message": "upgraded", "role": "teacher"})
 }

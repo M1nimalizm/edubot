@@ -18,24 +18,32 @@ type AuthService struct {
 	trialRepo         *repository.TrialRequestRepository
 	telegramBot       *telegram.Bot
 	jwtSecret         string
-	teacherTelegramID int64
+    teacherTelegramID int64
+    teacherAllowlist  []int64
+    teacherPassword   string
 }
 
 // NewAuthService создает новый сервис авторизации
 func NewAuthService(
-	userRepo *repository.UserRepository,
-	trialRepo *repository.TrialRequestRepository,
-	telegramBot *telegram.Bot,
-	jwtSecret string,
-	teacherTelegramID int64,
+    userRepo *repository.UserRepository,
+    trialRepo *repository.TrialRequestRepository,
+    telegramBot *telegram.Bot,
+    jwtSecret string,
+    teacherTelegramID int64,
 ) *AuthService {
 	return &AuthService{
 		userRepo:          userRepo,
 		trialRepo:         trialRepo,
 		telegramBot:       telegramBot,
 		jwtSecret:         jwtSecret,
-		teacherTelegramID: teacherTelegramID,
+        teacherTelegramID: teacherTelegramID,
 	}
+}
+
+// InitTeacherSecurity настраивает allowlist и пароль учителя
+func (s *AuthService) InitTeacherSecurity(allowlist []int64, password string) {
+    s.teacherAllowlist = allowlist
+    s.teacherPassword = password
 }
 
 // TelegramAuthData представляет данные авторизации из Telegram
@@ -79,8 +87,8 @@ func (s *AuthService) AuthenticateWithTelegram(authData *TelegramAuthData) (*Aut
 			InviteCode: nil,              // Пустой invite code
 		}
 
-		// Проверяем, является ли пользователь преподавателем
-		if authData.ID == s.teacherTelegramID {
+    // Проверяем, является ли пользователь преподавателем (по allowlist)
+    if s.isTeacherAllowed(authData.ID) {
 			user.Role = models.RoleTeacher
 		}
 
@@ -110,6 +118,30 @@ func (s *AuthService) AuthenticateWithTelegram(authData *TelegramAuthData) (*Aut
 		IsNewUser: isNewUser,
 		Role:      string(user.Role),
 	}, nil
+}
+
+// UpgradeToTeacher проверяет пароль и апгрейдит роль до teacher для пользователя из allowlist
+func (s *AuthService) UpgradeToTeacher(user *models.User, password string) error {
+    if !s.isTeacherAllowed(user.TelegramID) {
+        return fmt.Errorf("not allowed")
+    }
+    if s.teacherPassword == "" || password != s.teacherPassword {
+        return fmt.Errorf("invalid password")
+    }
+    user.Role = models.RoleTeacher
+    return s.userRepo.Update(user)
+}
+
+func (s *AuthService) isTeacherAllowed(telegramID int64) bool {
+    if telegramID == s.teacherTelegramID {
+        return true
+    }
+    for _, id := range s.teacherAllowlist {
+        if id == telegramID {
+            return true
+        }
+    }
+    return false
 }
 
 // RegisterStudent регистрирует ученика по коду приглашения

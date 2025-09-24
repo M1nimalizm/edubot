@@ -1,11 +1,12 @@
 package config
 
 import (
-	"os"
-	"strconv"
-	"time"
+    "os"
+    "strconv"
+    "time"
+    "strings"
 
-	"github.com/joho/godotenv"
+    "github.com/joho/godotenv"
 )
 
 // Config содержит все настройки приложения
@@ -17,10 +18,12 @@ type Config struct {
 	// Database
 	DBPath string
 
-	// Telegram
-	TelegramBotToken   string
-	TelegramWebhookURL string
-	TeacherTelegramID  int64
+    // Telegram
+    TelegramBotToken   string
+    TelegramWebhookURL string
+    TeacherTelegramID  int64
+    TeacherTelegramIDs []int64
+    TeacherPassword    string
 
 	// File Storage
 	UploadPath     string
@@ -64,6 +67,21 @@ func Load() (*Config, error) {
 	if teacherID, err := strconv.ParseInt(getEnv("TEACHER_TELEGRAM_ID", "0"), 10, 64); err == nil {
 		config.TeacherTelegramID = teacherID
 	}
+
+    // Список учителей через запятую (дополнение)
+    if idsStr := getEnv("TEACHER_TELEGRAM_IDS", ""); idsStr != "" {
+        parts := strings.Split(idsStr, ",")
+        for _, p := range parts {
+            if v, err := strconv.ParseInt(strings.TrimSpace(p), 10, 64); err == nil {
+                config.TeacherTelegramIDs = append(config.TeacherTelegramIDs, v)
+            }
+        }
+    } else if config.TeacherTelegramID != 0 {
+        config.TeacherTelegramIDs = []int64{config.TeacherTelegramID}
+    }
+
+    // Пароль учителя (для апгрейда роли)
+    config.TeacherPassword = getEnv("TEACHER_PASSWORD", "")
 
 	return config, nil
 }

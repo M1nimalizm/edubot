@@ -65,7 +65,9 @@ func main() {
 	assignmentRepo := repository.NewAssignmentRepository(db.DB)
 
 	// Создаем сервисы
-	authService := services.NewAuthService(userRepo, trialRepo, telegramBot, cfg.JWTSecret, cfg.TeacherTelegramID)
+    authService := services.NewAuthService(userRepo, trialRepo, telegramBot, cfg.JWTSecret, cfg.TeacherTelegramID)
+    // Инициализируем политику учителя (allowlist + пароль)
+    authService.InitTeacherSecurity(cfg.TeacherTelegramIDs, cfg.TeacherPassword)
 	assignmentService := services.NewAssignmentService(assignmentRepo, userRepo, telegramBot)
 
 	// Создаем обработчики
@@ -167,6 +169,7 @@ func main() {
 		// Профиль пользователя
 		protected.GET("/profile", authHandler.GetProfile)
 		protected.POST("/register-student", authHandler.RegisterStudent)
+        protected.POST("/teacher/upgrade", authHandler.UpgradeToTeacher)
 
 		// Задания для учеников
 		protected.GET("/assignments", assignmentHandler.GetStudentAssignments)
