@@ -661,20 +661,21 @@ document.head.appendChild(style);
 // Прямой вход ученика через Telegram
 async function studentLogin() {
     try {
-        // Получаем данные из Telegram WebApp, если внутри Телеги
-        let tgUser = null;
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
-            tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+        // Если не внутри Telegram WebApp — отправляем в бота
+        if (!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user)) {
+            window.location.href = 'https://t.me/EduBot_by_Pugachev_bot?start=app';
+            return;
         }
 
-        const payload = tgUser ? {
+        const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+        const payload = {
             id: tgUser.id,
             first_name: tgUser.first_name,
             last_name: tgUser.last_name || '',
             username: tgUser.username || '',
             auth_date: Math.floor(Date.now() / 1000),
-            hash: '' // Валидация подписи может быть включена на бэкенде
-        } : {};
+            hash: ''
+        };
 
         const result = await authenticateWithTelegram(payload);
         if (result && result.user) {
@@ -692,20 +693,20 @@ async function studentLogin() {
 // Прямой вход учителя через Telegram + пароль
 async function teacherLogin() {
     try {
-        // Сначала авторизуемся через Telegram
-        let tgUser = null;
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
-            tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+        if (!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user)) {
+            window.location.href = 'https://t.me/EduBot_by_Pugachev_bot?start=teacher';
+            return;
         }
 
-        const payload = tgUser ? {
+        const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+        const payload = {
             id: tgUser.id,
             first_name: tgUser.first_name,
             last_name: tgUser.last_name || '',
             username: tgUser.username || '',
             auth_date: Math.floor(Date.now() / 1000),
             hash: ''
-        } : {};
+        };
 
         const result = await authenticateWithTelegram(payload);
         if (result && result.user) {

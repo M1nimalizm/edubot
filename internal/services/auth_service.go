@@ -67,6 +67,10 @@ type AuthResult struct {
 
 // AuthenticateWithTelegram авторизует пользователя через Telegram
 func (s *AuthService) AuthenticateWithTelegram(authData *TelegramAuthData) (*AuthResult, error) {
+    // Обязателен корректный Telegram ID
+    if authData == nil || authData.ID == 0 {
+        return nil, fmt.Errorf("telegram auth required")
+    }
 	// Проверяем подпись данных (в реальном приложении)
 	// if !s.validateTelegramAuth(authData) {
 	//     return nil, fmt.Errorf("invalid telegram auth data")
