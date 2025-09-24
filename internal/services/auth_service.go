@@ -75,12 +75,12 @@ func (s *AuthService) AuthenticateWithTelegram(authData *TelegramAuthData) (*Aut
 	// }
 
 	// Ищем существующего пользователя
-    user, err := s.userRepo.GetByTelegramID(authData.ID)
+	user, err := s.userRepo.GetByTelegramID(authData.ID)
 	isNewUser := false
 
 	if err != nil {
 		// Пользователь не найден, создаем нового
-        user = &models.User{
+		user = &models.User{
 			TelegramID: authData.ID,
 			FirstName:  authData.FirstName,
 			LastName:   authData.LastName,
@@ -94,16 +94,17 @@ func (s *AuthService) AuthenticateWithTelegram(authData *TelegramAuthData) (*Aut
 			user.Role = models.RoleTeacher
 		}
 
-        if err := s.userRepo.Create(user); err != nil {
-            // Если параллельно уже создали этого пользователя — просто читаем его
-            // (решает UNIQUE constraint failed: users.telegram_id)
-            existing, gerr := s.userRepo.GetByTelegramID(authData.ID)
-            if gerr != nil {
-                return nil, fmt.Errorf("failed to create user: %w", err)
-            }
-            user = existing
-        }
-		isNewUser = true
+		if err := s.userRepo.Create(user); err != nil {
+			// Если параллельно уже создали этого пользователя — читаем его и считаем, что он не новый
+			existing, gerr := s.userRepo.GetByTelegramID(authData.ID)
+			if gerr != nil {
+				return nil, fmt.Errorf("failed to create user: %w", err)
+			}
+			user = existing
+			isNewUser = false
+		} else {
+			isNewUser = true
+		}
 	} else {
 		// Обновляем данные существующего пользователя
 		user.FirstName = authData.FirstName
