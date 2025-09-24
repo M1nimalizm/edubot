@@ -932,44 +932,34 @@ function closeStudentLoginModal() {
 }
 
 // Обработка формы входа ученика
-document.addEventListener('DOMContentLoaded', function() {
-    const studentLoginForm = document.getElementById('studentLoginForm');
-    if (studentLoginForm) {
-        studentLoginForm.addEventListener('submit', handleStudentLogin);
-    }
-});
-
-async function handleStudentLogin(event) {
-    event.preventDefault();
-    
-    const formData = new FormData(event.target);
-    const loginData = {
-        inviteCode: formData.get('inviteCode')
-    };
-    
+// Новый вход ученика через Telegram
+async function studentTelegramLogin() {
     try {
-        const response = await fetch('/api/public/register-student', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(loginData)
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            localStorage.setItem('authToken', result.token);
-            showSuccess('Добро пожаловать! Вы успешно зарегистрированы.');
+        // 1) Получаем данные из Telegram WebApp, если внутри Телеги
+        let tgUser = null;
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+            tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+        }
+
+        const payload = tgUser ? {
+            id: tgUser.id,
+            first_name: tgUser.first_name,
+            last_name: tgUser.last_name || '',
+            username: tgUser.username || '',
+            auth_date: Math.floor(Date.now() / 1000),
+            hash: '' // Валидация подписи может быть включена на бэкенде
+        } : {};
+
+        const result = await authenticateWithTelegram(payload);
+        if (result && result.user) {
+            closeStudentLoginModal();
+            showSuccess('Успешный вход через Telegram');
             setTimeout(() => {
                 window.location.href = '/student-dashboard';
-            }, 1500);
-        } else {
-            const error = await response.json();
-            showError(error.error || 'Ошибка входа');
+            }, 1200);
         }
-    } catch (error) {
-        console.error('Error during student login:', error);
-        showError('Ошибка входа');
+    } catch (e) {
+        console.error(e);
     }
 }
 

@@ -359,22 +359,18 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form id="studentLoginForm" class="modal-body">
-                <div class="form-group">
-                    <label for="studentInviteCode">Код приглашения</label>
-                    <input type="text" id="studentInviteCode" name="inviteCode" required 
-                           placeholder="Введите код приглашения от учителя">
-                </div>
+            <div class="modal-body">
+                <p>Вход происходит через Telegram. Откройте сайт внутри Telegram или нажмите кнопку ниже.</p>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeStudentLoginModal()">
                         Отмена
                     </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-sign-in-alt"></i>
-                        Войти
+                    <button type="button" class="btn btn-primary" onclick="studentTelegramLogin()">
+                        <i class="fab fa-telegram"></i>
+                        Войти через Telegram
                     </button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
