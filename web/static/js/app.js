@@ -35,7 +35,7 @@ function initializeTelegramWebApp() {
         
         console.log('Telegram WebApp initialized successfully');
 
-        // Авто-авторизация через Telegram WebApp (без предложений входа)
+        // Авто-авторизация через Telegram WebApp
         // Жёсткая авто-авторизация в WebApp: если есть initDataUnsafe.user — авторизуемся без вопросов
         const tgUser = window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
         if (tgUser) {
@@ -49,11 +49,27 @@ function initializeTelegramWebApp() {
                 hash: ''
             };
             authenticateWithTelegram(telegramData)
-                .then(() => handleInviteLinkPostAuth())
+                .then((result) => {
+                    // Никаких предложений входа в WebApp
+                    // Если есть invite в URL — привязываем и ведём в кабинет ученика
+                    const url = new URL(window.location.href);
+                    const invite = url.searchParams.get('invite');
+                    if (invite) {
+                        handleInviteLinkPostAuth();
+                        return;
+                    }
+                    // Иначе заходим сразу в соответствующий кабинет
+                    const role = (result && result.user && result.user.role) || 'student';
+                    if (role === 'teacher') {
+                        window.location.href = '/teacher-dashboard';
+                    } else if (role === 'student') {
+                        window.location.href = '/student-dashboard';
+                    }
+                })
                 .catch(() => {});
         }
 
-        // Скрываем любые элементы логина внутри WebApp
+        // В WebApp скрываем любые элементы логина
         try {
             const loginBtn = document.getElementById('studentLoginBtn');
             if (loginBtn) loginBtn.style.display = 'none';
@@ -1051,7 +1067,7 @@ function closeAllSelects() {
 
 // Функции для входа ученика
 function openStudentLoginModal() {
-    // В WebApp не показываем — авто-логин при загрузке
+    // В WebApp ничего не показываем — авторизация автоматическая
     if (window.Telegram && window.Telegram.WebApp) return;
     document.getElementById('studentLoginModal').style.display = 'block';
 }
@@ -1062,7 +1078,7 @@ function closeStudentLoginModal() {
 
 // Telegram Login Widget для десктопа
 function openStudentTelegramLogin() {
-    // В WebApp не используем Telegram Login Widget — он для веба
+    // В WebApp не открываем Login Widget
     if (window.Telegram && window.Telegram.WebApp) return;
     openStudentLoginModal();
     const container = document.getElementById('telegramLoginContainer');
