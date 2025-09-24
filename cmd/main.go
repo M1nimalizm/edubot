@@ -104,6 +104,13 @@ func main() {
 		})
 	})
 
+	// Регистрация по инвайт-ссылке
+	router.GET("/register", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "register.html", gin.H{
+			"title": "Регистрация - EduBot",
+		})
+	})
+
 	// Панель управления учителя
 	router.GET("/teacher-dashboard", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "teacher-dashboard.html", gin.H{
@@ -200,6 +207,7 @@ func main() {
 		// Управление учениками
 		teacher.GET("/students", authHandler.GetStudents)
 		teacher.POST("/students", authHandler.CreateStudentByTeacher)
+		teacher.POST("/students/bind", authHandler.BindStudentByUsername)
 
 		// Управление заданиями
 		teacher.POST("/assignments", assignmentHandler.CreateAssignment)

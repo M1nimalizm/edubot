@@ -62,6 +62,10 @@ type CreateStudentByTeacherRequest struct {
     TelegramID int64  `json:"telegram_id"`
 }
 
+type BindByUsernameRequest struct {
+    Username string `json:"username" binding:"required"`
+}
+
 // TrialRequestRequest представляет запрос на пробное занятие
 type TrialRequestRequest struct {
 	Name         string `json:"name" binding:"required"`
@@ -246,6 +250,21 @@ func (h *AuthHandler) CreateStudentByTeacher(c *gin.Context) {
         "user":        user,
         "invite_code": code,
     })
+}
+
+// BindStudentByUsername привязывает существующего пользователя по @username как ученика
+func (h *AuthHandler) BindStudentByUsername(c *gin.Context) {
+    var req BindByUsernameRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    user, err := h.authService.BindStudentByUsername(req.Username)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(http.StatusOK, gin.H{"user": user})
 }
 
 // RegisterStudentByCode регистрирует ученика только по коду приглашения

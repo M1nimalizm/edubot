@@ -336,6 +336,21 @@ func (s *AuthService) RegisterStudentByCode(inviteCode string) (*models.User, st
 	return user, token, nil
 }
 
+// BindStudentByUsername привязывает существующего пользователя @username как ученика
+func (s *AuthService) BindStudentByUsername(username string) (*models.User, error) {
+    if username == "" {
+        return nil, fmt.Errorf("username required")
+    }
+    user, err := s.userRepo.GetByUsername(username)
+    if err != nil {
+        return nil, fmt.Errorf("user not found")
+    }
+    user.Role = models.RoleStudent
+    if err := s.userRepo.Update(user); err != nil {
+        return nil, fmt.Errorf("failed to update user: %w", err)
+    }
+    return user, nil
+}
 // CreateStudentByTeacher создает ученика от имени преподавателя и выдает код приглашения
 func (s *AuthService) CreateStudentByTeacher(firstName string, lastName string, grade int, subjects string, phone string, username string, telegramID int64) (*models.User, string, error) {
     // Если указан telegramID, проверяем существование пользователя

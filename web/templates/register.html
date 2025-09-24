@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация - EduBot</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container" style="padding-top:80px;">
+        <h1>Подключение к системе</h1>
+        <p id="status">Проверяем инвайт и авторизацию...</p>
+    </div>
+    <script>
+        (async function(){
+            const url = new URL(window.location.href);
+            const invite = url.searchParams.get('invite');
+            if (!invite) {
+                document.getElementById('status').textContent = 'Инвайт не указан';
+                return;
+            }
+            try {
+                // Если не внутри Telegram, отправляем в бота
+                if (!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user)) {
+                    window.location.href = 'https://t.me/EduBot_by_Pugachev_bot?start=' + encodeURIComponent('invite_' + invite);
+                    return;
+                }
+                const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+                const payload = {
+                    id: tgUser.id,
+                    first_name: tgUser.first_name,
+                    last_name: tgUser.last_name || '',
+                    username: tgUser.username || '',
+                    auth_date: Math.floor(Date.now()/1000),
+                    hash: ''
+                };
+                // Авторизуемся
+                const authRes = await fetch('/api/public/auth/telegram', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+                if (!authRes.ok) throw new Error('auth failed');
+                const auth = await authRes.json();
+                localStorage.setItem('authToken', auth.token);
+                // Регистрируем ученика по инвайту (привязка к ранее созданному профилю)
+                const regRes = await fetch('/api/public/register-student', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ invite_code: invite })});
+                if (!regRes.ok) {
+                    const err = await regRes.json().catch(()=>({}));
+                    throw new Error(err.error || 'register failed');
+                }
+                document.getElementById('status').textContent = 'Готово! Перенаправляем...';
+                setTimeout(()=>{ window.location.href = '/student-dashboard'; }, 800);
+            } catch(e){
+                document.getElementById('status').textContent = 'Ошибка подключения: ' + e.message;
+            }
+        })();
+    </script>
+</body>
+</html>
+
