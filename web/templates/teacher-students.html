@@ -316,8 +316,15 @@
 
         // Загрузка списка учеников
         async function loadStudents() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                showError('Требуется авторизация. Войдите через Telegram на главной.');
+                return;
+            }
             try {
-                const response = await fetch('/api/teacher/students');
+                const response = await fetch('/api/teacher/students', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
                 if (response.ok) {
                     allStudents = await response.json();
                     filteredStudents = [...allStudents];
@@ -333,6 +340,11 @@
 
         // Создание ученика учителем
         async function createStudent() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                showError('Требуется авторизация. Войдите через Telegram на главной.');
+                return;
+            }
             const firstName = document.getElementById('studentFirstName').value.trim();
             const lastName = document.getElementById('studentLastName').value.trim();
             const grade = parseInt(document.getElementById('studentGrade').value || '0', 10);
@@ -347,7 +359,7 @@
             try {
                 const response = await fetch('/api/teacher/students', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                     body: JSON.stringify({
                         first_name: firstName,
                         last_name: lastName,
@@ -456,9 +468,15 @@
 
         // Создание кода приглашения
         async function generateInviteCode() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                showError('Требуется авторизация. Войдите через Telegram на главной.');
+                return;
+            }
             try {
                 const response = await fetch('/api/teacher/invite-code', {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
                 });
 
                 if (response.ok) {
