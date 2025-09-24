@@ -54,11 +54,11 @@
                 <a href="#about" class="nav-link">О преподавателе</a>
                 <a href="#subjects" class="nav-link">Предметы</a>
                 <a href="#contact" class="nav-link">Контакты</a>
-                <button class="btn btn-outline" onclick="openTeacherLogin()" style="margin-right: 10px;">
+                <button class="btn btn-outline" onclick="teacherLogin()" style="margin-right: 10px;">
                     <i class="fas fa-chalkboard-teacher"></i>
                     Вход для учителя
                 </button>
-                <button class="btn btn-outline" onclick="openStudentLoginModal()" style="margin-right: 10px;">
+                <button class="btn btn-outline" onclick="studentLogin()" style="margin-right: 10px;">
                     <i class="fas fa-user-graduate"></i>
                     Вход для ученика
                 </button>
@@ -309,34 +309,6 @@
         </div>
     </div>
 
-    <!-- Модальное окно входа для учителя -->
-    <div id="teacherLoginModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-chalkboard-teacher"></i> Вход для учителя</h3>
-                <button class="modal-close" onclick="closeTeacherLoginModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <form id="teacherLoginForm" class="modal-body">
-                <div class="form-group">
-                    <label for="teacherPassword">Пароль доступа</label>
-                    <input type="password" id="teacherPassword" name="password" required 
-                           placeholder="Введите пароль для доступа к панели управления">
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeTeacherLoginModal()">
-                        Отмена
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-sign-in-alt"></i>
-                        Войти
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- Подвал -->
     <footer class="footer">
         <div class="container">
@@ -349,30 +321,6 @@
             </div>
         </div>
     </footer>
-
-    <!-- Модальное окно входа для ученика -->
-    <div id="studentLoginModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-user-graduate"></i> Вход для ученика</h3>
-                <button class="modal-close" onclick="closeStudentLoginModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Вход происходит через Telegram. Откройте сайт внутри Telegram или нажмите кнопку ниже.</p>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeStudentLoginModal()">
-                        Отмена
-                    </button>
-                    <button type="button" class="btn btn-primary" onclick="studentTelegramLogin()">
-                        <i class="fab fa-telegram"></i>
-                        Войти через Telegram
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script src="/static/js/app.js?v=2025-09-22-1"></script>
 </body>

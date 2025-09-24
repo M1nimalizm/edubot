@@ -334,6 +334,33 @@ func (s *AuthService) RegisterStudentByCode(inviteCode string) (*models.User, st
 
 // CreateStudentByTeacher создает ученика от имени преподавателя и выдает код приглашения
 func (s *AuthService) CreateStudentByTeacher(firstName string, lastName string, grade int, subjects string, phone string, username string, telegramID int64) (*models.User, string, error) {
+    // Если указан telegramID, проверяем существование пользователя
+    if telegramID != 0 {
+        if existing, err := s.userRepo.GetByTelegramID(telegramID); err == nil && existing != nil {
+            // Пользователь уже существует, обновляем его данные
+            existing.FirstName = firstName
+            existing.LastName = lastName
+            existing.Grade = grade
+            existing.Subjects = subjects
+            existing.Phone = phone
+            existing.Username = username
+            existing.Role = models.RoleStudent
+            
+            // Генерируем новый код приглашения
+            code, err := s.userRepo.GenerateInviteCode()
+            if err != nil {
+                return nil, "", fmt.Errorf("failed to generate invite code: %w", err)
+            }
+            existing.InviteCode = &code
+            
+            if err := s.userRepo.Update(existing); err != nil {
+                return nil, "", fmt.Errorf("failed to update existing user: %w", err)
+            }
+            
+            return existing, code, nil
+        }
+    }
+
     // Сгенерировать уникальный инвайт-код
     code, err := s.userRepo.GenerateInviteCode()
     if err != nil {

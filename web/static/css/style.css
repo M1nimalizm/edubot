@@ -47,6 +47,7 @@ body {
     left: 0;
     right: 0;
     z-index: 1000;
+    font-family: 'Roboto', sans-serif;
 }
 
 .nav-container {
@@ -65,6 +66,7 @@ body {
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--primary-color);
+    font-family: 'Roboto', sans-serif;
 }
 
 .nav-brand i {
@@ -76,6 +78,7 @@ body {
     display: flex;
     align-items: center;
     gap: 30px;
+    font-family: 'Roboto', sans-serif;
 }
 
 .nav-link {
@@ -84,6 +87,7 @@ body {
     font-weight: 500;
     transition: var(--transition);
     position: relative;
+    font-family: 'Roboto', sans-serif;
 }
 
 .nav-link:hover {

@@ -658,166 +658,86 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Функции для работы с модальным окном учителя
-function openTeacherLogin() {
-    const modal = document.getElementById('teacherLoginModal');
-    if (modal) {
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    }
-}
-
-function closeTeacherLoginModal() {
-    const modal = document.getElementById('teacherLoginModal');
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-        
-        // Очищаем форму
-        const form = document.getElementById('teacherLoginForm');
-        if (form) {
-            form.reset();
+// Прямой вход ученика через Telegram
+async function studentLogin() {
+    try {
+        // Получаем данные из Telegram WebApp, если внутри Телеги
+        let tgUser = null;
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+            tgUser = window.Telegram.WebApp.initDataUnsafe.user;
         }
+
+        const payload = tgUser ? {
+            id: tgUser.id,
+            first_name: tgUser.first_name,
+            last_name: tgUser.last_name || '',
+            username: tgUser.username || '',
+            auth_date: Math.floor(Date.now() / 1000),
+            hash: '' // Валидация подписи может быть включена на бэкенде
+        } : {};
+
+        const result = await authenticateWithTelegram(payload);
+        if (result && result.user) {
+            showSuccess('Успешный вход через Telegram');
+            setTimeout(() => {
+                window.location.href = '/student-dashboard';
+            }, 1200);
+        }
+    } catch (e) {
+        console.error(e);
+        showError('Ошибка авторизации через Telegram');
     }
 }
 
-// Обработка отправки формы входа учителя
-document.addEventListener('DOMContentLoaded', function() {
-    const teacherLoginForm = document.getElementById('teacherLoginForm');
-    if (teacherLoginForm) {
-        teacherLoginForm.addEventListener('submit', handleTeacherLogin);
-    }
-    
-    // Инициализация выбора контакта
-    initializeContactChoice();
-});
+// Прямой вход учителя через Telegram + пароль
+async function teacherLogin() {
+    try {
+        // Сначала авторизуемся через Telegram
+        let tgUser = null;
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+            tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+        }
 
-// Инициализация выбора контакта
-function initializeContactChoice() {
-    const phoneRadio = document.getElementById('contact_phone');
-    const telegramRadio = document.getElementById('contact_telegram');
-    const phoneInput = document.getElementById('phone');
-    const telegramInput = document.getElementById('telegram');
-    
-    if (phoneRadio && telegramRadio && phoneInput && telegramInput) {
-        // Обработка переключения между телефоном и Telegram
-        phoneRadio.addEventListener('change', function() {
-            if (this.checked) {
-                phoneInput.style.display = 'block';
-                telegramInput.style.display = 'none';
-                phoneInput.required = true;
-                telegramInput.required = false;
-            }
-        });
-        
-        telegramRadio.addEventListener('change', function() {
-            if (this.checked) {
-                phoneInput.style.display = 'none';
-                telegramInput.style.display = 'block';
-                phoneInput.required = false;
-                telegramInput.required = true;
-                
-                // Автозаполнение Telegram тега из Telegram WebApp
-                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
-                    const user = window.Telegram.WebApp.initDataUnsafe.user;
-                    if (user && user.username) {
-                        telegramInput.value = '@' + user.username;
+        const payload = tgUser ? {
+            id: tgUser.id,
+            first_name: tgUser.first_name,
+            last_name: tgUser.last_name || '',
+            username: tgUser.username || '',
+            auth_date: Math.floor(Date.now() / 1000),
+            hash: ''
+        } : {};
+
+        const result = await authenticateWithTelegram(payload);
+        if (result && result.user) {
+            // Запрашиваем пароль для апгрейда до учителя
+            const password = prompt('Введите пароль для доступа к панели учителя:');
+            if (password) {
+                try {
+                    const upgradeResponse = await fetch('/api/teacher/upgrade', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + result.token
+                        },
+                        body: JSON.stringify({ password: password })
+                    });
+
+                    if (upgradeResponse.ok) {
+                        showSuccess('Успешный вход в панель учителя');
+                        setTimeout(() => {
+                            window.location.href = '/teacher-dashboard';
+                        }, 1200);
+                    } else {
+                        showError('Неверный пароль или нет доступа');
                     }
+                } catch (e) {
+                    showError('Ошибка при входе в панель учителя');
                 }
             }
-        });
-    }
-    
-    // Инициализация мобильного UX
-    initializeMobileUX();
-}
-
-// Инициализация мобильного UX
-function initializeMobileUX() {
-    // Проверяем, мобильное ли устройство
-    const isMobile = window.innerWidth <= 768;
-    
-    if (isMobile) {
-        // Добавляем класс для мобильных устройств
-        document.body.classList.add('mobile-device');
-        
-        // Принудительно скрываем все кнопки кроме мобильной
-        hideDuplicateButtons();
-        
-        // Улучшаем поведение кастомных селектов на мобильных
-        const customSelects = document.querySelectorAll('.custom-select');
-        customSelects.forEach(select => {
-            const selectItems = select.querySelector('.select-items');
-            if (selectItems) {
-                // Добавляем класс для мобильных селектов
-                selectItems.classList.add('mobile-select');
-                
-                // Обработка клика по элементам селекта
-                const options = selectItems.querySelectorAll('div');
-                options.forEach(option => {
-                    option.addEventListener('click', function() {
-                        // Закрываем селект после выбора
-                        setTimeout(() => {
-                            closeAllSelects();
-                        }, 100);
-                    });
-                });
-            }
-        });
-        
-        // Убираем предотвращение скролла - позволяем нормальное поведение
-    }
-}
-
-// Функция для скрытия дублирующих кнопок
-function hideDuplicateButtons() {
-    // Не скрываем никаких кнопок
-    
-    // Обработчик изменения размера окна
-    window.addEventListener('resize', function() {
-        const isMobile = window.innerWidth <= 768;
-        if (isMobile) {
-            document.body.classList.add('mobile-device');
-        } else {
-            document.body.classList.remove('mobile-device');
         }
-    });
-}
-
-async function handleTeacherLogin(e) {
-    e.preventDefault();
-    
-    const form = e.target;
-    const formData = new FormData(form);
-    const password = formData.get('password');
-    
-    // Показываем индикатор загрузки
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Вход...';
-    submitBtn.disabled = true;
-    
-    try {
-        // Простая проверка пароля (в реальном приложении нужна более сложная авторизация)
-        if (password === 'teacher2024') {
-            showNotification('Успешный вход! Переходим в панель управления...', 'success');
-            
-            // Закрываем модальное окно
-            setTimeout(() => {
-                closeTeacherLoginModal();
-                // Переходим в панель управления учителя
-                window.location.href = '/teacher-dashboard';
-            }, 1500);
-        } else {
-            showNotification('Неверный пароль. Попробуйте еще раз.', 'error');
-        }
-    } catch (error) {
-        console.error('Error during teacher login:', error);
-        showNotification('Произошла ошибка при входе. Попробуйте еще раз.', 'error');
-    } finally {
-        // Восстанавливаем кнопку
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
+    } catch (e) {
+        console.error(e);
+        showError('Ошибка авторизации через Telegram');
     }
 }
 
