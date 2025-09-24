@@ -239,9 +239,7 @@
                 
                 // Загружаем заявки на пробные уроки
                 await loadTrialRequests();
-                
-                // Загружаем последние активности
-                await loadRecentActivity();
+                // Блок «Последние активности» удалён — ничего не загружаем
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
                 showNotification('Ошибка загрузки данных панели управления', 'error');
@@ -250,8 +248,9 @@
 
         async function loadStats() {
             try {
-                // Для панели управления учителя используем простой запрос без авторизации
-                const response = await fetch('/api/teacher/stats');
+                const token = localStorage.getItem('authToken');
+                const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+                const response = await fetch('/api/teacher/stats', { headers });
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -281,8 +280,9 @@
             const container = document.getElementById('trialRequests');
             
             try {
-                // Для панели управления учителя используем простой запрос без авторизации
-                const response = await fetch('/api/teacher/trial-requests');
+                const token = localStorage.getItem('authToken');
+                const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+                const response = await fetch('/api/teacher/trial-requests', { headers });
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -325,24 +325,7 @@
             }
         }
 
-        async function loadRecentActivity() {
-            const container = document.getElementById('recentActivity');
-            
-            // Заглушка данных
-            const activities = [
-                'Новая заявка от Анны Петровой',
-                'Михаил Сидоров сдал задание по алгебре',
-                'Елена Козлова просмотрела материал по физике',
-                'Создано новое задание "Кинематика"'
-            ];
-
-            container.innerHTML = activities.map(activity => `
-                <div class="request-item">
-                    <i class="fas fa-circle" style="color: var(--accent-color); font-size: 0.5rem; margin-right: 0.5rem;"></i>
-                    ${activity}
-                </div>
-            `).join('');
-        }
+        // Блок «Последние активности» удалён
 
         function refreshTrialRequests() {
             loadTrialRequests();

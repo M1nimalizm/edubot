@@ -267,20 +267,29 @@ func (s *AuthService) RegisterStudentByCode(inviteCode string) (*models.User, st
 	if inviteCode == "" {
 		return nil, "", fmt.Errorf("invite code is required")
 	}
+    // Пытаемся найти уже созданного ученика с этим кодом (учитель создаёт заранее)
+    if existing, err := s.userRepo.GetByInviteCode(inviteCode); err == nil && existing != nil {
+        // Генерируем токен для существующего ученика
+        token, err := s.generateJWT(existing)
+        if err != nil {
+            return nil, "", fmt.Errorf("failed to generate token: %w", err)
+        }
+        return existing, token, nil
+    }
 
-	// Создаем нового пользователя-ученика
-	user := &models.User{
-		ID:         uuid.New(),
-		TelegramID: 0, // Временно 0, будет заполнено позже
-		Role:       models.RoleStudent,
-		InviteCode: &inviteCode,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-	}
+    // Если не нашли — создаём ученика (fallback)
+    user := &models.User{
+        ID:         uuid.New(),
+        TelegramID: 0,
+        Role:       models.RoleStudent,
+        InviteCode: &inviteCode,
+        CreatedAt:  time.Now(),
+        UpdatedAt:  time.Now(),
+    }
 
-	if err := s.userRepo.Create(user); err != nil {
-		return nil, "", fmt.Errorf("failed to create user: %w", err)
-	}
+    if err := s.userRepo.Create(user); err != nil {
+        return nil, "", fmt.Errorf("failed to create user: %w", err)
+    }
 
 	// Генерируем JWT токен
 	token, err := s.generateJWT(user)
