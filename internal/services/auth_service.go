@@ -291,6 +291,37 @@ func (s *AuthService) RegisterStudentByCode(inviteCode string) (*models.User, st
 	return user, token, nil
 }
 
+// CreateStudentByTeacher создает ученика от имени преподавателя и выдает код приглашения
+func (s *AuthService) CreateStudentByTeacher(firstName string, lastName string, grade int, subjects string, phone string, username string, telegramID int64) (*models.User, string, error) {
+    // Сгенерировать уникальный инвайт-код
+    code, err := s.userRepo.GenerateInviteCode()
+    if err != nil {
+        return nil, "", fmt.Errorf("failed to generate invite code: %w", err)
+    }
+
+    // Сформировать пользователя
+    user := &models.User{
+        ID:         uuid.New(),
+        TelegramID: telegramID, // может быть 0, если неизвестен
+        Username:   username,
+        FirstName:  firstName,
+        LastName:   lastName,
+        Role:       models.RoleStudent,
+        Phone:      phone,
+        Grade:      grade,
+        Subjects:   subjects,
+        InviteCode: &code,
+        CreatedAt:  time.Now(),
+        UpdatedAt:  time.Now(),
+    }
+
+    if err := s.userRepo.Create(user); err != nil {
+        return nil, "", fmt.Errorf("failed to create student: %w", err)
+    }
+
+    return user, code, nil
+}
+
 // validateTelegramAuth валидирует данные авторизации Telegram (упрощенная версия)
 func (s *AuthService) validateTelegramAuth(authData *TelegramAuthData) bool {
 	// В реальном приложении здесь должна быть проверка подписи

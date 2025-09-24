@@ -196,6 +196,7 @@ func main() {
 
 		// Управление учениками
 		teacher.GET("/students", authHandler.GetStudents)
+		teacher.POST("/students", authHandler.CreateStudentByTeacher)
 
 		// Управление заданиями
 		teacher.POST("/assignments", assignmentHandler.CreateAssignment)

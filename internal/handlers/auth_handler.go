@@ -46,6 +46,17 @@ type RegisterStudentByCodeRequest struct {
 	InviteCode string `json:"invite_code" binding:"required"`
 }
 
+// CreateStudentByTeacherRequest запрос на создание ученика преподавателем
+type CreateStudentByTeacherRequest struct {
+    FirstName  string `json:"first_name" binding:"required"`
+    LastName   string `json:"last_name"`
+    Grade      int    `json:"grade" binding:"required,min=1,max=11"`
+    Subjects   string `json:"subjects"`
+    Phone      string `json:"phone"`
+    Username   string `json:"username"`
+    TelegramID int64  `json:"telegram_id"`
+}
+
 // TrialRequestRequest представляет запрос на пробное занятие
 type TrialRequestRequest struct {
 	Name         string `json:"name" binding:"required"`
@@ -202,6 +213,34 @@ func (h *AuthHandler) GetStudents(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, students)
+}
+
+// CreateStudentByTeacher создает ученика и возвращает код приглашения
+func (h *AuthHandler) CreateStudentByTeacher(c *gin.Context) {
+    var req CreateStudentByTeacherRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    user, code, err := h.authService.CreateStudentByTeacher(
+        req.FirstName,
+        req.LastName,
+        req.Grade,
+        req.Subjects,
+        req.Phone,
+        req.Username,
+        req.TelegramID,
+    )
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "user":        user,
+        "invite_code": code,
+    })
 }
 
 // RegisterStudentByCode регистрирует ученика только по коду приглашения
