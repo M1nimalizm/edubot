@@ -65,6 +65,7 @@ type AuthResult struct {
 	Token     string       `json:"token"`
 	IsNewUser bool         `json:"is_new_user"`
 	Role      string       `json:"role"`
+    AllowedTeacher bool    `json:"allowed_teacher"`
 }
 
 // AuthenticateWithTelegram авторизует пользователя через Telegram
@@ -125,7 +126,8 @@ func (s *AuthService) AuthenticateWithTelegram(authData *TelegramAuthData) (*Aut
 		User:      user,
 		Token:     token,
 		IsNewUser: isNewUser,
-		Role:      string(user.Role),
+        Role:      string(user.Role),
+        AllowedTeacher: s.IsTeacherTelegram(user.TelegramID),
 	}, nil
 }
 
@@ -259,6 +261,20 @@ func (s *AuthService) UpdateUser(user *models.User) error {
 
 func (s *AuthService) GenerateToken(user *models.User) (string, error) {
 	return s.generateJWT(user)
+}
+
+// SelectRole меняет роль пользователя и возвращает новый токен
+func (s *AuthService) SelectRole(user *models.User, role models.UserRole) (string, error) {
+    if role == models.RoleTeacher {
+        if !s.IsTeacherTelegram(user.TelegramID) {
+            return "", fmt.Errorf("not allowed to be teacher")
+        }
+    }
+    user.Role = role
+    if err := s.userRepo.Update(user); err != nil {
+        return "", err
+    }
+    return s.generateJWT(user)
 }
 
 // GetTrialRequests получает все заявки на пробные занятия

@@ -548,7 +548,11 @@ async function authenticateWithTelegram(telegramData) {
             // Сохраняем токен в localStorage
             localStorage.setItem('authToken', authToken);
             
-            // Обновляем интерфейс
+            // Учитель в whitelist? предложим выбрать роль, иначе — студент по умолчанию
+            if (result.allowed_teacher) {
+                // Для веб-версии покажем компактный выбор роли один раз
+                openRoleSelectModal(result.user);
+            }
             updateUIForUser(result.user);
             
             return result;
@@ -565,17 +569,66 @@ async function authenticateWithTelegram(telegramData) {
 
 // Обновление интерфейса для авторизованного пользователя
 function updateUIForUser(user) {
-    // Скрываем кнопку записи на пробное занятие для авторизованных пользователей
+    // Переопределяем кнопку входа: одна кнопка «Войти»
     const trialButtons = document.querySelectorAll('[onclick="openTrialModal()"]');
     trialButtons.forEach(btn => {
-        if (user.role === 'student') {
-            btn.textContent = 'Личный кабинет';
-            btn.onclick = () => window.location.href = '/student/dashboard';
-        } else if (user.role === 'teacher') {
+        if (user.role === 'teacher') {
             btn.textContent = 'Панель преподавателя';
-            btn.onclick = () => window.location.href = '/teacher/dashboard';
+            btn.onclick = () => window.location.href = '/teacher-dashboard';
+        } else {
+            btn.textContent = 'Личный кабинет';
+            btn.onclick = () => window.location.href = '/student-dashboard';
         }
     });
+}
+
+// UI модалка выбора роли (минимум кликов)
+function openRoleSelectModal(user) {
+    // Если в Telegram WebApp — не спрашиваем, оставляем роль последней, UI минимальный
+    if (window.Telegram && window.Telegram.WebApp) return;
+    // Создаём простую модалку с двумя кнопками
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Выбор роли</h3>
+          <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+        </div>
+        <div class="modal-body" style="display:flex; gap:12px; justify-content:center;">
+          <button class="btn btn-primary" id="selectStudent">Ученик</button>
+          <button class="btn btn-outline" id="selectTeacher">Учитель</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    const token = localStorage.getItem('authToken');
+    const select = async (role) => {
+        try {
+            const resp = await fetch('/api/auth/select-role', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ role })
+            });
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data.token) localStorage.setItem('authToken', data.token);
+                modal.remove();
+                if (role === 'teacher') {
+                    window.location.href = '/teacher-dashboard';
+                } else {
+                    window.location.href = '/student-dashboard';
+                }
+            } else {
+                const err = await resp.json().catch(() => ({}));
+                showError(err.error || 'Не удалось выбрать роль');
+            }
+        } catch (e) {
+            showError('Ошибка сети при выборе роли');
+        }
+    };
+    modal.querySelector('#selectStudent').onclick = () => select('student');
+    modal.querySelector('#selectTeacher').onclick = () => select('teacher');
 }
 
 // После Telegram-авторизации: если есть invite в URL — привязываем ученика и вводим в ЛК

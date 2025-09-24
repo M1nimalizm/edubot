@@ -51,6 +51,11 @@ type TeacherLoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// SelectRoleRequest запрос на выбор роли (учитель/ученик)
+type SelectRoleRequest struct {
+    Role string `json:"role" binding:"required,oneof=teacher student"`
+}
+
 // CreateStudentByTeacherRequest запрос на создание ученика преподавателем
 type CreateStudentByTeacherRequest struct {
 	FirstName  string `json:"first_name" binding:"required"`
@@ -325,4 +330,33 @@ func (h *AuthHandler) TeacherLogin(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Teacher login successful", "token": token, "user": user})
+}
+
+// SelectRole устанавливает роль пользователя (для whitelisted учителей)
+func (h *AuthHandler) SelectRole(c *gin.Context) {
+    var req SelectRoleRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    userAny, exists := c.Get("user")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+    user := userAny.(*models.User)
+
+    var role models.UserRole
+    if req.Role == "teacher" {
+        role = models.RoleTeacher
+    } else {
+        role = models.RoleStudent
+    }
+
+    token, err := h.authService.SelectRole(user, role)
+    if err != nil {
+        c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(http.StatusOK, gin.H{"token": token, "role": role})
 }

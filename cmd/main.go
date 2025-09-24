@@ -224,8 +224,8 @@ func main() {
 		teacher.DELETE("/content/:id", assignmentHandler.DeleteContent)
 	}
 
-	// Вход учителя после Telegram-авторизации (требует валидного токена гостя)
-	api.POST("/teacher/login", handlers.AuthMiddleware(authService), authHandler.TeacherLogin)
+    // Выбор роли после Telegram-авторизации (без пароля)
+    api.POST("/auth/select-role", handlers.AuthMiddleware(authService), authHandler.SelectRole)
 
 	// Webhook для Telegram
 	router.GET("/webhook", func(c *gin.Context) {
