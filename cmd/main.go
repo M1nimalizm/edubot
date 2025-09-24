@@ -65,9 +65,15 @@ func main() {
 	assignmentRepo := repository.NewAssignmentRepository(db.DB)
 
 	// Создаем сервисы
-    authService := services.NewAuthService(userRepo, trialRepo, telegramBot, cfg.JWTSecret, cfg.TeacherTelegramID)
-    // Инициализируем политику учителя (allowlist + пароль)
-    authService.InitTeacherSecurity(cfg.TeacherTelegramIDs, cfg.TeacherPassword)
+	authService := services.NewAuthService(
+		userRepo,
+		trialRepo,
+		telegramBot,
+		cfg.JWTSecret,
+		cfg.TeacherTelegramID,
+		cfg.TeacherTelegramIDs,
+		cfg.TeacherPassword,
+	)
 	assignmentService := services.NewAssignmentService(assignmentRepo, userRepo, telegramBot)
 
 	// Создаем обработчики
@@ -101,13 +107,6 @@ func main() {
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"title": "EduBot - Образовательная платформа",
-		})
-	})
-
-	// Регистрация по инвайт-ссылке
-	router.GET("/register", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "register.html", gin.H{
-			"title": "Регистрация - EduBot",
 		})
 	})
 
@@ -159,6 +158,11 @@ func main() {
 		public.POST("/auth/telegram", authHandler.TelegramAuth)
 		public.POST("/trial-request", handlers.GuestMiddleware(authService), authHandler.SubmitTrialRequest)
 		public.POST("/register-student", authHandler.RegisterStudentByCode)
+		// Публичная точка для обработки инвайт-ссылок (просто валидируем код и отдаём 200)
+		public.GET("/invite/:code", func(c *gin.Context) {
+			// Фронт после Telegram-логина вызовет /api/public/register-student
+			c.JSON(http.StatusOK, gin.H{"invite_code": c.Param("code")})
+		})
 	}
 
 	// Публичные маршруты для панели управления учителя (без авторизации для простоты)
@@ -176,7 +180,6 @@ func main() {
 		// Профиль пользователя
 		protected.GET("/profile", authHandler.GetProfile)
 		protected.POST("/register-student", authHandler.RegisterStudent)
-        protected.POST("/teacher/upgrade", authHandler.UpgradeToTeacher)
 
 		// Задания для учеников
 		protected.GET("/assignments", assignmentHandler.GetStudentAssignments)
@@ -207,7 +210,6 @@ func main() {
 		// Управление учениками
 		teacher.GET("/students", authHandler.GetStudents)
 		teacher.POST("/students", authHandler.CreateStudentByTeacher)
-		teacher.POST("/students/bind", authHandler.BindStudentByUsername)
 
 		// Управление заданиями
 		teacher.POST("/assignments", assignmentHandler.CreateAssignment)
@@ -221,6 +223,9 @@ func main() {
 		teacher.PUT("/content/:id", assignmentHandler.UpdateContent)
 		teacher.DELETE("/content/:id", assignmentHandler.DeleteContent)
 	}
+
+	// Вход учителя после Telegram-авторизации (требует валидного токена гостя)
+	api.POST("/teacher/login", handlers.AuthMiddleware(authService), authHandler.TeacherLogin)
 
 	// Webhook для Telegram
 	router.GET("/webhook", func(c *gin.Context) {

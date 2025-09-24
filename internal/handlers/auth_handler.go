@@ -46,24 +46,20 @@ type RegisterStudentByCodeRequest struct {
 	InviteCode string `json:"invite_code" binding:"required"`
 }
 
-// TeacherUpgradeRequest апгрейд до учителя
-type TeacherUpgradeRequest struct {
-    Password string `json:"password" binding:"required"`
+// TeacherLoginRequest запрос для входа учителя (после Telegram-авторизации)
+type TeacherLoginRequest struct {
+	Password string `json:"password" binding:"required"`
 }
 
 // CreateStudentByTeacherRequest запрос на создание ученика преподавателем
 type CreateStudentByTeacherRequest struct {
-    FirstName  string `json:"first_name" binding:"required"`
-    LastName   string `json:"last_name"`
-    Grade      int    `json:"grade" binding:"required,min=1,max=11"`
-    Subjects   string `json:"subjects"`
-    Phone      string `json:"phone"`
-    Username   string `json:"username"`
-    TelegramID int64  `json:"telegram_id"`
-}
-
-type BindByUsernameRequest struct {
-    Username string `json:"username" binding:"required"`
+	FirstName  string `json:"first_name" binding:"required"`
+	LastName   string `json:"last_name"`
+	Grade      int    `json:"grade" binding:"required,min=1,max=11"`
+	Subjects   string `json:"subjects"`
+	Phone      string `json:"phone"`
+	Username   string `json:"username"`
+	TelegramID int64  `json:"telegram_id"`
 }
 
 // TrialRequestRequest представляет запрос на пробное занятие
@@ -226,45 +222,41 @@ func (h *AuthHandler) GetStudents(c *gin.Context) {
 
 // CreateStudentByTeacher создает ученика и возвращает код приглашения
 func (h *AuthHandler) CreateStudentByTeacher(c *gin.Context) {
-    var req CreateStudentByTeacherRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var req CreateStudentByTeacherRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+    // Если указан username без остальных полей — пытаемся привязать существующего
+    if req.Username != "" && req.FirstName == "" && req.Grade == 0 {
+        user, err := h.authService.LinkExistingStudentByUsername(req.Username)
+        if err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+            return
+        }
+        c.JSON(http.StatusOK, gin.H{"user": user, "invite_code": user.InviteCode})
         return
     }
 
-    user, code, err := h.authService.CreateStudentByTeacher(
-        req.FirstName,
-        req.LastName,
-        req.Grade,
-        req.Subjects,
-        req.Phone,
-        req.Username,
-        req.TelegramID,
-    )
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
+	user, code, err := h.authService.CreateStudentByTeacher(
+		req.FirstName,
+		req.LastName,
+		req.Grade,
+		req.Subjects,
+		req.Phone,
+		req.Username,
+		req.TelegramID,
+	)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{
-        "user":        user,
-        "invite_code": code,
-    })
-}
-
-// BindStudentByUsername привязывает существующего пользователя по @username как ученика
-func (h *AuthHandler) BindStudentByUsername(c *gin.Context) {
-    var req BindByUsernameRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
-    user, err := h.authService.BindStudentByUsername(req.Username)
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
-    c.JSON(http.StatusOK, gin.H{"user": user})
+	c.JSON(http.StatusOK, gin.H{
+		"user":        user,
+		"invite_code": code,
+	})
 }
 
 // RegisterStudentByCode регистрирует ученика только по коду приглашения
@@ -289,26 +281,48 @@ func (h *AuthHandler) RegisterStudentByCode(c *gin.Context) {
 	})
 }
 
-// UpgradeToTeacher апгрейдит текущего пользователя до роли teacher по паролю и allowlist
-func (h *AuthHandler) UpgradeToTeacher(c *gin.Context) {
-    var req TeacherUpgradeRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
+// TeacherLogin после Telegram-авторизации повышает роль до teacher при верном пароле и валидном Telegram ID
+func (h *AuthHandler) TeacherLogin(c *gin.Context) {
+	var req TeacherLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-    // Из AuthMiddleware
-    userAny, exists := c.Get("user")
-    if !exists {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-        return
-    }
-    user := userAny.(*models.User)
+	// Достаём пользователя из контекста (AuthMiddleware должен быть активен)
+	userAny, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 
-    if err := h.authService.UpgradeToTeacher(user, req.Password); err != nil {
-        c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-        return
-    }
+	user := userAny.(*models.User)
 
-    c.JSON(http.StatusOK, gin.H{"message": "upgraded", "role": "teacher"})
+	// Проверяем право на teacher: Telegram ID должен быть в белом списке
+	if !h.authService.IsTeacherTelegram(user.TelegramID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+		return
+	}
+
+	// Проверяем пароль
+	if !h.authService.ValidateTeacherPassword(req.Password) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid password"})
+		return
+	}
+
+	// Повышаем роль до teacher (единый учёт у всех разрешённых ID)
+	user.Role = models.RoleTeacher
+	if err := h.authService.UpdateUser(user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Выдаём новый токен с ролью teacher
+	token, err := h.authService.GenerateToken(user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Teacher login successful", "token": token, "user": user})
 }

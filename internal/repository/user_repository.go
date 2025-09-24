@@ -58,7 +58,7 @@ func (r *UserRepository) GetByInviteCode(code string) (*models.User, error) {
 	return &user, nil
 }
 
-// GetByUsername получает пользователя по username
+// GetByUsername получает пользователя по Telegram username
 func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
     var user models.User
     err := r.db.Where("username = ?", username).First(&user).Error

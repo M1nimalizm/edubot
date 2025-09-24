@@ -244,16 +244,6 @@
                         <input type="text" id="searchInput" placeholder="Имя, фамилия или Telegram ID" onkeyup="filterStudents()">
                     </div>
                     <div class="form-group">
-                        <label for="bindUsername">Привязать по @username</label>
-                        <input type="text" id="bindUsername" placeholder="@username">
-                    </div>
-                    <div class="form-group">
-                        <label>&nbsp;</label>
-                        <button class="btn btn-outline" onclick="bindByUsername()">
-                            <i class="fas fa-link"></i> Привязать
-                        </button>
-                    </div>
-                    <div class="form-group">
                         <label for="gradeFilter">Класс</label>
                         <select id="gradeFilter" onchange="filterStudents()">
                             <option value="">Все классы</option>
@@ -397,38 +387,6 @@
             } catch (e) {
                 console.error(e);
                 showError('Ошибка сети при создании ученика');
-            }
-        }
-
-        // Привязка ученика по @username
-        async function bindByUsername() {
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                showError('Требуется авторизация. Войдите через Telegram на главной.');
-                return;
-            }
-            const username = document.getElementById('bindUsername').value.trim();
-            if (!username || !username.startsWith('@')) {
-                showError('Укажите @username в формате @user');
-                return;
-            }
-            try {
-                const response = await fetch('/api/teacher/students/bind', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ username: username.replace('@','') })
-                });
-                if (response.ok) {
-                    showSuccess('Ученик привязан');
-                    document.getElementById('bindUsername').value = '';
-                    loadStudents();
-                } else {
-                    const err = await response.json().catch(() => ({}));
-                    showError('Ошибка: ' + (err.error || 'не удалось привязать ученика'));
-                }
-            } catch (e) {
-                console.error(e);
-                showError('Ошибка сети при привязке ученика');
             }
         }
 

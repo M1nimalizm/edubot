@@ -14,36 +14,38 @@ import (
 
 // AuthService представляет сервис авторизации
 type AuthService struct {
-	userRepo          *repository.UserRepository
-	trialRepo         *repository.TrialRequestRepository
-	telegramBot       *telegram.Bot
-	jwtSecret         string
-    teacherTelegramID int64
-    teacherAllowlist  []int64
-    teacherPassword   string
+	userRepo           *repository.UserRepository
+	trialRepo          *repository.TrialRequestRepository
+	telegramBot        *telegram.Bot
+	jwtSecret          string
+	teacherTelegramID  int64
+	teacherTelegramIDs map[int64]struct{}
+	teacherPassword    string
 }
 
 // NewAuthService создает новый сервис авторизации
 func NewAuthService(
-    userRepo *repository.UserRepository,
-    trialRepo *repository.TrialRequestRepository,
-    telegramBot *telegram.Bot,
-    jwtSecret string,
-    teacherTelegramID int64,
+	userRepo *repository.UserRepository,
+	trialRepo *repository.TrialRequestRepository,
+	telegramBot *telegram.Bot,
+	jwtSecret string,
+	teacherTelegramID int64,
+	teacherTelegramIDs []int64,
+	teacherPassword string,
 ) *AuthService {
-	return &AuthService{
-		userRepo:          userRepo,
-		trialRepo:         trialRepo,
-		telegramBot:       telegramBot,
-		jwtSecret:         jwtSecret,
-        teacherTelegramID: teacherTelegramID,
+	idSet := make(map[int64]struct{})
+	for _, id := range teacherTelegramIDs {
+		idSet[id] = struct{}{}
 	}
-}
-
-// InitTeacherSecurity настраивает allowlist и пароль учителя
-func (s *AuthService) InitTeacherSecurity(allowlist []int64, password string) {
-    s.teacherAllowlist = allowlist
-    s.teacherPassword = password
+	return &AuthService{
+		userRepo:           userRepo,
+		trialRepo:          trialRepo,
+		telegramBot:        telegramBot,
+		jwtSecret:          jwtSecret,
+		teacherTelegramID:  teacherTelegramID,
+		teacherTelegramIDs: idSet,
+		teacherPassword:    teacherPassword,
+	}
 }
 
 // TelegramAuthData представляет данные авторизации из Telegram
@@ -67,10 +69,6 @@ type AuthResult struct {
 
 // AuthenticateWithTelegram авторизует пользователя через Telegram
 func (s *AuthService) AuthenticateWithTelegram(authData *TelegramAuthData) (*AuthResult, error) {
-    // Обязателен корректный Telegram ID
-    if authData == nil || authData.ID == 0 {
-        return nil, fmt.Errorf("telegram auth required")
-    }
 	// Проверяем подпись данных (в реальном приложении)
 	// if !s.validateTelegramAuth(authData) {
 	//     return nil, fmt.Errorf("invalid telegram auth data")
@@ -91,8 +89,8 @@ func (s *AuthService) AuthenticateWithTelegram(authData *TelegramAuthData) (*Aut
 			InviteCode: nil,              // Пустой invite code
 		}
 
-    // Проверяем, является ли пользователь преподавателем (по allowlist)
-    if s.isTeacherAllowed(authData.ID) {
+		// Проверяем, является ли пользователь преподавателем
+		if _, ok := s.teacherTelegramIDs[authData.ID]; ok || authData.ID == s.teacherTelegramID {
 			user.Role = models.RoleTeacher
 		}
 
@@ -122,30 +120,6 @@ func (s *AuthService) AuthenticateWithTelegram(authData *TelegramAuthData) (*Aut
 		IsNewUser: isNewUser,
 		Role:      string(user.Role),
 	}, nil
-}
-
-// UpgradeToTeacher проверяет пароль и апгрейдит роль до teacher для пользователя из allowlist
-func (s *AuthService) UpgradeToTeacher(user *models.User, password string) error {
-    if !s.isTeacherAllowed(user.TelegramID) {
-        return fmt.Errorf("not allowed")
-    }
-    if s.teacherPassword == "" || password != s.teacherPassword {
-        return fmt.Errorf("invalid password")
-    }
-    user.Role = models.RoleTeacher
-    return s.userRepo.Update(user)
-}
-
-func (s *AuthService) isTeacherAllowed(telegramID int64) bool {
-    if telegramID == s.teacherTelegramID {
-        return true
-    }
-    for _, id := range s.teacherAllowlist {
-        if id == telegramID {
-            return true
-        }
-    }
-    return false
 }
 
 // RegisterStudent регистрирует ученика по коду приглашения
@@ -256,6 +230,30 @@ func (s *AuthService) generateJWT(user *models.User) (string, error) {
 	return token.SignedString([]byte(s.jwtSecret))
 }
 
+// Public helpers for handlers
+func (s *AuthService) IsTeacherTelegram(telegramID int64) bool {
+	if telegramID == s.teacherTelegramID {
+		return true
+	}
+	_, ok := s.teacherTelegramIDs[telegramID]
+	return ok
+}
+
+func (s *AuthService) ValidateTeacherPassword(password string) bool {
+	if s.teacherPassword == "" {
+		return false
+	}
+	return password == s.teacherPassword
+}
+
+func (s *AuthService) UpdateUser(user *models.User) error {
+	return s.userRepo.Update(user)
+}
+
+func (s *AuthService) GenerateToken(user *models.User) (string, error) {
+	return s.generateJWT(user)
+}
+
 // GetTrialRequests получает все заявки на пробные занятия
 func (s *AuthService) GetTrialRequests() ([]models.TrialRequest, error) {
 	return s.trialRepo.GetAll()
@@ -297,49 +295,10 @@ func (s *AuthService) GetStudents() ([]models.User, error) {
 	return s.userRepo.ListByRole("student")
 }
 
-// RegisterStudentByCode регистрирует ученика только по коду приглашения
-func (s *AuthService) RegisterStudentByCode(inviteCode string) (*models.User, string, error) {
-	// Проверяем код приглашения
-	if inviteCode == "" {
-		return nil, "", fmt.Errorf("invite code is required")
-	}
-    // Пытаемся найти уже созданного ученика с этим кодом (учитель создаёт заранее)
-    if existing, err := s.userRepo.GetByInviteCode(inviteCode); err == nil && existing != nil {
-        // Генерируем токен для существующего ученика
-        token, err := s.generateJWT(existing)
-        if err != nil {
-            return nil, "", fmt.Errorf("failed to generate token: %w", err)
-        }
-        return existing, token, nil
-    }
-
-    // Если не нашли — создаём ученика (fallback)
-    user := &models.User{
-        ID:         uuid.New(),
-        TelegramID: 0,
-        Role:       models.RoleStudent,
-        InviteCode: &inviteCode,
-        CreatedAt:  time.Now(),
-        UpdatedAt:  time.Now(),
-    }
-
-    if err := s.userRepo.Create(user); err != nil {
-        return nil, "", fmt.Errorf("failed to create user: %w", err)
-    }
-
-	// Генерируем JWT токен
-	token, err := s.generateJWT(user)
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to generate token: %w", err)
-	}
-
-	return user, token, nil
-}
-
-// BindStudentByUsername привязывает существующего пользователя @username как ученика
-func (s *AuthService) BindStudentByUsername(username string) (*models.User, error) {
+// LinkExistingStudentByUsername привязывает существующего пользователя к роли студента
+func (s *AuthService) LinkExistingStudentByUsername(username string) (*models.User, error) {
     if username == "" {
-        return nil, fmt.Errorf("username required")
+        return nil, fmt.Errorf("username is required")
     }
     user, err := s.userRepo.GetByUsername(username)
     if err != nil {
@@ -351,62 +310,75 @@ func (s *AuthService) BindStudentByUsername(username string) (*models.User, erro
     }
     return user, nil
 }
+
+// RegisterStudentByCode регистрирует ученика только по коду приглашения
+func (s *AuthService) RegisterStudentByCode(inviteCode string) (*models.User, string, error) {
+	// Проверяем код приглашения
+	if inviteCode == "" {
+		return nil, "", fmt.Errorf("invite code is required")
+	}
+	// Пытаемся найти уже созданного ученика с этим кодом (учитель создаёт заранее)
+	if existing, err := s.userRepo.GetByInviteCode(inviteCode); err == nil && existing != nil {
+		// Генерируем токен для существующего ученика
+		token, err := s.generateJWT(existing)
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to generate token: %w", err)
+		}
+		return existing, token, nil
+	}
+
+	// Если не нашли — создаём ученика (fallback)
+	user := &models.User{
+		ID:         uuid.New(),
+		TelegramID: 0,
+		Role:       models.RoleStudent,
+		InviteCode: &inviteCode,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+
+	if err := s.userRepo.Create(user); err != nil {
+		return nil, "", fmt.Errorf("failed to create user: %w", err)
+	}
+
+	// Генерируем JWT токен
+	token, err := s.generateJWT(user)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	return user, token, nil
+}
+
 // CreateStudentByTeacher создает ученика от имени преподавателя и выдает код приглашения
 func (s *AuthService) CreateStudentByTeacher(firstName string, lastName string, grade int, subjects string, phone string, username string, telegramID int64) (*models.User, string, error) {
-    // Если указан telegramID, проверяем существование пользователя
-    if telegramID != 0 {
-        if existing, err := s.userRepo.GetByTelegramID(telegramID); err == nil && existing != nil {
-            // Пользователь уже существует, обновляем его данные
-            existing.FirstName = firstName
-            existing.LastName = lastName
-            existing.Grade = grade
-            existing.Subjects = subjects
-            existing.Phone = phone
-            existing.Username = username
-            existing.Role = models.RoleStudent
-            
-            // Генерируем новый код приглашения
-            code, err := s.userRepo.GenerateInviteCode()
-            if err != nil {
-                return nil, "", fmt.Errorf("failed to generate invite code: %w", err)
-            }
-            existing.InviteCode = &code
-            
-            if err := s.userRepo.Update(existing); err != nil {
-                return nil, "", fmt.Errorf("failed to update existing user: %w", err)
-            }
-            
-            return existing, code, nil
-        }
-    }
+	// Сгенерировать уникальный инвайт-код
+	code, err := s.userRepo.GenerateInviteCode()
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to generate invite code: %w", err)
+	}
 
-    // Сгенерировать уникальный инвайт-код
-    code, err := s.userRepo.GenerateInviteCode()
-    if err != nil {
-        return nil, "", fmt.Errorf("failed to generate invite code: %w", err)
-    }
+	// Сформировать пользователя
+	user := &models.User{
+		ID:         uuid.New(),
+		TelegramID: telegramID, // может быть 0, если неизвестен
+		Username:   username,
+		FirstName:  firstName,
+		LastName:   lastName,
+		Role:       models.RoleStudent,
+		Phone:      phone,
+		Grade:      grade,
+		Subjects:   subjects,
+		InviteCode: &code,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
 
-    // Сформировать пользователя
-    user := &models.User{
-        ID:         uuid.New(),
-        TelegramID: telegramID, // может быть 0, если неизвестен
-        Username:   username,
-        FirstName:  firstName,
-        LastName:   lastName,
-        Role:       models.RoleStudent,
-        Phone:      phone,
-        Grade:      grade,
-        Subjects:   subjects,
-        InviteCode: &code,
-        CreatedAt:  time.Now(),
-        UpdatedAt:  time.Now(),
-    }
+	if err := s.userRepo.Create(user); err != nil {
+		return nil, "", fmt.Errorf("failed to create student: %w", err)
+	}
 
-    if err := s.userRepo.Create(user); err != nil {
-        return nil, "", fmt.Errorf("failed to create student: %w", err)
-    }
-
-    return user, code, nil
+	return user, code, nil
 }
 
 // validateTelegramAuth валидирует данные авторизации Telegram (упрощенная версия)

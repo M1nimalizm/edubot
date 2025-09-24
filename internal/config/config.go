@@ -1,12 +1,12 @@
 package config
 
 import (
-    "os"
-    "strconv"
-    "time"
-    "strings"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 
-    "github.com/joho/godotenv"
+	"github.com/joho/godotenv"
 )
 
 // Config содержит все настройки приложения
@@ -18,12 +18,11 @@ type Config struct {
 	// Database
 	DBPath string
 
-    // Telegram
-    TelegramBotToken   string
-    TelegramWebhookURL string
-    TeacherTelegramID  int64
-    TeacherTelegramIDs []int64
-    TeacherPassword    string
+	// Telegram
+	TelegramBotToken   string
+	TelegramWebhookURL string
+	TeacherTelegramID  int64
+	TeacherTelegramIDs []int64
 
 	// File Storage
 	UploadPath     string
@@ -31,8 +30,9 @@ type Config struct {
 	MaxUserStorage int64
 
 	// Security
-	JWTSecret     string
-	JWTExpiration time.Duration
+	JWTSecret       string
+	TeacherPassword string
+	JWTExpiration   time.Duration
 }
 
 // Load загружает конфигурацию из переменных окружения
@@ -48,6 +48,7 @@ func Load() (*Config, error) {
 		TelegramWebhookURL: getEnv("TELEGRAM_WEBHOOK_URL", ""),
 		UploadPath:         getEnv("UPLOAD_PATH", "/tmp/uploads"),
 		JWTSecret:          getEnv("JWT_SECRET", "edubot_secret_key_2024"),
+		TeacherPassword:    getEnv("TEACHER_PASSWORD", ""),
 		JWTExpiration:      24 * time.Hour,
 	}
 
@@ -68,20 +69,22 @@ func Load() (*Config, error) {
 		config.TeacherTelegramID = teacherID
 	}
 
-    // Список учителей через запятую (дополнение)
-    if idsStr := getEnv("TEACHER_TELEGRAM_IDS", ""); idsStr != "" {
-        parts := strings.Split(idsStr, ",")
-        for _, p := range parts {
-            if v, err := strconv.ParseInt(strings.TrimSpace(p), 10, 64); err == nil {
-                config.TeacherTelegramIDs = append(config.TeacherTelegramIDs, v)
-            }
-        }
-    } else if config.TeacherTelegramID != 0 {
-        config.TeacherTelegramIDs = []int64{config.TeacherTelegramID}
-    }
-
-    // Пароль учителя (для апгрейда роли)
-    config.TeacherPassword = getEnv("TEACHER_PASSWORD", "")
+	// Множественный список ID учителей через запятую
+	if idsCSV := getEnv("TEACHER_TELEGRAM_IDS", ""); idsCSV != "" {
+		var ids []int64
+		for _, part := range strings.Split(idsCSV, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			if id, err := strconv.ParseInt(part, 10, 64); err == nil {
+				ids = append(ids, id)
+			}
+		}
+		config.TeacherTelegramIDs = ids
+	} else if config.TeacherTelegramID != 0 {
+		config.TeacherTelegramIDs = []int64{config.TeacherTelegramID}
+	}
 
 	return config, nil
 }
