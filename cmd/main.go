@@ -158,6 +158,7 @@ func main() {
     {
         // intentionally empty
     }
+    _ = public
 
 	// Публичные маршруты для панели управления учителя (без авторизации для простоты)
 	teacherPublic := api.Group("/teacher")
