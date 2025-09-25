@@ -227,6 +227,9 @@ func main() {
 		// Авторизация через Telegram WebApp/Desktop
 		public.POST("/auth/telegram", authHandler.TelegramAuth)
 	}
+
+	// Совместимость: /api/media/public (чтобы не перехватывалось /media/:id)
+	api.GET("/media/public", mediaHandler.GetPublicMedia)
 	_ = public
 
 	// Публичные маршруты для панели управления учителя (без авторизации для простоты)
