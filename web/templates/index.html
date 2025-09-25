@@ -436,6 +436,13 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', async function () {
+    // Авто-авторизация внутри Telegram Mini App
+    try {
+        if (!localStorage.getItem('authToken') && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+            const u = window.Telegram.WebApp.initDataUnsafe.user;
+            await telegramAuth(u.id, u.first_name||'', u.last_name||'', u.username||'', '');
+        }
+    } catch(e) { console.warn('auto tg auth failed', e); }
     try {
         const token = localStorage.getItem('authToken');
         const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -486,12 +493,14 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 async function startTelegramLogin(){
     try{
+        // Вариант 1: Mini App
         if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user){
             const u = window.Telegram.WebApp.initDataUnsafe.user;
             await telegramAuth(u.id, u.first_name||'', u.last_name||'', u.username||'', '');
             return;
         }
-        alert('Откройте сайт из Telegram (Mini App) или используйте вход в приложении.');
+        // Вариант 2: Desktop/Web — показать Telegram Login Widget
+        showTelegramLoginWidget();
     }catch(e){ console.warn(e); }
 }
 
@@ -501,6 +510,44 @@ async function telegramAuth(id, firstName, lastName, username, photoUrl){
     if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.error||'Auth failed'); }
     const data = await resp.json();
     if(data && data.token){ localStorage.setItem('authToken', data.token); location.reload(); }
+}
+
+// Telegram Login Widget для Web/Desktop
+function showTelegramLoginWidget(){
+    let cont = document.getElementById('tgLoginContainer');
+    if(!cont){
+        cont = document.createElement('div');
+        cont.id = 'tgLoginContainer';
+        cont.style.position = 'fixed';
+        cont.style.top = '70px';
+        cont.style.right = '16px';
+        cont.style.zIndex = '9999';
+        cont.style.background = 'white';
+        cont.style.border = '1px solid #eee';
+        cont.style.borderRadius = '8px';
+        cont.style.padding = '12px';
+        document.body.appendChild(cont);
+    } else {
+        cont.innerHTML = '';
+    }
+    // Вставляем виджет
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://telegram.org/js/telegram-widget.js?22';
+    s.setAttribute('data-telegram-login', 'EduBot_by_Pugachev_bot');
+    s.setAttribute('data-size', 'medium');
+    s.setAttribute('data-userpic', 'false');
+    s.setAttribute('data-request-access', 'write');
+    s.setAttribute('data-onauth', 'onTelegramAuth');
+    cont.appendChild(s);
+}
+
+// Колбэк телеграм-виджета
+function onTelegramAuth(user){
+    telegramAuth(user.id, user.first_name||'', user.last_name||'', user.username||'', user.photo_url||'').catch(err=>{
+        console.error(err);
+        alert('Ошибка авторизации через Telegram');
+    });
 }
 </script>
 </html>
