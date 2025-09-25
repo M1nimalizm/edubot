@@ -13,23 +13,24 @@ import (
 // AuthMiddleware создает middleware для авторизации
 func AuthMiddleware(authService *services.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Получаем токен из заголовка Authorization
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
-			c.Abort()
-			return
-		}
-
-		// Проверяем формат "Bearer <token>"
-		tokenParts := strings.Split(authHeader, " ")
-		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
-			c.Abort()
-			return
-		}
-
-		token := tokenParts[1]
+        // Получаем токен из заголовка Authorization или cookie
+        var token string
+        if authHeader := c.GetHeader("Authorization"); authHeader != "" {
+            parts := strings.Split(authHeader, " ")
+            if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+                token = parts[1]
+            }
+        }
+        if token == "" {
+            if cookie, err := c.Cookie("jwt"); err == nil {
+                token = cookie
+            }
+        }
+        if token == "" {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+            c.Abort()
+            return
+        }
 
 		// Валидируем токен
 		user, err := authService.ValidateToken(token)

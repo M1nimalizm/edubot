@@ -106,13 +106,17 @@ func (h *AuthHandler) TelegramAuth(c *gin.Context) {
 		Hash:      req.Hash,
 	}
 
-	result, err := h.authService.AuthenticateWithTelegram(authData)
+    result, err := h.authService.AuthenticateWithTelegram(authData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, result)
+    // Ставим jwt в cookie для удобства переходов по HTML
+    if result != nil && result.Token != "" {
+        c.SetCookie("jwt", result.Token, 3600*24, "/", "", false, true)
+    }
+    c.JSON(http.StatusOK, result)
 }
 
 // RegisterStudent регистрирует ученика по коду приглашения
