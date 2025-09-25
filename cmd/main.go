@@ -224,6 +224,8 @@ func main() {
 	{
 		// Публичные медиафайлы (приветственные ролики и т.д.)
 		public.GET("/media", mediaHandler.GetPublicMedia)
+		// Авторизация через Telegram WebApp/Desktop
+		public.POST("/auth/telegram", authHandler.TelegramAuth)
 	}
 	_ = public
 

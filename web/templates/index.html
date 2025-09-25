@@ -57,6 +57,9 @@
                 <a href="#subjects" class="nav-link">Предметы</a>
                 <a href="#contact" class="nav-link">Контакты</a>
                 <!-- Вход временно отключен -->
+                <button class="btn btn-outline" id="loginBtn" data-auth="guest" onclick="startTelegramLogin()">
+                    <i class="fab fa-telegram"></i> Войти
+                </button>
                 <button class="btn btn-primary" onclick="openTrialModal()">
                     <i class="fas fa-calendar-plus"></i>
                     Записаться на пробное занятие
@@ -480,6 +483,25 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.warn('role visibility init failed', e);
     }
 });
+
+async function startTelegramLogin(){
+    try{
+        if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user){
+            const u = window.Telegram.WebApp.initDataUnsafe.user;
+            await telegramAuth(u.id, u.first_name||'', u.last_name||'', u.username||'', '');
+            return;
+        }
+        alert('Откройте сайт из Telegram (Mini App) или используйте вход в приложении.');
+    }catch(e){ console.warn(e); }
+}
+
+async function telegramAuth(id, firstName, lastName, username, photoUrl){
+    const body = { id, first_name:firstName, last_name:lastName, username, photo_url:photoUrl, auth_date: Math.floor(Date.now()/1000), hash: '' };
+    const resp = await fetch('/api/public/auth/telegram', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+    if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.error||'Auth failed'); }
+    const data = await resp.json();
+    if(data && data.token){ localStorage.setItem('authToken', data.token); location.reload(); }
+}
 </script>
 </html>
 </html>
