@@ -497,8 +497,9 @@ async function startTelegramLogin(){
             await telegramAuth(u.id, u.first_name||'', u.last_name||'', u.username||'', '');
             return;
         }
-        // Вариант 2: Desktop/Web — показать Telegram Login Widget
-        showTelegramLoginWidget();
+        // Вариант 2: Desktop/Web — открыть модальное окно с Telegram Login Widget
+        openStudentLoginModal();
+        mountTelegramLoginWidget();
     }catch(e){ 
         console.error('Ошибка авторизации:', e);
         alert('Ошибка авторизации: ' + e.message);
@@ -529,34 +530,31 @@ function logout() {
 }
 
 
-// Telegram Login Widget для Web/Desktop
-function showTelegramLoginWidget(){
-    let cont = document.getElementById('tgLoginContainer');
-    if(!cont){
-        cont = document.createElement('div');
-        cont.id = 'tgLoginContainer';
-        cont.style.position = 'fixed';
-        cont.style.top = '70px';
-        cont.style.right = '16px';
-        cont.style.zIndex = '9999';
-        cont.style.background = 'white';
-        cont.style.border = '1px solid #eee';
-        cont.style.borderRadius = '8px';
-        cont.style.padding = '12px';
-        document.body.appendChild(cont);
-    } else {
-        cont.innerHTML = '';
-    }
-    // Вставляем виджет
+// Открыть модальное окно входа (ученик/любой пользователь через Telegram)
+function openStudentLoginModal(){
+    const modal = document.getElementById('studentLoginModal');
+    if (modal) modal.style.display = 'block';
+}
+
+function closeStudentLoginModal(){
+    const modal = document.getElementById('studentLoginModal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Смонтировать Telegram Login Widget внутрь модалки
+function mountTelegramLoginWidget(){
+    const container = document.getElementById('telegramLoginContainer');
+    if (!container) return;
+    container.innerHTML = '';
     const s = document.createElement('script');
     s.async = true;
     s.src = 'https://telegram.org/js/telegram-widget.js?22';
     s.setAttribute('data-telegram-login', 'EduBot_by_Pugachev_bot');
-    s.setAttribute('data-size', 'medium');
+    s.setAttribute('data-size', 'large');
     s.setAttribute('data-userpic', 'false');
     s.setAttribute('data-request-access', 'write');
     s.setAttribute('data-onauth', 'onTelegramAuth');
-    cont.appendChild(s);
+    container.appendChild(s);
 }
 
 // Колбэк телеграм-виджета
