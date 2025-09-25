@@ -226,6 +226,8 @@ func main() {
 		public.GET("/media", mediaHandler.GetPublicMedia)
 		// Авторизация через Telegram WebApp/Desktop
 		public.POST("/auth/telegram", authHandler.TelegramAuth)
+		// Заявка на пробное занятие
+		public.POST("/trial-request", authHandler.SubmitTrialRequest)
 	}
 
 	// Совместимость: /api/media/public (чтобы не перехватывалось /media/:id)
