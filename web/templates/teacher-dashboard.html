@@ -212,9 +212,6 @@
                         <button class="btn btn-outline" onclick="addContent()">
                             <i class="fas fa-file-alt"></i> Добавить материал
                         </button>
-                        <button class="btn btn-outline" onclick="generateInviteCode()">
-                            <i class="fas fa-key"></i> Создать код приглашения
-                        </button>
                         <button class="btn btn-outline" onclick="viewStudents()">
                             <i class="fas fa-users"></i> Ученики
                         </button>
@@ -310,7 +307,9 @@
                                 <div class="request-phone">
                                     ${request.contact_type === 'phone' ? 
                                         '<i class="fas fa-phone"></i> ' + request.contact_value : 
-                                        '<i class="fab fa-telegram"></i> ' + request.contact_value}
+                                        '<i class="fab fa-telegram"></i> <a href="https://t.me/' + request.contact_value.replace('@', '') + '" target="_blank" style="color: #0088cc; text-decoration: none;">' + request.contact_value + '</a>'}
+                                    ${request.telegram_id ? 
+                                        '<br><i class="fab fa-telegram"></i> <a href="https://t.me/user' + request.telegram_id + '" target="_blank" style="color: #0088cc; text-decoration: none;">ID: ' + request.telegram_id + '</a>' : ''}
                                 </div>
                             </div>
                         `;

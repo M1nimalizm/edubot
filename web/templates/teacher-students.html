@@ -194,9 +194,6 @@
         <div class="students-container">
             <div class="page-header">
                 <h1><i class="fas fa-users"></i> Мои ученики</h1>
-                <button class="btn btn-primary" onclick="generateInviteCode()">
-                    <i class="fas fa-key"></i> Создать код приглашения
-                </button>
             </div>
 
             <!-- Форма добавления ученика -->
@@ -297,24 +294,6 @@
         </div>
     </main>
 
-    <!-- Модальное окно для кода приглашения -->
-    <div id="inviteModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-key"></i> Код приглашения</h3>
-                <button class="modal-close" onclick="closeInviteModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Поделитесь этим кодом с учениками для регистрации:</p>
-                <div class="invite-code">
-                    <input type="text" id="inviteCode" readonly>
-                    <button class="btn btn-outline" onclick="copyInviteCode()">
-                        <i class="fas fa-copy"></i> Копировать
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script>
         let allStudents = [];
@@ -525,44 +504,6 @@
             displayStudents();
         }
 
-        // Создание кода приглашения
-        async function generateInviteCode() {
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                showError('Требуется авторизация. Войдите через Telegram на главной.');
-                return;
-            }
-            try {
-                const response = await fetch('/api/teacher/invite-code', {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    document.getElementById('inviteCode').value = data.invite_code;
-                    document.getElementById('inviteModal').style.display = 'block';
-                } else {
-                    showError('Ошибка создания кода приглашения');
-                }
-            } catch (error) {
-                console.error('Error generating invite code:', error);
-                showError('Ошибка создания кода приглашения');
-            }
-        }
-
-        // Копирование кода приглашения
-        function copyInviteCode() {
-            const inviteCode = document.getElementById('inviteCode');
-            inviteCode.select();
-            document.execCommand('copy');
-            showSuccess('Код скопирован в буфер обмена!');
-        }
-
-        // Закрытие модального окна
-        function closeInviteModal() {
-            document.getElementById('inviteModal').style.display = 'none';
-        }
 
         // Просмотр прогресса ученика
         function viewStudentProgress(studentId) {
