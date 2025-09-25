@@ -506,7 +506,7 @@ async function startTelegramLogin(){
 
 async function telegramAuth(id, firstName, lastName, username, photoUrl){
     const body = { id, first_name:firstName, last_name:lastName, username, photo_url:photoUrl, auth_date: Math.floor(Date.now()/1000), hash: '' };
-    const resp = await fetch('/api/public/auth/telegram', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+    const resp = await fetch('/api/public/auth/telegram', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), credentials:'include' });
     if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.error||'Auth failed'); }
     const data = await resp.json();
     if(data && data.token){ localStorage.setItem('authToken', data.token); location.reload(); }
