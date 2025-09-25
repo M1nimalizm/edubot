@@ -14,7 +14,7 @@ import (
 
 // AuthService представляет сервис авторизации
 type AuthService struct {
-	userRepo           *repository.UserRepository
+	userRepo           repository.UserRepository
 	trialRepo          *repository.TrialRequestRepository
 	telegramBot        *telegram.Bot
 	jwtSecret          string
@@ -25,7 +25,7 @@ type AuthService struct {
 
 // NewAuthService создает новый сервис авторизации
 func NewAuthService(
-	userRepo *repository.UserRepository,
+	userRepo repository.UserRepository,
 	trialRepo *repository.TrialRequestRepository,
 	telegramBot *telegram.Bot,
 	jwtSecret string,

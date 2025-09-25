@@ -12,11 +12,11 @@ import (
 
 type AssignmentService struct {
 	assignmentRepo *repository.AssignmentRepository
-	userRepo       *repository.UserRepository
+	userRepo       repository.UserRepository
 	telegramBot    *telegram.Bot
 }
 
-func NewAssignmentService(assignmentRepo *repository.AssignmentRepository, userRepo *repository.UserRepository, telegramBot *telegram.Bot) *AssignmentService {
+func NewAssignmentService(assignmentRepo *repository.AssignmentRepository, userRepo repository.UserRepository, telegramBot *telegram.Bot) *AssignmentService {
 	return &AssignmentService{
 		assignmentRepo: assignmentRepo,
 		userRepo:       userRepo,

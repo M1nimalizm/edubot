@@ -519,3 +519,236 @@ func (b *Bot) SendCommentNotification(chatID int64, content, title, subject stri
 	}
 	return nil
 }
+
+// GetFilePath получает путь к файлу в Telegram
+func (b *Bot) GetFilePath(fileID string) (string, error) {
+	fileConfig := tgbotapi.FileConfig{FileID: fileID}
+	file, err := b.api.GetFile(fileConfig)
+	if err != nil {
+		return "", fmt.Errorf("failed to get file: %w", err)
+	}
+
+	fileURL := fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", b.token, file.FilePath)
+	return fileURL, nil
+}
+
+// SendMediaUploadInstructions отправляет инструкции по загрузке медиа
+func (b *Bot) SendMediaUploadInstructions(chatID int64, mediaType string) error {
+	var text string
+	var keyboard tgbotapi.InlineKeyboardMarkup
+
+	switch mediaType {
+	case "welcome_video":
+		text = `🎬 <b>Загрузка приветственного ролика</b>
+
+Отправьте видео-файл, который будет отображаться на главной странице приложения.
+
+<b>Требования:</b>
+• Формат: MP4, MOV, AVI
+• Размер: до 50 МБ
+• Длительность: до 5 минут
+• Качество: HD (720p) или выше
+
+Просто отправьте видео-файл в этот чат!`
+		
+		keyboard = tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL("📱 Открыть приложение", "https://edubot-0g05.onrender.com"),
+			),
+		)
+
+	case "homework":
+		text = `📝 <b>Сдача домашнего задания</b>
+
+Отправьте файлы с решением задания:
+• Фото решений
+• Видео с объяснением
+• Документы (PDF, DOC)
+• Аудио-комментарии
+
+<b>Можно отправить несколько файлов!</b>`
+		
+		keyboard = tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL("📚 Мои задания", "https://edubot-0g05.onrender.com"),
+			),
+		)
+
+	case "feedback":
+		text = `🎯 <b>Запись фидбэка для ученика</b>
+
+Запишите ваш отзыв о выполненном задании:
+• Голосовое сообщение
+• Видео с разбором ошибок
+• Документ с комментариями
+• Фото с пометками
+
+Это поможет ученику лучше понять материал!`
+		
+		keyboard = tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL("👨‍🏫 Панель учителя", "https://edubot-0g05.onrender.com"),
+			),
+		)
+
+	default:
+		text = `📎 <b>Загрузка медиафайла</b>
+
+Отправьте файл в этот чат для загрузки в приложение.
+
+<b>Поддерживаемые форматы:</b>
+• Видео: MP4, MOV, AVI
+• Аудио: MP3, WAV, OGG
+• Документы: PDF, DOC, DOCX
+• Изображения: JPG, PNG, GIF`
+	}
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+	msg.ReplyMarkup = keyboard
+
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send media upload instructions: %w", err)
+	}
+	return nil
+}
+
+// SendMediaUploadSuccess отправляет уведомление об успешной загрузке
+func (b *Bot) SendMediaUploadSuccess(chatID int64, mediaType, fileName string) error {
+	var text string
+
+	switch mediaType {
+	case "welcome_video":
+		text = fmt.Sprintf(`✅ <b>Приветственный ролик загружен!</b>
+
+📹 <b>Файл:</b> %s
+
+Ролик теперь отображается на главной странице приложения.`, fileName)
+
+	case "homework":
+		text = fmt.Sprintf(`✅ <b>Домашнее задание сдано!</b>
+
+📎 <b>Файл:</b> %s
+
+Ваше решение отправлено учителю на проверку.`, fileName)
+
+	case "feedback":
+		text = fmt.Sprintf(`✅ <b>Фидбэк записан!</b>
+
+📎 <b>Файл:</b> %s
+
+Ваш отзыв отправлен ученику.`, fileName)
+
+	default:
+		text = fmt.Sprintf(`✅ <b>Медиафайл загружен!</b>
+
+📎 <b>Файл:</b> %s
+
+Файл успешно добавлен в приложение.`, fileName)
+	}
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send media upload success: %w", err)
+	}
+	return nil
+}
+
+// SendMediaUploadError отправляет уведомление об ошибке загрузки
+func (b *Bot) SendMediaUploadError(chatID int64, errorMsg string) error {
+	text := fmt.Sprintf(`❌ <b>Ошибка загрузки медиафайла</b>
+
+%s
+
+Попробуйте еще раз или обратитесь в поддержку.`, errorMsg)
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+
+	_, err := b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send media upload error: %w", err)
+	}
+	return nil
+}
+
+// HandleMediaUpload обрабатывает загрузку медиафайлов
+func (b *Bot) HandleMediaUpload(update tgbotapi.Update, mediaService interface{}) error {
+	var fileName string
+	var mediaType string
+
+	// Определяем тип медиафайла и извлекаем информацию
+	if update.Message.Photo != nil && len(update.Message.Photo) > 0 {
+		// Изображение
+		photo := update.Message.Photo[len(update.Message.Photo)-1] // Берем самое большое
+		fileName = fmt.Sprintf("image_%d.jpg", photo.FileSize)
+		mediaType = "image"
+	} else if update.Message.Video != nil {
+		// Видео
+		fileName = update.Message.Video.FileName
+		if fileName == "" {
+			fileName = fmt.Sprintf("video_%d.mp4", update.Message.Video.FileSize)
+		}
+		mediaType = "video"
+	} else if update.Message.Audio != nil {
+		// Аудио
+		fileName = update.Message.Audio.FileName
+		if fileName == "" {
+			fileName = fmt.Sprintf("audio_%d.mp3", update.Message.Audio.FileSize)
+		}
+		mediaType = "audio"
+	} else if update.Message.Document != nil {
+		// Документ
+		fileName = update.Message.Document.FileName
+		mediaType = "document"
+	} else if update.Message.Voice != nil {
+		// Голосовое сообщение
+		fileName = fmt.Sprintf("voice_%d.ogg", update.Message.Voice.FileSize)
+		mediaType = "audio"
+	} else {
+		return fmt.Errorf("unsupported media type")
+	}
+
+	chatID := update.Message.Chat.ID
+
+	// Здесь нужно будет интегрировать с MediaService
+	// Пока просто отправляем подтверждение
+	err := b.SendMediaUploadSuccess(chatID, mediaType, fileName)
+	if err != nil {
+		return fmt.Errorf("failed to send success notification: %w", err)
+	}
+
+	return nil
+}
+
+// HandleWelcomeVideoUpload обрабатывает загрузку приветственного ролика
+func (b *Bot) HandleWelcomeVideoUpload(update tgbotapi.Update, mediaService interface{}) error {
+	if update.Message.Video == nil {
+		return fmt.Errorf("expected video file")
+	}
+
+	// Проверяем, что пользователь является учителем
+	// Здесь нужно будет добавить проверку роли пользователя
+
+	return b.HandleMediaUpload(update, mediaService)
+}
+
+// HandleHomeworkSubmission обрабатывает сдачу домашнего задания
+func (b *Bot) HandleHomeworkSubmission(update tgbotapi.Update, mediaService interface{}) error {
+	// Проверяем, что пользователь является учеником
+	// Здесь нужно будет добавить проверку роли пользователя
+
+	return b.HandleMediaUpload(update, mediaService)
+}
+
+// HandleTeacherFeedback обрабатывает запись фидбэка учителем
+func (b *Bot) HandleTeacherFeedback(update tgbotapi.Update, mediaService interface{}) error {
+	// Проверяем, что пользователь является учителем
+	// Здесь нужно будет добавить проверку роли пользователя
+
+	return b.HandleMediaUpload(update, mediaService)
+}

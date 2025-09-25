@@ -63,6 +63,7 @@ func main() {
 	userRepo := repository.NewUserRepository(db.DB)
 	trialRepo := repository.NewTrialRequestRepository(db.DB)
 	assignmentRepo := repository.NewAssignmentRepository(db.DB)
+	mediaRepo := repository.NewMediaRepository(db.DB)
 
 	// Создаем сервисы
 	authService := services.NewAuthService(
@@ -75,10 +76,12 @@ func main() {
 		cfg.TeacherPassword,
 	)
 	assignmentService := services.NewAssignmentService(assignmentRepo, userRepo, telegramBot)
+	mediaService := services.NewMediaService(mediaRepo, userRepo, telegramBot)
 
 	// Создаем обработчики
 	authHandler := handlers.NewAuthHandler(authService)
 	assignmentHandler := handlers.NewAssignmentHandler(assignmentService)
+	mediaHandler := handlers.NewMediaHandler(mediaService)
 
 	// Настраиваем Gin
 	if gin.Mode() == gin.ReleaseMode {
@@ -156,7 +159,8 @@ func main() {
     // Публичные маршруты: временно отключены авторизация и регистрация
     public := api.Group("/public")
     {
-        // intentionally empty
+        // Публичные медиафайлы (приветственные ролики и т.д.)
+        public.GET("/media", mediaHandler.GetPublicMedia)
     }
     _ = public
 
@@ -192,6 +196,19 @@ func main() {
 
 		// Прогресс ученика
 		protected.GET("/progress", assignmentHandler.GetStudentProgress)
+
+		// Медиафайлы
+		protected.POST("/media", mediaHandler.CreateMedia)
+		protected.GET("/media/:id", mediaHandler.GetMedia)
+		protected.GET("/media/:id/stream", mediaHandler.StreamMedia)
+		protected.GET("/media/:id/thumbnail", mediaHandler.GetThumbnail)
+		protected.GET("/media", mediaHandler.GetUserMedia)
+		protected.GET("/media/entity/:entity_type/:entity_id", mediaHandler.GetEntityMedia)
+		protected.PUT("/media/:id", mediaHandler.UpdateMedia)
+		protected.DELETE("/media/:id", mediaHandler.DeleteMedia)
+		protected.GET("/media/:id/views", mediaHandler.GetMediaViews)
+		protected.POST("/media/:id/access", mediaHandler.GrantAccess)
+		protected.DELETE("/media/:id/access/:user_id", mediaHandler.RevokeAccess)
 	}
 
 	// Маршруты только для преподавателей (защищенные)

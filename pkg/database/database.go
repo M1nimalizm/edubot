@@ -52,6 +52,9 @@ func (d *Database) Migrate() error {
 		&models.Comment{},
 		&models.Content{},
 		&models.StudentProgress{},
+		&models.Media{},
+		&models.MediaAccess{},
+		&models.MediaView{},
 	)
 }
 

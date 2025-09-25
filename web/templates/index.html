@@ -12,9 +12,11 @@
     <!-- Telegram WebApp -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="/static/css/style.css?v=2025-09-22-1">
+    <link rel="stylesheet" href="/static/css/media.css?v=2025-09-22-1">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="/static/js/contacts.js?v=2025-09-22-1"></script>
+    <script src="/static/js/media-player.js?v=2025-09-22-1"></script>
     
     <style>
         /* Стили для Telegram WebApp */
@@ -103,6 +105,23 @@
                         <span class="badge">ЕГЭ эксперт</span>
                         <span class="badge">Опыт 5+ лет</span>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Приветственный ролик -->
+    <section class="welcome-video-section">
+        <div class="container">
+            <h2>Приветствие от преподавателя</h2>
+            <div class="video-container" id="welcomeVideoContainer">
+                <div class="video-fallback" id="welcomeVideoFallback">
+                    <h3>Приветственный ролик</h3>
+                    <p>Посмотрите видео-приветствие от Александра Пугачева, чтобы узнать больше о методике преподавания и подходе к подготовке к ЕГЭ.</p>
+                    <button class="btn" onclick="loadWelcomeVideo()">
+                        <i class="fas fa-play"></i>
+                        Загрузить видео
+                    </button>
                 </div>
             </div>
         </div>
@@ -335,5 +354,80 @@
     </div>
 
     <script src="/static/js/app.js?v=2025-09-22-1"></script>
+    
+    <script>
+        // Функция для загрузки приветственного ролика
+        async function loadWelcomeVideo() {
+            const container = document.getElementById('welcomeVideoContainer');
+            const fallback = document.getElementById('welcomeVideoFallback');
+            
+            try {
+                // Показываем загрузку
+                container.innerHTML = '<div class="media-loading"><div class="spinner"></div><p>Загрузка приветственного ролика...</p></div>';
+                
+                // Получаем публичные медиафайлы
+                const response = await fetch('/api/media/public');
+                if (!response.ok) {
+                    throw new Error('Не удалось загрузить медиафайлы');
+                }
+                
+                const data = await response.json();
+                const welcomeVideo = data.media.find(media => 
+                    media.entity_type === 'welcome_video' && 
+                    media.type === 'video'
+                );
+                
+                if (welcomeVideo) {
+                    // Создаем плеер для приветственного ролика
+                    const player = new MediaPlayer(container, {
+                        controls: true,
+                        autoplay: false,
+                        poster: null
+                    });
+                    
+                    await player.loadMedia(welcomeVideo.id, welcomeVideo);
+                    
+                    // Записываем просмотр
+                    player.options.onPlay = () => {
+                        fetch(`/api/media/${welcomeVideo.id}/views`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                duration: 0
+                            })
+                        }).catch(console.error);
+                    };
+                    
+                } else {
+                    // Если приветственный ролик не найден, показываем фолбэк
+                    container.innerHTML = fallback.outerHTML;
+                }
+                
+            } catch (error) {
+                console.error('Ошибка загрузки приветственного ролика:', error);
+                container.innerHTML = `
+                    <div class="media-error">
+                        <div class="error-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <p>Приветственный ролик временно недоступен</p>
+                        <button class="btn btn-secondary" onclick="loadWelcomeVideo()">
+                            <i class="fas fa-redo"></i> Попробовать снова
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Автоматически загружаем приветственный ролик при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            // Небольшая задержка для лучшего UX
+            setTimeout(() => {
+                loadWelcomeVideo();
+            }, 1000);
+        });
+    </script>
 </body>
 </html>
