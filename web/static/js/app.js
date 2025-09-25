@@ -50,21 +50,8 @@ function initializeTelegramWebApp() {
             };
             authenticateWithTelegram(telegramData)
                 .then((result) => {
-                    // Никаких предложений входа в WebApp
-                    // Если есть invite в URL — привязываем и ведём в кабинет ученика
-                    const url = new URL(window.location.href);
-                    const invite = url.searchParams.get('invite');
-                    if (invite) {
-                        handleInviteLinkPostAuth();
-                        return;
-                    }
-                    // Иначе заходим сразу в соответствующий кабинет
-                    const role = (result && result.user && result.user.role) || 'student';
-                    if (role === 'teacher') {
-                        window.location.href = '/teacher-dashboard';
-                    } else if (role === 'student') {
-                        window.location.href = '/student-dashboard';
-                    }
+                    // Остаёмся на текущей странице, просто обновляем UI
+                    updateUIForUser(result.user);
                 })
                 .catch(() => {});
         }
@@ -104,18 +91,21 @@ function setupEventListeners() {
         trialForm.addEventListener('submit', handleTrialSubmission);
     }
     
-    // Закрытие модального окна по клику вне его
-    const modal = document.getElementById('trialModal');
-    if (modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                closeTrialModal();
-            }
+    // Закрытие модального окна пробной заявки по клику вне
+    const trial = document.getElementById('trialModal');
+    if (trial) {
+        trial.addEventListener('click', function(e) {
+            if (e.target === trial) closeTrialModal();
+            if (e.target.classList && e.target.classList.contains('modal-close')) closeTrialModal();
         });
-        modal.addEventListener('click', function(e) {
-            if (e.target.classList.contains('modal-close')) {
-                closeTrialModal();
-            }
+    }
+
+    // Обработчики для модалки входа через Telegram
+    const studentLogin = document.getElementById('studentLoginModal');
+    if (studentLogin) {
+        studentLogin.addEventListener('click', function(e) {
+            if (e.target === studentLogin) closeStudentLoginModal();
+            if (e.target.classList && e.target.classList.contains('modal-close')) closeStudentLoginModal();
         });
     }
     
@@ -123,6 +113,7 @@ function setupEventListeners() {
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeTrialModal();
+            closeStudentLoginModal();
         }
     });
 }
@@ -1067,21 +1058,39 @@ function closeAllSelects() {
 
 // Функции для входа ученика
 function openStudentLoginModal() {
-    // В WebApp ничего не показываем — авторизация автоматическая
-    return; // временно отключено
+    // В Telegram WebApp модалка не нужна — авто-вход
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+        return;
+    }
+    const modal = document.getElementById('studentLoginModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+        document.body.classList.add('modal-open');
+        document.body.style.overflow = 'hidden';
+    }
 }
 
 function closeStudentLoginModal() {
-    document.getElementById('studentLoginModal').style.display = 'none';
+    const modal = document.getElementById('studentLoginModal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+    }
 }
 
 // Telegram Login Widget для десктопа
 function openStudentTelegramLogin() {
-    // В WebApp не открываем Login Widget
-    return; // временно отключено
+    // Открываем модалку и монтируем виджет (для Web/Desktop)
+    openStudentLoginModal();
+    if (typeof mountTelegramLoginWidget === 'function') {
+        mountTelegramLoginWidget();
+    }
 }
 
-window.onTelegramAuth = function() { return; } // временно отключено
+// Колбэк Telegram Login Widget должен быть определён глобально в index.html
 
 
 // Централизованная анимация успеха

@@ -514,7 +514,8 @@ async function telegramAuth(id, firstName, lastName, username, photoUrl){
     if(data && data.token){ 
         localStorage.setItem('authToken', data.token); 
         await checkAuthAndUpdateVisibility();
-        location.reload(); 
+        // Остаёмся на текущей странице без редиректов
+        closeStudentLoginModal();
     }
 }
 
@@ -532,13 +533,25 @@ function logout() {
 
 // Открыть модальное окно входа (ученик/любой пользователь через Telegram)
 function openStudentLoginModal(){
+    // В WebApp модалка не нужна — авто-вход
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) return;
     const modal = document.getElementById('studentLoginModal');
-    if (modal) modal.style.display = 'block';
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+        document.body.classList.add('modal-open');
+        document.body.style.overflow = 'hidden';
+    }
 }
 
 function closeStudentLoginModal(){
     const modal = document.getElementById('studentLoginModal');
-    if (modal) modal.style.display = 'none';
+    if (modal){
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+    }
 }
 
 // Смонтировать Telegram Login Widget внутрь модалки
