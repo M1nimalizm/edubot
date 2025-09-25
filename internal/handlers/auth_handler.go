@@ -156,15 +156,7 @@ func (h *AuthHandler) SubmitTrialRequest(c *gin.Context) {
 		return
 	}
 
-	// Получаем Telegram ID из контекста
-	telegramIDStr, exists := c.Get("telegram_id")
-	var telegramID int64
-	if exists {
-		if id, err := strconv.ParseInt(telegramIDStr.(string), 10, 64); err == nil {
-			telegramID = id
-		}
-	}
-
+	// Для публичных заявок telegram_id не обязателен
 	trialRequest := &models.TrialRequest{
 		Name:         req.Name,
 		Grade:        req.Grade,
@@ -173,7 +165,7 @@ func (h *AuthHandler) SubmitTrialRequest(c *gin.Context) {
 		Comment:      req.Comment,
 		ContactType:  req.ContactType,
 		ContactValue: req.ContactValue,
-		TelegramID:   telegramID,
+		TelegramID:   0, // Публичные заявки без telegram_id
 	}
 
 	if err := h.authService.SubmitTrialRequest(trialRequest); err != nil {

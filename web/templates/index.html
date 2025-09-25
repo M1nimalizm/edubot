@@ -436,8 +436,8 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', async function () {
-    // Убираем автоматическую проверку авторизации при загрузке
-    // Проверка будет происходить только при явном входе через кнопку
+    // Проверяем авторизацию при загрузке страницы
+    await checkAuthAndUpdateVisibility();
     
     // Загружаем приветственный ролик
     setTimeout(() => {
@@ -445,47 +445,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     }, 1000);
 });
 
-async function startTelegramLogin(){
-    try{
-        // Вариант 1: Mini App
-        if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user){
-            const u = window.Telegram.WebApp.initDataUnsafe.user;
-            await telegramAuth(u.id, u.first_name||'', u.last_name||'', u.username||'', '');
-            return;
-        }
-        // Вариант 2: Desktop/Web — показать Telegram Login Widget
-        showTelegramLoginWidget();
-    }catch(e){ 
-        console.error('Ошибка авторизации:', e);
-        alert('Ошибка авторизации: ' + e.message);
-    }
-}
-
-async function telegramAuth(id, firstName, lastName, username, photoUrl){
-    const body = { id, first_name:firstName, last_name:lastName, username, photo_url:photoUrl, auth_date: Math.floor(Date.now()/1000), hash: '' };
-    const resp = await fetch('/api/public/auth/telegram', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), credentials:'include' });
-    if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.error||'Auth failed'); }
-    const data = await resp.json();
-    if(data && data.token){ 
-        localStorage.setItem('authToken', data.token); 
-        await updateVisibilityAfterLogin();
-        location.reload(); 
-    }
-}
-
-// Функция выхода
-function logout() {
-    localStorage.removeItem('authToken');
-    // Скрываем все элементы для авторизованных пользователей
-    document.querySelectorAll('[data-auth="user"]').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('[data-role]').forEach(el => el.style.display = 'none');
-    // Показываем элементы для гостей
-    document.querySelectorAll('[data-auth="guest"]').forEach(el => el.style.display = '');
-    location.reload();
-}
-
-// Обновляем видимость элементов после успешного входа
-async function updateVisibilityAfterLogin() {
+// Проверяем авторизацию и обновляем видимость
+async function checkAuthAndUpdateVisibility() {
     try {
         const token = localStorage.getItem('authToken');
         if (!token) return;
@@ -495,7 +456,11 @@ async function updateVisibilityAfterLogin() {
             credentials: 'include'
         });
         
-        if (!resp.ok) return;
+        if (!resp.ok) {
+            // Токен недействителен, удаляем его
+            localStorage.removeItem('authToken');
+            return;
+        }
         
         const data = await resp.json();
         const role = (data && data.role) ? data.role : 'guest';
@@ -520,9 +485,49 @@ async function updateVisibilityAfterLogin() {
             if (need === 'guest' && isUser) node.style.display = 'none';
         });
     } catch (e) {
-        console.warn('Failed to update visibility after login:', e);
+        console.warn('Failed to check auth on page load:', e);
     }
 }
+
+async function startTelegramLogin(){
+    try{
+        // Вариант 1: Mini App
+        if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user){
+            const u = window.Telegram.WebApp.initDataUnsafe.user;
+            await telegramAuth(u.id, u.first_name||'', u.last_name||'', u.username||'', '');
+            return;
+        }
+        // Вариант 2: Desktop/Web — показать Telegram Login Widget
+        showTelegramLoginWidget();
+    }catch(e){ 
+        console.error('Ошибка авторизации:', e);
+        alert('Ошибка авторизации: ' + e.message);
+    }
+}
+
+async function telegramAuth(id, firstName, lastName, username, photoUrl){
+    const body = { id, first_name:firstName, last_name:lastName, username, photo_url:photoUrl, auth_date: Math.floor(Date.now()/1000), hash: '' };
+    const resp = await fetch('/api/public/auth/telegram', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), credentials:'include' });
+    if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.error||'Auth failed'); }
+    const data = await resp.json();
+    if(data && data.token){ 
+        localStorage.setItem('authToken', data.token); 
+        await checkAuthAndUpdateVisibility();
+        location.reload(); 
+    }
+}
+
+// Функция выхода
+function logout() {
+    localStorage.removeItem('authToken');
+    // Скрываем все элементы для авторизованных пользователей
+    document.querySelectorAll('[data-auth="user"]').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('[data-role]').forEach(el => el.style.display = 'none');
+    // Показываем элементы для гостей
+    document.querySelectorAll('[data-auth="guest"]').forEach(el => el.style.display = '');
+    location.reload();
+}
+
 
 // Telegram Login Widget для Web/Desktop
 function showTelegramLoginWidget(){
