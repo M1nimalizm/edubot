@@ -90,16 +90,17 @@ type UserAssignment struct {
 
 // Submission представляет решение задания от ученика
 type Submission struct {
-	ID           uuid.UUID  `json:"id" gorm:"type:text;primary_key"`
-	AssignmentID uuid.UUID  `json:"assignment_id" gorm:"type:text"`
-	UserID       uuid.UUID  `json:"user_id" gorm:"type:text"`
-	Status       string     `json:"status" gorm:"default:'submitted'"` // "submitted", "graded", "returned"
-	Grade        int        `json:"grade"`                             // 1-5
-	Comments     string     `json:"comments"`
-	SubmittedAt  time.Time  `json:"submitted_at"`
-	GradedAt     *time.Time `json:"graded_at"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
+	ID              uuid.UUID  `json:"id" gorm:"type:text;primary_key"`
+	AssignmentID    uuid.UUID  `json:"assignment_id" gorm:"type:text"`
+	UserID          uuid.UUID  `json:"user_id" gorm:"type:text"`
+	Status          string     `json:"status" gorm:"default:'submitted'"` // "submitted", "reviewed", "needs_revision"
+	Grade           string     `json:"grade"`                             // "5", "4", "3", "2", "needs_revision"
+	Comments        string     `json:"comments"`                          // Комментарии ученика
+	TeacherComments string     `json:"teacher_comments"`                  // Комментарии учителя
+	SubmittedAt     time.Time  `json:"submitted_at"`
+	ReviewedAt      *time.Time `json:"reviewed_at"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 
 	// Связи
 	Assignment Assignment   `json:"assignment" gorm:"foreignKey:AssignmentID"`

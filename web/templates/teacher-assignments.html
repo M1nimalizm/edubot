@@ -118,6 +118,118 @@
             margin-top: 0.25rem;
         }
         
+        /* Media uploader styles */
+        .help-text {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        
+        .media-uploader {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .media-uploader:hover {
+            border-color: var(--primary-color);
+            background: #e3f2fd;
+        }
+        
+        .media-uploader.dragover {
+            border-color: var(--primary-color);
+            background: #e3f2fd;
+            transform: scale(1.02);
+        }
+        
+        .media-uploader .upload-icon {
+            font-size: 3rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        
+        .media-uploader .upload-text {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        
+        .media-uploader .upload-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .media-uploader .upload-button:hover {
+            background: var(--primary-dark);
+        }
+        
+        .media-preview {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .media-preview h4 {
+            margin: 0 0 1rem 0;
+            color: var(--text-color);
+        }
+        
+        .media-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .media-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .media-item .file-icon {
+            margin-right: 0.5rem;
+            color: var(--primary-color);
+        }
+        
+        .media-item .file-name {
+            flex: 1;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .media-item .file-size {
+            color: #666;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+        }
+        
+        .media-item .remove-file {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+        
+        .media-item .remove-file:hover {
+            color: #a71e2a;
+        }
+        
         @media (max-width: 768px) {
             .form-row {
                 grid-template-columns: 1fr;
@@ -241,6 +353,34 @@
                     <input type="hidden" id="selectedStudentId" name="studentId">
                 </div>
                 
+                <!-- Медиафайлы задания -->
+                <div class="form-section">
+                    <h3><i class="fas fa-video"></i> Медиафайлы задания</h3>
+                    
+                    <div class="form-group">
+                        <label>Добавить медиафайлы к заданию</label>
+                        <p class="help-text">Добавьте видео-разборы, документы или другие материалы для задания</p>
+                        
+                        <div class="media-uploader" id="assignmentMediaUploader">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <div class="upload-text">
+                                Перетащите файлы сюда или нажмите для выбора
+                            </div>
+                            <input type="file" id="mediaFiles" multiple accept="video/*,audio/*,image/*,.pdf,.doc,.docx" style="display: none;">
+                            <button type="button" class="upload-button" onclick="document.getElementById('mediaFiles').click()">
+                                Выбрать файлы
+                            </button>
+                        </div>
+                        
+                        <div class="media-preview" id="mediaPreview" style="display: none;">
+                            <h4>Выбранные файлы:</h4>
+                            <div class="media-list" id="mediaList"></div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Кнопки -->
                 <div class="btn-group">
                     <button type="button" class="btn btn-outline" onclick="goBack()">
@@ -307,6 +447,133 @@
             displayStudents(filteredStudents);
         }
 
+        // Media handling
+        let selectedMediaFiles = [];
+        
+        // Инициализация медиа-загрузчика
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStudents();
+            initializeMediaUploader();
+        });
+
+        function initializeMediaUploader() {
+            const uploader = document.getElementById('assignmentMediaUploader');
+            const fileInput = document.getElementById('mediaFiles');
+            
+            // Drag and drop events
+            uploader.addEventListener('dragover', handleDragOver);
+            uploader.addEventListener('dragleave', handleDragLeave);
+            uploader.addEventListener('drop', handleDrop);
+            
+            // File input change
+            fileInput.addEventListener('change', handleFileSelect);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files);
+            addMediaFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            addMediaFiles(files);
+        }
+
+        function addMediaFiles(files) {
+            files.forEach(file => {
+                // Проверяем тип файла
+                if (!isValidMediaFile(file)) {
+                    showError(`Неподдерживаемый тип файла: ${file.name}`);
+                    return;
+                }
+                
+                // Проверяем размер файла (максимум 50MB)
+                if (file.size > 50 * 1024 * 1024) {
+                    showError(`Файл слишком большой: ${file.name} (максимум 50MB)`);
+                    return;
+                }
+                
+                // Добавляем файл в список
+                selectedMediaFiles.push({
+                    file: file,
+                    id: Date.now() + Math.random(),
+                    name: file.name,
+                    size: file.size,
+                    type: file.type
+                });
+            });
+            
+            updateMediaPreview();
+        }
+
+        function isValidMediaFile(file) {
+            const validTypes = [
+                'video/mp4', 'video/avi', 'video/mov', 'video/webm',
+                'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a',
+                'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+                'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
+            
+            return validTypes.includes(file.type);
+        }
+
+        function updateMediaPreview() {
+            const preview = document.getElementById('mediaPreview');
+            const mediaList = document.getElementById('mediaList');
+            
+            if (selectedMediaFiles.length === 0) {
+                preview.style.display = 'none';
+                return;
+            }
+            
+            preview.style.display = 'block';
+            mediaList.innerHTML = selectedMediaFiles.map(media => `
+                <div class="media-item">
+                    <i class="file-icon ${getFileIcon(media.type)}"></i>
+                    <div class="file-name">${media.name}</div>
+                    <div class="file-size">${formatFileSize(media.size)}</div>
+                    <button type="button" class="remove-file" onclick="removeMediaFile('${media.id}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function getFileIcon(type) {
+            if (type.startsWith('video/')) return 'fas fa-video';
+            if (type.startsWith('audio/')) return 'fas fa-music';
+            if (type.startsWith('image/')) return 'fas fa-image';
+            if (type === 'application/pdf') return 'fas fa-file-pdf';
+            if (type.includes('word')) return 'fas fa-file-word';
+            return 'fas fa-file';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function removeMediaFile(id) {
+            selectedMediaFiles = selectedMediaFiles.filter(media => media.id !== id);
+            updateMediaPreview();
+        }
+
         // Выбор ученика
         function selectStudent(studentId, studentName, telegramId) {
             selectedStudent = { id: studentId, name: studentName, telegramId: telegramId };
@@ -340,6 +607,7 @@
             };
 
             try {
+                // Сначала создаем задание
                 const response = await fetch('/api/teacher/assignments', {
                     method: 'POST',
                     headers: {
@@ -348,20 +616,83 @@
                     body: JSON.stringify(assignmentData)
                 });
 
-                if (response.ok) {
-                    showSuccess('Задание успешно создано!');
-                    setTimeout(() => {
-                        window.location.href = '/teacher-dashboard';
-                    }, 1500);
-                } else {
+                if (!response.ok) {
                     const error = await response.json();
                     showError(error.error || 'Ошибка создания задания');
+                    return;
                 }
+
+                const assignment = await response.json();
+                const assignmentId = assignment.assignment.id;
+
+                // Затем загружаем медиафайлы, если они есть
+                if (selectedMediaFiles.length > 0) {
+                    await uploadMediaFiles(assignmentId);
+                }
+
+                showSuccess('Задание успешно создано!');
+                setTimeout(() => {
+                    window.location.href = '/teacher-dashboard';
+                }, 1500);
+
             } catch (error) {
                 console.error('Error creating assignment:', error);
                 showError('Ошибка создания задания');
             }
         });
+
+        // Загрузка медиафайлов
+        async function uploadMediaFiles(assignmentId) {
+            const uploadPromises = selectedMediaFiles.map(async (mediaFile) => {
+                try {
+                    // Создаем FormData для загрузки файла
+                    const formData = new FormData();
+                    formData.append('file', mediaFile.file);
+                    formData.append('type', getMediaType(mediaFile.type));
+                    formData.append('caption', mediaFile.name);
+
+                    // Загружаем файл
+                    const response = await fetch('/api/media/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Ошибка загрузки файла ${mediaFile.name}`);
+                    }
+
+                    const media = await response.json();
+                    
+                    // Привязываем медиафайл к заданию
+                    const attachResponse = await fetch(`/api/assignments/${assignmentId}/media`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            media_id: media.media.id
+                        })
+                    });
+
+                    if (!attachResponse.ok) {
+                        throw new Error(`Ошибка привязки файла ${mediaFile.name} к заданию`);
+                    }
+
+                } catch (error) {
+                    console.error(`Error uploading media file ${mediaFile.name}:`, error);
+                    showError(`Ошибка загрузки файла ${mediaFile.name}`);
+                }
+            });
+
+            await Promise.all(uploadPromises);
+        }
+
+        function getMediaType(fileType) {
+            if (fileType.startsWith('video/')) return 'video';
+            if (fileType.startsWith('audio/')) return 'audio';
+            if (fileType.startsWith('image/')) return 'image';
+            return 'document';
+        }
 
         // Вспомогательные функции
         function goBack() {

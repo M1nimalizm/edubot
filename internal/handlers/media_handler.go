@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -26,17 +27,17 @@ func NewMediaHandler(mediaService services.MediaService) *MediaHandler {
 
 // CreateMediaRequest запрос на создание медиафайла
 type CreateMediaRequest struct {
-	TelegramFileID   string                `json:"telegram_file_id" binding:"required"`
-	TelegramUniqueID string                `json:"telegram_unique_id"`
-	ChatID           int64                 `json:"chat_id"`
-	MessageID        int                   `json:"message_id"`
-	Type             models.MediaType      `json:"type" binding:"required"`
-	MimeType         string                `json:"mime_type"`
-	Size             int64                 `json:"size"`
-	Caption          string                `json:"caption"`
-	Scope            models.MediaScope      `json:"scope"`
-	EntityType       models.EntityType     `json:"entity_type"`
-	EntityID         *uuid.UUID            `json:"entity_id"`
+	TelegramFileID   string            `json:"telegram_file_id" binding:"required"`
+	TelegramUniqueID string            `json:"telegram_unique_id"`
+	ChatID           int64             `json:"chat_id"`
+	MessageID        int               `json:"message_id"`
+	Type             models.MediaType  `json:"type" binding:"required"`
+	MimeType         string            `json:"mime_type"`
+	Size             int64             `json:"size"`
+	Caption          string            `json:"caption"`
+	Scope            models.MediaScope `json:"scope"`
+	EntityType       models.EntityType `json:"entity_type"`
+	EntityID         *uuid.UUID        `json:"entity_id"`
 }
 
 // UpdateMediaRequest запрос на обновление медиафайла
@@ -91,6 +92,82 @@ func (h *MediaHandler) CreateMedia(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"media": media})
+}
+
+// UploadMedia загружает медиафайл напрямую (для веб-интерфейса)
+func (h *MediaHandler) UploadMedia(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	ownerID, ok := userID.(uuid.UUID)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	// Получаем файл из формы
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no file provided"})
+		return
+	}
+
+	// Получаем дополнительные параметры
+	mediaType := c.PostForm("type")
+	caption := c.PostForm("caption")
+	if caption == "" {
+		caption = file.Filename
+	}
+
+	// Определяем MIME тип
+	mimeType := file.Header.Get("Content-Type")
+	if mimeType == "" {
+		mimeType = "application/octet-stream"
+	}
+
+	// Для демонстрации создаем временный медиафайл
+	// В реальном приложении здесь должна быть интеграция с Telegram Bot API
+	media := &models.Media{
+		ID:               uuid.New(),
+		TelegramFileID:   "temp_" + uuid.New().String(),
+		TelegramUniqueID: "temp_" + uuid.New().String(),
+		ChatID:           0,
+		MessageID:        0,
+		Type:             models.MediaType(mediaType),
+		MimeType:         mimeType,
+		Size:             file.Size,
+		Caption:          caption,
+		OwnerID:          ownerID,
+		Scope:            models.MediaScopePrivate,
+		EntityType:       models.EntityTypeContent,
+		EntityID:         nil,
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
+	}
+
+	// Сохраняем в базе данных
+	createdMedia, err := h.mediaService.CreateMediaFromTelegram(
+		media.TelegramFileID,
+		media.TelegramUniqueID,
+		media.ChatID,
+		media.MessageID,
+		media.Type,
+		media.MimeType,
+		media.Size,
+		media.Caption,
+		ownerID,
+		media.Scope,
+		media.EntityType,
+		media.EntityID,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "media uploaded successfully", "media": createdMedia})
 }
 
 // GetMedia получает информацию о медиафайле

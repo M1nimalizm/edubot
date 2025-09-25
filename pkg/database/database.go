@@ -7,10 +7,10 @@ import (
 
 	"edubot/internal/models"
 
+	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-    "github.com/google/uuid"
 )
 
 // Database представляет подключение к базе данных
@@ -55,6 +55,8 @@ func (d *Database) Migrate() error {
 		&models.Media{},
 		&models.MediaAccess{},
 		&models.MediaView{},
+		&models.Group{},
+		&models.GroupMember{},
 	)
 }
 
@@ -74,8 +76,8 @@ func (d *Database) CreateDefaultTeacher(telegramID int64) error {
 
 	if result.Error == gorm.ErrRecordNotFound {
 		// Создаем преподавателя
-        teacher := models.User{
-            ID:         uuid.New(),
+		teacher := models.User{
+			ID:         uuid.New(),
 			TelegramID: telegramID,
 			FirstName:  "Александр",
 			LastName:   "Пугачев",
@@ -83,7 +85,7 @@ func (d *Database) CreateDefaultTeacher(telegramID int64) error {
 			Username:   "pugachev_teacher",
 		}
 
-        if err := d.DB.Create(&teacher).Error; err != nil {
+		if err := d.DB.Create(&teacher).Error; err != nil {
 			return fmt.Errorf("failed to create default teacher: %w", err)
 		}
 	}

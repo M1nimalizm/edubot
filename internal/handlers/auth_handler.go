@@ -8,6 +8,7 @@ import (
 	"edubot/internal/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // AuthHandler представляет обработчик авторизации
@@ -53,7 +54,7 @@ type TeacherLoginRequest struct {
 
 // SelectRoleRequest запрос на выбор роли (учитель/ученик)
 type SelectRoleRequest struct {
-    Role string `json:"role" binding:"required,oneof=teacher student"`
+	Role string `json:"role" binding:"required,oneof=teacher student"`
 }
 
 // CreateStudentByTeacherRequest запрос на создание ученика преподавателем
@@ -65,6 +66,15 @@ type CreateStudentByTeacherRequest struct {
 	Phone      string `json:"phone"`
 	Username   string `json:"username"`
 	TelegramID int64  `json:"telegram_id"`
+}
+
+// AssignStudentRequest — teacher-driven назначение ученика без кода
+type AssignStudentRequest struct {
+	UserID     *uuid.UUID `json:"user_id"`
+	TelegramID *int64     `json:"telegram_id"`
+	Username   string     `json:"username"`
+	Grade      *int       `json:"grade"`
+	Subjects   string     `json:"subjects"`
 }
 
 // TrialRequestRequest представляет запрос на пробное занятие
@@ -233,16 +243,16 @@ func (h *AuthHandler) CreateStudentByTeacher(c *gin.Context) {
 		return
 	}
 
-    // Если указан username без остальных полей — пытаемся привязать существующего
-    if req.Username != "" && req.FirstName == "" && req.Grade == 0 {
-        user, err := h.authService.LinkExistingStudentByUsername(req.Username)
-        if err != nil {
-            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-            return
-        }
-        c.JSON(http.StatusOK, gin.H{"user": user, "invite_code": user.InviteCode})
-        return
-    }
+	// Если указан username без остальных полей — пытаемся привязать существующего
+	if req.Username != "" && req.FirstName == "" && req.Grade == 0 {
+		user, err := h.authService.LinkExistingStudentByUsername(req.Username)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"user": user, "invite_code": user.InviteCode})
+		return
+	}
 
 	user, code, err := h.authService.CreateStudentByTeacher(
 		req.FirstName,
@@ -262,6 +272,45 @@ func (h *AuthHandler) CreateStudentByTeacher(c *gin.Context) {
 		"user":        user,
 		"invite_code": code,
 	})
+}
+
+// AssignStudentToTeacher назначает гостя учеником (teacher-only)
+func (h *AuthHandler) AssignStudentToTeacher(c *gin.Context) {
+	// Проверяем роль
+	roleVal, exists := c.Get("user_role")
+	if !exists || roleVal != models.RoleTeacher {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+	userVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	teacherID, ok := userVal.(uuid.UUID)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user id"})
+		return
+	}
+
+	var req AssignStudentRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, err := h.authService.AssignStudentToTeacher(teacherID, services.AssignStudentParams{
+		UserID:     req.UserID,
+		TelegramID: req.TelegramID,
+		Username:   req.Username,
+		Grade:      req.Grade,
+		Subjects:   req.Subjects,
+	})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"user": user})
 }
 
 // RegisterStudentByCode регистрирует ученика только по коду приглашения
@@ -334,29 +383,29 @@ func (h *AuthHandler) TeacherLogin(c *gin.Context) {
 
 // SelectRole устанавливает роль пользователя (для whitelisted учителей)
 func (h *AuthHandler) SelectRole(c *gin.Context) {
-    var req SelectRoleRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
-    userAny, exists := c.Get("user")
-    if !exists {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-        return
-    }
-    user := userAny.(*models.User)
+	var req SelectRoleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	userAny, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	user := userAny.(*models.User)
 
-    var role models.UserRole
-    if req.Role == "teacher" {
-        role = models.RoleTeacher
-    } else {
-        role = models.RoleStudent
-    }
+	var role models.UserRole
+	if req.Role == "teacher" {
+		role = models.RoleTeacher
+	} else {
+		role = models.RoleStudent
+	}
 
-    token, err := h.authService.SelectRole(user, role)
-    if err != nil {
-        c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-        return
-    }
-    c.JSON(http.StatusOK, gin.H{"token": token, "role": role})
+	token, err := h.authService.SelectRole(user, role)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"token": token, "role": role})
 }

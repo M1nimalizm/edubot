@@ -225,6 +225,91 @@
             color: #666;
         }
         
+        /* Submission styles */
+        .submission-section {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .submission-section h4 {
+            margin: 0 0 1rem 0;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .submission-section .help-text {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+        
+        .submission-options {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 2rem;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .submission-option {
+            text-align: center;
+        }
+        
+        .submission-option h5 {
+            margin: 0 0 1rem 0;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .submission-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .submission-divider span {
+            padding: 0.5rem 1rem;
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #ddd;
+        }
+        
+        .submission-comments {
+            margin-top: 1.5rem;
+        }
+        
+        .submission-comments label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .submission-comments textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        
+        .submission-comments textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
         @media (max-width: 768px) {
             .welcome-content {
                 flex-direction: column;
@@ -353,6 +438,52 @@
                 <div id="modalContent">
                     <!-- Содержимое будет загружено динамически -->
                 </div>
+                
+                <!-- Секция для сдачи ДЗ -->
+                <div class="submission-section" id="submissionSection" style="display: none;">
+                    <h4><i class="fas fa-upload"></i> Сдача домашнего задания</h4>
+                    <p class="help-text">Загрузите файлы с решением задания или отправьте их через Telegram бота</p>
+                    
+                    <div class="submission-options">
+                        <div class="submission-option">
+                            <h5><i class="fas fa-cloud-upload-alt"></i> Загрузка через веб-интерфейс</h5>
+                            <div class="media-uploader" id="submissionMediaUploader">
+                                <div class="upload-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <div class="upload-text">
+                                    Перетащите файлы сюда или нажмите для выбора
+                                </div>
+                                <input type="file" id="submissionFiles" multiple accept="video/*,audio/*,image/*,.pdf,.doc,.docx" style="display: none;">
+                                <button type="button" class="upload-button" onclick="document.getElementById('submissionFiles').click()">
+                                    Выбрать файлы
+                                </button>
+                            </div>
+                            
+                            <div class="media-preview" id="submissionMediaPreview" style="display: none;">
+                                <h5>Выбранные файлы:</h5>
+                                <div class="media-list" id="submissionMediaList"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="submission-divider">
+                            <span>или</span>
+                        </div>
+                        
+                        <div class="submission-option">
+                            <h5><i class="fab fa-telegram"></i> Отправка через Telegram</h5>
+                            <p>Отправьте файлы с решением в Telegram бота</p>
+                            <button class="btn btn-outline" onclick="openTelegramBot()">
+                                <i class="fab fa-telegram"></i> Открыть бота
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="submission-comments">
+                        <label for="submissionComments">Комментарии к решению:</label>
+                        <textarea id="submissionComments" placeholder="Добавьте комментарии к вашему решению..."></textarea>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeAssignmentModal()">Отмена</button>
@@ -368,11 +499,13 @@
         let allAssignments = [];
         let filteredAssignments = [];
         let currentAssignment = null;
+        let selectedSubmissionFiles = [];
 
         // Загружаем данные при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
             loadUserProfile();
             loadAssignments();
+            initializeSubmissionUploader();
         });
 
         // Загрузка профиля пользователя
@@ -439,7 +572,21 @@
             const assignmentsList = document.getElementById('assignmentsList');
             
             if (filteredAssignments.length === 0) {
-                assignmentsList.innerHTML = '<div class="no-assignments"><i class="fas fa-clipboard-list" style="font-size: 3rem; margin-bottom: 1rem;"></i><p>Задания не найдены</p></div>';
+                assignmentsList.innerHTML = `
+                    <div class="no-assignments">
+                        <i class="fas fa-user-clock" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <h3>Вы пока не назначены к преподавателю</h3>
+                        <p>Как только преподаватель добавит вас в систему, здесь появятся ваши задания.</p>
+                        <div class="actions" style="margin-top: 1rem; display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap;">
+                            <button class="btn btn-outline" onclick="openTelegramBot()">
+                                <i class="fab fa-telegram"></i> Написать боту
+                            </button>
+                            <a class="btn" href="/" onclick="event.preventDefault(); window.scrollTo({top: 0, behavior: 'smooth'});">
+                                <i class="fas fa-info-circle"></i> Узнать о курсе
+                            </a>
+                        </div>
+                    </div>
+                `;
                 return;
             }
 
@@ -515,6 +662,134 @@
             displayAssignments();
         }
 
+        // Инициализация медиа-загрузчика для сдачи ДЗ
+        function initializeSubmissionUploader() {
+            const uploader = document.getElementById('submissionMediaUploader');
+            const fileInput = document.getElementById('submissionFiles');
+            
+            if (!uploader || !fileInput) return;
+            
+            // Drag and drop events
+            uploader.addEventListener('dragover', handleSubmissionDragOver);
+            uploader.addEventListener('dragleave', handleSubmissionDragLeave);
+            uploader.addEventListener('drop', handleSubmissionDrop);
+            
+            // File input change
+            fileInput.addEventListener('change', handleSubmissionFileSelect);
+        }
+
+        function handleSubmissionDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleSubmissionDragLeave(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function handleSubmissionDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files);
+            addSubmissionFiles(files);
+        }
+
+        function handleSubmissionFileSelect(e) {
+            const files = Array.from(e.target.files);
+            addSubmissionFiles(files);
+        }
+
+        function addSubmissionFiles(files) {
+            files.forEach(file => {
+                // Проверяем тип файла
+                if (!isValidSubmissionFile(file)) {
+                    showError(`Неподдерживаемый тип файла: ${file.name}`);
+                    return;
+                }
+                
+                // Проверяем размер файла (максимум 50MB)
+                if (file.size > 50 * 1024 * 1024) {
+                    showError(`Файл слишком большой: ${file.name} (максимум 50MB)`);
+                    return;
+                }
+                
+                // Добавляем файл в список
+                selectedSubmissionFiles.push({
+                    file: file,
+                    id: Date.now() + Math.random(),
+                    name: file.name,
+                    size: file.size,
+                    type: file.type
+                });
+            });
+            
+            updateSubmissionMediaPreview();
+        }
+
+        function isValidSubmissionFile(file) {
+            const validTypes = [
+                'video/mp4', 'video/avi', 'video/mov', 'video/webm',
+                'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a',
+                'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+                'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
+            
+            return validTypes.includes(file.type);
+        }
+
+        function updateSubmissionMediaPreview() {
+            const preview = document.getElementById('submissionMediaPreview');
+            const mediaList = document.getElementById('submissionMediaList');
+            
+            if (!preview || !mediaList) return;
+            
+            if (selectedSubmissionFiles.length === 0) {
+                preview.style.display = 'none';
+                return;
+            }
+            
+            preview.style.display = 'block';
+            mediaList.innerHTML = selectedSubmissionFiles.map(media => `
+                <div class="media-item">
+                    <i class="file-icon ${getFileIcon(media.type)}"></i>
+                    <div class="file-name">${media.name}</div>
+                    <div class="file-size">${formatFileSize(media.size)}</div>
+                    <button type="button" class="remove-file" onclick="removeSubmissionFile('${media.id}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function getFileIcon(type) {
+            if (type.startsWith('video/')) return 'fas fa-video';
+            if (type.startsWith('audio/')) return 'fas fa-music';
+            if (type.startsWith('image/')) return 'fas fa-image';
+            if (type === 'application/pdf') return 'fas fa-file-pdf';
+            if (type.includes('word')) return 'fas fa-file-word';
+            return 'fas fa-file';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function removeSubmissionFile(id) {
+            selectedSubmissionFiles = selectedSubmissionFiles.filter(media => media.id !== id);
+            updateSubmissionMediaPreview();
+        }
+
+        function openTelegramBot() {
+            // Открываем Telegram бота в новом окне
+            window.open('https://t.me/your_bot_username', '_blank');
+        }
+
         // Открытие задания
         function openAssignment(assignmentId) {
             const assignment = allAssignments.find(a => a.id === assignmentId);
@@ -559,30 +834,119 @@
                 </div>
             `;
 
+            // Показываем секцию для сдачи ДЗ только для активных заданий
+            const submissionSection = document.getElementById('submissionSection');
+            if (assignment.status === 'assigned') {
+                submissionSection.style.display = 'block';
+                // Очищаем предыдущие файлы
+                selectedSubmissionFiles = [];
+                updateSubmissionMediaPreview();
+            } else {
+                submissionSection.style.display = 'none';
+            }
+
             document.getElementById('submitBtn').style.display = assignment.status === 'assigned' ? 'block' : 'none';
             document.getElementById('assignmentModal').style.display = 'block';
         }
 
         // Выполнение задания
         async function completeAssignment(assignmentId) {
-            if (!confirm('Отметить задание как выполненное?')) return;
+            if (!confirm('Отправить домашнее задание?')) return;
 
             try {
-                const response = await fetch(`/api/assignments/${assignmentId}/complete`, {
-                    method: 'POST'
-                });
-
-                if (response.ok) {
-                    showSuccess('Задание отмечено как выполненное!');
-                    loadAssignments(); // Перезагружаем список
+                const comments = document.getElementById('submissionComments').value;
+                
+                // Если есть выбранные файлы, загружаем их
+                if (selectedSubmissionFiles.length > 0) {
+                    await submitAssignmentWithMedia(assignmentId, comments);
                 } else {
-                    const error = await response.json();
-                    showError(error.error || 'Ошибка выполнения задания');
+                    // Если нет файлов, просто отмечаем как выполненное
+                    await submitAssignmentWithoutMedia(assignmentId, comments);
                 }
+
+                showSuccess('Домашнее задание отправлено!');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+
             } catch (error) {
-                console.error('Error completing assignment:', error);
-                showError('Ошибка выполнения задания');
+                console.error('Error submitting assignment:', error);
+                showError('Ошибка отправки домашнего задания');
             }
+        }
+
+        // Отправка задания с медиафайлами
+        async function submitAssignmentWithMedia(assignmentId, comments) {
+            const uploadPromises = selectedSubmissionFiles.map(async (mediaFile) => {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', mediaFile.file);
+                    formData.append('type', getMediaType(mediaFile.type));
+                    formData.append('caption', mediaFile.name);
+
+                    const response = await fetch('/api/media/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Ошибка загрузки файла ${mediaFile.name}`);
+                    }
+
+                    const media = await response.json();
+                    return media.media.id;
+
+                } catch (error) {
+                    console.error(`Error uploading media file ${mediaFile.name}:`, error);
+                    throw error;
+                }
+            });
+
+            const mediaIds = await Promise.all(uploadPromises);
+
+            // Отправляем задание с медиафайлами
+            const response = await fetch(`/api/assignments/${assignmentId}/submit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    media_ids: mediaIds,
+                    comments: comments
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Ошибка отправки задания');
+            }
+        }
+
+        // Отправка задания без медиафайлов
+        async function submitAssignmentWithoutMedia(assignmentId, comments) {
+            const response = await fetch(`/api/assignments/${assignmentId}/submit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    media_ids: [],
+                    comments: comments
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Ошибка отправки задания');
+            }
+        }
+
+        // Определение типа медиафайла
+        function getMediaType(fileType) {
+            if (fileType.startsWith('video/')) return 'video';
+            if (fileType.startsWith('audio/')) return 'audio';
+            if (fileType.startsWith('image/')) return 'image';
+            return 'document';
         }
 
         // Отправка задания через модальное окно

@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Проверка заданий - EduBot</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=2025-09-22-1">
+    <link rel="stylesheet" href="/static/css/media.css?v=2025-09-22-1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="/static/js/media-player.js?v=2025-09-22-1"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>EduBot - Проверка заданий</h2>
+            </div>
+            <div class="nav-links">
+                <a href="/teacher-dashboard" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Дашборд
+                </a>
+                <a href="/teacher-assignments" class="nav-link">
+                    <i class="fas fa-tasks"></i>
+                    Задания
+                </a>
+                <a href="/teacher-submissions" class="nav-link active">
+                    <i class="fas fa-check-circle"></i>
+                    Проверка
+                </a>
+                <a href="/teacher-students" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    Ученики
+                </a>
+                <a href="#" class="nav-link" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Выйти
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1><i class="fas fa-check-circle"></i> Проверка домашних заданий</h1>
+                <p>Просматривайте и оценивайте работы учеников</p>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="filters-section">
+                <div class="filters">
+                    <button class="filter-btn active" onclick="filterSubmissions('all')">
+                        <i class="fas fa-list"></i>
+                        Все
+                    </button>
+                    <button class="filter-btn" onclick="filterSubmissions('pending')">
+                        <i class="fas fa-clock"></i>
+                        Ожидают проверки
+                    </button>
+                    <button class="filter-btn" onclick="filterSubmissions('reviewed')">
+                        <i class="fas fa-check"></i>
+                        Проверенные
+                    </button>
+                    <button class="filter-btn" onclick="filterSubmissions('needs_revision')">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        На доработку
+                    </button>
+                </div>
+            </div>
+
+            <!-- Список заданий -->
+            <div class="submissions-list" id="submissionsList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Загрузка заданий...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Модальное окно проверки задания -->
+    <div id="submissionModal" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Проверка задания</h2>
+                <span class="close" onclick="closeSubmissionModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="modalContent">
+                    <!-- Содержимое будет загружено динамически -->
+                </div>
+
+                <!-- Секция для добавления фидбэка -->
+                <div class="feedback-section" id="feedbackSection">
+                    <h3><i class="fas fa-comment"></i> Обратная связь</h3>
+                    
+                    <!-- Текстовый комментарий -->
+                    <div class="form-group">
+                        <label for="feedbackComments">Комментарий к работе:</label>
+                        <textarea id="feedbackComments" placeholder="Добавьте комментарий к работе ученика..."></textarea>
+                    </div>
+
+                    <!-- Оценка -->
+                    <div class="form-group">
+                        <label for="feedbackGrade">Оценка:</label>
+                        <select id="feedbackGrade">
+                            <option value="">Выберите оценку</option>
+                            <option value="5">5 (отлично)</option>
+                            <option value="4">4 (хорошо)</option>
+                            <option value="3">3 (удовлетворительно)</option>
+                            <option value="2">2 (неудовлетворительно)</option>
+                            <option value="needs_revision">На доработку</option>
+                        </select>
+                    </div>
+
+                    <!-- Медиа-фидбэк -->
+                    <div class="form-group">
+                        <label>Добавить медиа-фидбэк</label>
+                        <p class="help-text">Запишите видео или аудио комментарий, добавьте документы</p>
+                        
+                        <div class="feedback-options">
+                            <div class="feedback-option">
+                                <h5><i class="fas fa-cloud-upload-alt"></i> Загрузка через веб-интерфейс</h5>
+                                <div class="media-uploader" id="feedbackMediaUploader">
+                                    <div class="upload-icon">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                    </div>
+                                    <div class="upload-text">
+                                        Перетащите файлы сюда или нажмите для выбора
+                                    </div>
+                                    <input type="file" id="feedbackFiles" multiple accept="video/*,audio/*,image/*,.pdf,.doc,.docx" style="display: none;">
+                                    <button type="button" class="upload-button" onclick="document.getElementById('feedbackFiles').click()">
+                                        Выбрать файлы
+                                    </button>
+                                </div>
+                                
+                                <div class="media-preview" id="feedbackMediaPreview" style="display: none;">
+                                    <h5>Выбранные файлы:</h5>
+                                    <div class="media-list" id="feedbackMediaList"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="submission-divider">
+                                <span>или</span>
+                            </div>
+                            
+                            <div class="feedback-option">
+                                <h5><i class="fab fa-telegram"></i> Отправка через Telegram</h5>
+                                <p>Отправьте медиа-фидбэк в Telegram бота</p>
+                                <button class="btn btn-outline" onclick="openTelegramBot()">
+                                    <i class="fab fa-telegram"></i> Открыть бота
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSubmissionModal()">Отмена</button>
+                <button class="btn btn-primary" id="submitFeedbackBtn" onclick="submitFeedback()">
+                    <i class="fas fa-check"></i> Сохранить проверку
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Тост уведомления -->
+    <div class="toast success" id="successToast">
+        <div class="toast-content">
+            <i class="fas fa-check-circle"></i>
+            <span id="successMessage">Операция выполнена успешно!</span>
+        </div>
+    </div>
+
+    <div class="toast error" id="errorToast">
+        <div class="toast-content">
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="errorMessage">Произошла ошибка!</span>
+        </div>
+    </div>
+
+    <script>
+        let allSubmissions = [];
+        let currentSubmission = null;
+        let selectedFeedbackFiles = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSubmissions();
+            initializeFeedbackUploader();
+        });
+
+        // Инициализация загрузчика медиа для фидбэка
+        function initializeFeedbackUploader() {
+            const uploader = document.getElementById('feedbackMediaUploader');
+            const fileInput = document.getElementById('feedbackFiles');
+            
+            uploader.addEventListener('dragover', handleFeedbackDragOver);
+            uploader.addEventListener('dragleave', handleFeedbackDragLeave);
+            uploader.addEventListener('drop', handleFeedbackDrop);
+            fileInput.addEventListener('change', handleFeedbackFileSelect);
+        }
+
+        function handleFeedbackDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleFeedbackDragLeave(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleFeedbackDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            
+            const files = Array.from(e.dataTransfer.files);
+            addFeedbackFiles(files);
+        }
+
+        function handleFeedbackFileSelect(e) {
+            const files = Array.from(e.target.files);
+            addFeedbackFiles(files);
+        }
+
+        function addFeedbackFiles(files) {
+            const validFiles = files.filter(isValidMediaFile);
+            
+            validFiles.forEach(file => {
+                selectedFeedbackFiles.push({
+                    file: file,
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    id: Date.now() + Math.random()
+                });
+            });
+            
+            updateFeedbackMediaPreview();
+        }
+
+        function isValidMediaFile(file) {
+            const maxSize = 100 * 1024 * 1024; // 100MB
+            const allowedTypes = [
+                'video/', 'audio/', 'image/', 
+                'application/pdf', 'application/msword', 
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
+            
+            if (file.size > maxSize) {
+                showError(`Файл ${file.name} слишком большой (максимум 100MB)`);
+                return false;
+            }
+            
+            const isAllowed = allowedTypes.some(type => file.type.startsWith(type) || file.type === type);
+            if (!isAllowed) {
+                showError(`Файл ${file.name} имеет неподдерживаемый формат`);
+                return false;
+            }
+            
+            return true;
+        }
+
+        function updateFeedbackMediaPreview() {
+            const preview = document.getElementById('feedbackMediaPreview');
+            const list = document.getElementById('feedbackMediaList');
+            
+            if (selectedFeedbackFiles.length === 0) {
+                preview.style.display = 'none';
+                return;
+            }
+            
+            preview.style.display = 'block';
+            list.innerHTML = selectedFeedbackFiles.map(mediaFile => `
+                <div class="media-item" data-id="${mediaFile.id}">
+                    <div class="media-icon">
+                        ${getFileIcon(mediaFile.type)}
+                    </div>
+                    <div class="media-info">
+                        <div class="media-name">${mediaFile.name}</div>
+                        <div class="media-size">${formatFileSize(mediaFile.size)}</div>
+                    </div>
+                    <button class="remove-media" onclick="removeFeedbackFile(${mediaFile.id})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function removeFeedbackFile(id) {
+            selectedFeedbackFiles = selectedFeedbackFiles.filter(file => file.id !== id);
+            updateFeedbackMediaPreview();
+        }
+
+        function getFileIcon(type) {
+            if (type.startsWith('video/')) return '<i class="fas fa-video"></i>';
+            if (type.startsWith('audio/')) return '<i class="fas fa-music"></i>';
+            if (type.startsWith('image/')) return '<i class="fas fa-image"></i>';
+            if (type === 'application/pdf') return '<i class="fas fa-file-pdf"></i>';
+            return '<i class="fas fa-file"></i>';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function openTelegramBot() {
+            window.open('https://t.me/your_bot_username', '_blank');
+        }
+
+        // Загрузка заданий для проверки
+        async function loadSubmissions() {
+            try {
+                const authToken = localStorage.getItem('authToken');
+                if (!authToken) {
+                    window.location.href = '/';
+                    return;
+                }
+
+                const response = await fetch('/api/teacher/submissions', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки заданий');
+                }
+
+                const data = await response.json();
+                allSubmissions = data.submissions || [];
+                renderSubmissions(allSubmissions);
+
+            } catch (error) {
+                console.error('Error loading submissions:', error);
+                showError('Ошибка загрузки заданий');
+            }
+        }
+
+        // Отображение списка заданий
+        function renderSubmissions(submissions) {
+            const container = document.getElementById('submissionsList');
+            
+            if (submissions.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h3>Нет заданий для проверки</h3>
+                        <p>Пока что нет сданных работ для проверки</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = submissions.map(submission => `
+                <div class="submission-card ${submission.status}" onclick="openSubmission('${submission.id}')">
+                    <div class="submission-header">
+                        <div class="submission-info">
+                            <h3>${submission.assignment?.title || 'Задание'}</h3>
+                            <p class="submission-student">
+                                <i class="fas fa-user"></i>
+                                ${submission.user?.first_name || ''} ${submission.user?.last_name || ''}
+                            </p>
+                        </div>
+                        <div class="submission-status">
+                            <span class="status-badge ${submission.status}">
+                                ${getStatusText(submission.status)}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="submission-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-book"></i>
+                            <span>${submission.assignment?.subject || 'Не указан'}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-clock"></i>
+                            <span>Сдано: ${formatDate(submission.submitted_at)}</span>
+                        </div>
+                        ${submission.grade ? `
+                        <div class="meta-item">
+                            <i class="fas fa-star"></i>
+                            <span>Оценка: ${submission.grade}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    ${submission.comments ? `
+                    <div class="submission-preview">
+                        <p>${submission.comments.substring(0, 100)}${submission.comments.length > 100 ? '...' : ''}</p>
+                    </div>
+                    ` : ''}
+
+                    <div class="submission-actions">
+                        <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); openSubmission('${submission.id}')">
+                            <i class="fas fa-eye"></i> Просмотреть
+                        </button>
+                        ${submission.status === 'submitted' ? `
+                        <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openSubmission('${submission.id}')">
+                            <i class="fas fa-check"></i> Проверить
+                        </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Фильтрация заданий
+        function filterSubmissions(status) {
+            // Обновляем активную кнопку
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            let filteredSubmissions;
+            if (status === 'all') {
+                filteredSubmissions = allSubmissions;
+            } else {
+                filteredSubmissions = allSubmissions.filter(submission => submission.status === status);
+            }
+
+            renderSubmissions(filteredSubmissions);
+        }
+
+        // Открытие задания для проверки
+        async function openSubmission(submissionId) {
+            try {
+                const submission = allSubmissions.find(s => s.id === submissionId);
+                if (!submission) return;
+
+                currentSubmission = submission;
+                
+                document.getElementById('modalTitle').textContent = `${submission.assignment?.title || 'Задание'} - ${submission.user?.first_name || ''} ${submission.user?.last_name || ''}`;
+                
+                // Загружаем медиафайлы submission
+                const authToken = localStorage.getItem('authToken');
+                const mediaResponse = await fetch(`/api/submissions/${submissionId}/media`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                let submissionMedia = [];
+                if (mediaResponse.ok) {
+                    const mediaData = await mediaResponse.json();
+                    submissionMedia = mediaData.media || [];
+                }
+
+                // Загружаем фидбэк медиа
+                const feedbackResponse = await fetch(`/api/submissions/${submissionId}/feedback`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                let feedbackMedia = [];
+                if (feedbackResponse.ok) {
+                    const feedbackData = await feedbackResponse.json();
+                    feedbackMedia = feedbackData.media || [];
+                }
+
+                document.getElementById('modalContent').innerHTML = `
+                    <div class="submission-details">
+                        <div class="submission-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-book"></i>
+                                <span>Предмет: ${submission.assignment?.subject || 'Не указан'}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span>Класс: ${submission.assignment?.grade || 'Не указан'}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-clock"></i>
+                                <span>Сдано: ${formatDate(submission.submitted_at)}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-signal"></i>
+                                <span>Статус: ${getStatusText(submission.status)}</span>
+                            </div>
+                        </div>
+                        
+                        ${submission.assignment?.description ? `
+                        <div class="assignment-description">
+                            <h4>Описание задания:</h4>
+                            <p>${submission.assignment.description}</p>
+                        </div>
+                        ` : ''}
+                        
+                        ${submission.comments ? `
+                        <div class="student-comments">
+                            <h4>Комментарии ученика:</h4>
+                            <p>${submission.comments}</p>
+                        </div>
+                        ` : ''}
+
+                        ${submissionMedia.length > 0 ? `
+                        <div class="submission-media">
+                            <h4>Файлы работы:</h4>
+                            <div class="media-list">
+                                ${submissionMedia.map(media => `
+                                    <div class="media-item">
+                                        <div class="media-icon">
+                                            ${getFileIcon(media.mime_type)}
+                                        </div>
+                                        <div class="media-info">
+                                            <div class="media-name">${media.caption || 'Медиафайл'}</div>
+                                            <div class="media-size">${formatFileSize(media.size || 0)}</div>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline" onclick="viewMedia('${media.id}')">
+                                            <i class="fas fa-eye"></i> Просмотреть
+                                        </button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        ${feedbackMedia.length > 0 ? `
+                        <div class="feedback-media-existing">
+                            <h4>Предыдущий фидбэк:</h4>
+                            <div class="media-list">
+                                ${feedbackMedia.map(media => `
+                                    <div class="media-item">
+                                        <div class="media-icon">
+                                            ${getFileIcon(media.mime_type)}
+                                        </div>
+                                        <div class="media-info">
+                                            <div class="media-name">${media.caption || 'Фидбэк'}</div>
+                                            <div class="media-size">${formatFileSize(media.size || 0)}</div>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline" onclick="viewMedia('${media.id}')">
+                                            <i class="fas fa-eye"></i> Просмотреть
+                                        </button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                // Заполняем поля фидбэка, если он уже есть
+                if (submission.teacher_comments) {
+                    document.getElementById('feedbackComments').value = submission.teacher_comments;
+                }
+                if (submission.grade) {
+                    document.getElementById('feedbackGrade').value = submission.grade;
+                }
+
+                // Очищаем предыдущие файлы
+                selectedFeedbackFiles = [];
+                updateFeedbackMediaPreview();
+
+                document.getElementById('submissionModal').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error opening submission:', error);
+                showError('Ошибка загрузки задания');
+            }
+        }
+
+        // Просмотр медиафайла
+        async function viewMedia(mediaId) {
+            try {
+                const authToken = localStorage.getItem('authToken');
+                window.open(`/api/media/${mediaId}/stream?token=${authToken}`, '_blank');
+            } catch (error) {
+                console.error('Error viewing media:', error);
+                showError('Ошибка просмотра файла');
+            }
+        }
+
+        // Отправка фидбэка
+        async function submitFeedback() {
+            if (!currentSubmission) return;
+
+            try {
+                const comments = document.getElementById('feedbackComments').value;
+                const grade = document.getElementById('feedbackGrade').value;
+
+                if (!comments && !grade && selectedFeedbackFiles.length === 0) {
+                    showError('Добавьте комментарий, оценку или медиа-фидбэк');
+                    return;
+                }
+
+                const authToken = localStorage.getItem('authToken');
+                
+                // Загружаем медиафайлы фидбэка, если есть
+                if (selectedFeedbackFiles.length > 0) {
+                    await uploadFeedbackMedia(currentSubmission.id);
+                }
+
+                // Отправляем фидбэк
+                const response = await fetch(`/api/teacher/submissions/${currentSubmission.id}/feedback`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        comments: comments,
+                        grade: grade
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Ошибка сохранения фидбэка');
+                }
+
+                showSuccess('Фидбэк сохранен!');
+                setTimeout(() => {
+                    closeSubmissionModal();
+                    loadSubmissions(); // Перезагружаем список
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error submitting feedback:', error);
+                showError('Ошибка сохранения фидбэка');
+            }
+        }
+
+        // Загрузка медиафайлов фидбэка
+        async function uploadFeedbackMedia(submissionId) {
+            const uploadPromises = selectedFeedbackFiles.map(async (mediaFile) => {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', mediaFile.file);
+                    formData.append('type', getMediaType(mediaFile.type));
+                    formData.append('caption', mediaFile.name);
+
+                    const response = await fetch('/api/media/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Ошибка загрузки файла ${mediaFile.name}`);
+                    }
+
+                    const media = await response.json();
+                    
+                    // Привязываем к фидбэку
+                    const attachResponse = await fetch(`/api/submissions/${submissionId}/feedback`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            media_id: media.media.id
+                        })
+                    });
+
+                    if (!attachResponse.ok) {
+                        throw new Error(`Ошибка привязки файла ${mediaFile.name} к фидбэку`);
+                    }
+
+                } catch (error) {
+                    console.error(`Error uploading feedback media file ${mediaFile.name}:`, error);
+                    throw error;
+                }
+            });
+
+            await Promise.all(uploadPromises);
+        }
+
+        function getMediaType(fileType) {
+            if (fileType.startsWith('video/')) return 'video';
+            if (fileType.startsWith('audio/')) return 'audio';
+            if (fileType.startsWith('image/')) return 'image';
+            return 'document';
+        }
+
+        // Закрытие модального окна
+        function closeSubmissionModal() {
+            document.getElementById('submissionModal').style.display = 'none';
+            currentSubmission = null;
+            selectedFeedbackFiles = [];
+            updateFeedbackMediaPreview();
+            
+            // Очищаем форму
+            document.getElementById('feedbackComments').value = '';
+            document.getElementById('feedbackGrade').value = '';
+        }
+
+        // Вспомогательные функции
+        function getStatusText(status) {
+            const statusTexts = {
+                'submitted': 'Сдано',
+                'reviewed': 'Проверено',
+                'needs_revision': 'На доработку',
+                'graded': 'Оценено'
+            };
+            return statusTexts[status] || status;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'Не указано';
+            const date = new Date(dateString);
+            return date.toLocaleString('ru-RU');
+        }
+
+        // Уведомления
+        function showSuccess(message) {
+            const toast = document.getElementById('successToast');
+            const messageEl = document.getElementById('successMessage');
+            messageEl.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function showError(message) {
+            const toast = document.getElementById('errorToast');
+            const messageEl = document.getElementById('errorMessage');
+            messageEl.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Выход
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

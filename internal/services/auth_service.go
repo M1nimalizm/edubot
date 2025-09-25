@@ -61,11 +61,11 @@ type TelegramAuthData struct {
 
 // AuthResult представляет результат авторизации
 type AuthResult struct {
-	User      *models.User `json:"user"`
-	Token     string       `json:"token"`
-	IsNewUser bool         `json:"is_new_user"`
-	Role      string       `json:"role"`
-    AllowedTeacher bool    `json:"allowed_teacher"`
+	User           *models.User `json:"user"`
+	Token          string       `json:"token"`
+	IsNewUser      bool         `json:"is_new_user"`
+	Role           string       `json:"role"`
+	AllowedTeacher bool         `json:"allowed_teacher"`
 }
 
 // AuthenticateWithTelegram авторизует пользователя через Telegram
@@ -123,11 +123,11 @@ func (s *AuthService) AuthenticateWithTelegram(authData *TelegramAuthData) (*Aut
 	}
 
 	return &AuthResult{
-		User:      user,
-		Token:     token,
-		IsNewUser: isNewUser,
-        Role:      string(user.Role),
-        AllowedTeacher: s.IsTeacherTelegram(user.TelegramID),
+		User:           user,
+		Token:          token,
+		IsNewUser:      isNewUser,
+		Role:           string(user.Role),
+		AllowedTeacher: s.IsTeacherTelegram(user.TelegramID),
 	}, nil
 }
 
@@ -263,18 +263,63 @@ func (s *AuthService) GenerateToken(user *models.User) (string, error) {
 	return s.generateJWT(user)
 }
 
+// AssignStudentParams параметры назначения ученика без участия ученика
+type AssignStudentParams struct {
+	UserID     *uuid.UUID
+	TelegramID *int64
+	Username   string
+	Grade      *int
+	Subjects   string
+}
+
+// AssignStudentToTeacher апгрейдит роль пользователя до student (teacher-driven)
+func (s *AuthService) AssignStudentToTeacher(teacherID uuid.UUID, params AssignStudentParams) (*models.User, error) {
+	var user *models.User
+	var err error
+	if params.UserID != nil {
+		user, err = s.userRepo.GetByID(*params.UserID)
+	} else if params.TelegramID != nil && *params.TelegramID != 0 {
+		user, err = s.userRepo.GetByTelegramID(*params.TelegramID)
+	} else if params.Username != "" {
+		user, err = s.userRepo.GetByUsername(params.Username)
+	} else {
+		return nil, fmt.Errorf("no identifier provided")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Обновление роли и учебных атрибутов
+	user.Role = models.RoleStudent
+	if params.Grade != nil {
+		user.Grade = *params.Grade
+	}
+	if params.Subjects != "" {
+		user.Subjects = params.Subjects
+	}
+	if err := s.userRepo.Update(user); err != nil {
+		return nil, err
+	}
+
+	// Уведомление ученику
+	if s.telegramBot != nil && user.TelegramID != 0 {
+		s.telegramBot.SendMessage(user.TelegramID, "🎓 Вы назначены учеником. Откройте мини‑приложение для заданий.")
+	}
+	return user, nil
+}
+
 // SelectRole меняет роль пользователя и возвращает новый токен
 func (s *AuthService) SelectRole(user *models.User, role models.UserRole) (string, error) {
-    if role == models.RoleTeacher {
-        if !s.IsTeacherTelegram(user.TelegramID) {
-            return "", fmt.Errorf("not allowed to be teacher")
-        }
-    }
-    user.Role = role
-    if err := s.userRepo.Update(user); err != nil {
-        return "", err
-    }
-    return s.generateJWT(user)
+	if role == models.RoleTeacher {
+		if !s.IsTeacherTelegram(user.TelegramID) {
+			return "", fmt.Errorf("not allowed to be teacher")
+		}
+	}
+	user.Role = role
+	if err := s.userRepo.Update(user); err != nil {
+		return "", err
+	}
+	return s.generateJWT(user)
 }
 
 // GetTrialRequests получает все заявки на пробные занятия
@@ -320,18 +365,18 @@ func (s *AuthService) GetStudents() ([]models.User, error) {
 
 // LinkExistingStudentByUsername привязывает существующего пользователя к роли студента
 func (s *AuthService) LinkExistingStudentByUsername(username string) (*models.User, error) {
-    if username == "" {
-        return nil, fmt.Errorf("username is required")
-    }
-    user, err := s.userRepo.GetByUsername(username)
-    if err != nil {
-        return nil, fmt.Errorf("user not found")
-    }
-    user.Role = models.RoleStudent
-    if err := s.userRepo.Update(user); err != nil {
-        return nil, fmt.Errorf("failed to update user: %w", err)
-    }
-    return user, nil
+	if username == "" {
+		return nil, fmt.Errorf("username is required")
+	}
+	user, err := s.userRepo.GetByUsername(username)
+	if err != nil {
+		return nil, fmt.Errorf("user not found")
+	}
+	user.Role = models.RoleStudent
+	if err := s.userRepo.Update(user); err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+	return user, nil
 }
 
 // RegisterStudentByCode регистрирует ученика только по коду приглашения

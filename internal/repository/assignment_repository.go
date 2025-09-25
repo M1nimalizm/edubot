@@ -1,10 +1,11 @@
 package repository
 
 import (
+	"edubot/internal/models"
 	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"edubot/internal/models"
 )
 
 type AssignmentRepository struct {
@@ -46,7 +47,7 @@ func (r *AssignmentRepository) GetByTeacherID(teacherID uuid.UUID) ([]models.Ass
 func (r *AssignmentRepository) GetUpcomingDeadlines(studentID uuid.UUID, days int) ([]models.Assignment, error) {
 	var assignments []models.Assignment
 	deadline := time.Now().AddDate(0, 0, days)
-	
+
 	err := r.db.Preload("Teacher").
 		Where("student_id = ? AND due_date <= ? AND status != 'completed'", studentID, deadline).
 		Order("due_date ASC").Find(&assignments).Error
@@ -68,11 +69,10 @@ func (r *AssignmentRepository) MarkCompleted(id uuid.UUID) error {
 	return r.db.Model(&models.Assignment{}).
 		Where("id = ?", id).
 		Updates(map[string]interface{}{
-			"status": "completed",
+			"status":       "completed",
 			"completed_at": &now,
 		}).Error
 }
-
 
 func (r *AssignmentRepository) Delete(id uuid.UUID) error {
 	return r.db.Delete(&models.Assignment{}, id).Error
@@ -158,4 +158,42 @@ func (r *AssignmentRepository) GetProgressBySubject(studentID uuid.UUID, subject
 		Where("student_id = ? AND subject = ?", studentID, subject).
 		First(&progress).Error
 	return &progress, err
+}
+
+// Submission methods
+func (r *AssignmentRepository) CreateSubmission(submission *models.Submission) error {
+	return r.db.Create(submission).Error
+}
+
+func (r *AssignmentRepository) GetSubmissionByID(id uuid.UUID) (*models.Submission, error) {
+	var submission models.Submission
+	err := r.db.Preload("Assignment").Preload("User").
+		Where("id = ?", id).First(&submission).Error
+	return &submission, err
+}
+
+func (r *AssignmentRepository) GetSubmissionsByAssignmentID(assignmentID uuid.UUID) ([]models.Submission, error) {
+	var submissions []models.Submission
+	err := r.db.Preload("User").
+		Where("assignment_id = ?", assignmentID).
+		Order("submitted_at DESC").
+		Find(&submissions).Error
+	return submissions, err
+}
+
+func (r *AssignmentRepository) GetSubmissionsByUserID(userID uuid.UUID) ([]models.Submission, error) {
+	var submissions []models.Submission
+	err := r.db.Preload("Assignment").
+		Where("user_id = ?", userID).
+		Order("submitted_at DESC").
+		Find(&submissions).Error
+	return submissions, err
+}
+
+func (r *AssignmentRepository) UpdateSubmission(submission *models.Submission) error {
+	return r.db.Save(submission).Error
+}
+
+func (r *AssignmentRepository) DeleteSubmission(id uuid.UUID) error {
+	return r.db.Delete(&models.Submission{}, "id = ?", id).Error
 }

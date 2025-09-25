@@ -430,4 +430,56 @@
         });
     </script>
 </body>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+    try {
+        const token = localStorage.getItem('authToken');
+        const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+        let role = 'guest';
+        if (token) {
+            const resp = await fetch('/api/profile', { headers: authHeaders });
+            if (resp.ok) {
+                const data = await resp.json();
+                role = (data && data.user && data.user.role) ? data.user.role : 'guest';
+            }
+        }
+
+        // Управление видимостью по ролям
+        const allRoleNodes = document.querySelectorAll('[data-role]');
+        allRoleNodes.forEach(node => {
+            const allowed = (node.getAttribute('data-role') || '').split(',').map(s => s.trim());
+            if (!allowed.includes(role)) {
+                node.style.display = 'none';
+            } else {
+                node.style.display = '';
+            }
+        });
+
+        // Управление видимостью по факту авторизации
+        const authNodes = document.querySelectorAll('[data-auth]');
+        const isUser = role === 'student' || role === 'teacher';
+        authNodes.forEach(node => {
+            const need = node.getAttribute('data-auth'); // 'guest' | 'user'
+            if (need === 'user' && !isUser) node.style.display = 'none';
+            if (need === 'guest' && isUser) node.style.display = 'none';
+        });
+
+        // Пример: быстрые редиректы для разделов, если страница помечена атрибутом data-guard на body
+        const guard = document.body.getAttribute('data-guard'); // 'student' | 'teacher'
+        if (guard) {
+            if (guard === 'teacher' && role !== 'teacher') {
+                window.location.href = '/';
+            }
+            if (guard === 'student' && role !== 'student') {
+                window.location.href = '/';
+            }
+        }
+    } catch (e) {
+        console.warn('role visibility init failed', e);
+    }
+});
+</script>
+</html>
 </html>

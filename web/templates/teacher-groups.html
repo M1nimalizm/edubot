@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Группы - EduBot</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem; }
+        .card { background:#fff; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,.08); padding:1rem; }
+        .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap:1rem; }
+        .row { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:1rem; }
+        .row-2 { display:grid; grid-template-columns: 1fr 1fr; gap:1rem; }
+        .form-group { margin-bottom: .8rem; }
+        .form-group label { display:block; margin-bottom:.4rem; font-weight:600; }
+        .form-group input, .form-group select, .form-group textarea { width:100%; border:1px solid #e0e0e0; border-radius:8px; padding:.6rem .7rem; }
+        .group-card h3 { margin:0 0 .5rem 0; }
+        .members { font-size: .9rem; color:#666; margin:.25rem 0 .75rem; }
+        .actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+        .inline { display:flex; gap:.5rem; }
+        @media (max-width: 768px){ .row, .row-2 { grid-template-columns:1fr; }}
+    </style>
+    <script>
+        let groups = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGroups();
+        });
+
+        function authHeader(){
+            const t = localStorage.getItem('authToken');
+            return t ? { 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+        }
+
+        async function loadGroups(){
+            try{
+                const resp = await fetch('/api/teacher/groups', { headers: authHeader() });
+                if(!resp.ok){ showError('Не удалось загрузить группы'); return; }
+                const data = await resp.json();
+                groups = data.groups || [];
+                renderGroups();
+            }catch(e){ console.error(e); showError('Ошибка сети при загрузке групп'); }
+        }
+
+        async function createGroup(){
+            const name = document.getElementById('gName').value.trim();
+            const subject = document.getElementById('gSubject').value.trim();
+            const grade = parseInt(document.getElementById('gGrade').value||'0',10);
+            const level = parseInt(document.getElementById('gLevel').value||'0',10);
+            if(!name){ showError('Введите название группы'); return; }
+            try{
+                const resp = await fetch('/api/teacher/groups', {
+                    method:'POST', headers: authHeader(),
+                    body: JSON.stringify({ name, subject, grade, level })
+                });
+                if(!resp.ok){ const e = await resp.json().catch(()=>({})); showError(e.error||'Не удалось создать группу'); return; }
+                showSuccess('Группа создана');
+                document.getElementById('gName').value='';
+                document.getElementById('gSubject').value='';
+                document.getElementById('gGrade').value='';
+                document.getElementById('gLevel').value='';
+                loadGroups();
+            }catch(e){ console.error(e); showError('Ошибка сети при создании группы'); }
+        }
+
+        function renderGroups(){
+            const grid = document.getElementById('groupsGrid');
+            if(groups.length===0){ grid.innerHTML = '<div class="card">Пока нет групп</div>'; return; }
+            grid.innerHTML = groups.map(g => `
+                <div class="card group-card">
+                    <h3>${g.name}</h3>
+                    <div class="members">Предмет: ${g.subject||'—'} • Класс: ${g.grade||'—'} • Уровень: ${g.level||'—'}</div>
+                    <div class="members">Участников: ${g.members ? g.members.length : 0}</div>
+
+                    <div class="row-2" style="margin:.75rem 0;">
+                        <div class="card" style="padding:.75rem;">
+                            <div class="form-group"><label>Добавить участника (user_id)</label>
+                                <div class="inline">
+                                    <input type="text" id="m_${g.id}" placeholder="UUID пользователя">
+                                    <button class="btn btn-outline" onclick="addMember('${g.id}')"><i class="fas fa-user-plus"></i></button>
+                                </div>
+                            </div>
+                            <div class="form-group"><label>Текущие участники</label>
+                                <div>${(g.members||[]).map(m => `<span style='display:inline-block;margin:.2rem .3rem;padding:.2rem .5rem;border:1px solid #eee;border-radius:6px;'>${m.user?.first_name||''} ${m.user?.last_name||''}<button class='btn btn-sm btn-outline' style='margin-left:.4rem' onclick=removeMember('${g.id}','${m.user_id}')><i class='fas fa-times'></i></button></span>`).join('') || '—'}</div>
+                            </div>
+                        </div>
+                        <div class="card" style="padding:.75rem;">
+                            <div class="form-group"><label>Выдать ДЗ группе</label></div>
+                            <div class="form-group"><input type="text" id="a_title_${g.id}" placeholder="Заголовок"></div>
+                            <div class="form-group"><textarea id="a_desc_${g.id}" placeholder="Описание"></textarea></div>
+                            <div class="inline">
+                                <input type="text" id="a_subject_${g.id}" placeholder="Предмет" style="flex:1;">
+                                <input type="number" id="a_grade_${g.id}" placeholder="Класс" style="width:110px;">
+                                <input type="number" id="a_level_${g.id}" placeholder="Уровень" style="width:110px;">
+                            </div>
+                            <div class="form-group" style="margin-top:.5rem;"><label>Дедлайн</label>
+                                <input type="datetime-local" id="a_due_${g.id}">
+                            </div>
+                            <div class="actions">
+                                <button class="btn" onclick="assignToGroup('${g.id}')"><i class="fas fa-paper-plane"></i> Выдать</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addMember(groupId){
+            const val = document.getElementById('m_'+groupId).value.trim();
+            if(!val){ showError('Укажите UUID пользователя'); return; }
+            try{
+                const resp = await fetch(`/api/teacher/groups/${groupId}/members`, {
+                    method:'POST', headers: authHeader(), body: JSON.stringify({ user_id: val })
+                });
+                if(!resp.ok){ const e=await resp.json().catch(()=>({})); showError(e.error||'Не удалось добавить участника'); return; }
+                showSuccess('Участник добавлен');
+                loadGroups();
+            }catch(e){ console.error(e); showError('Ошибка сети'); }
+        }
+
+        async function removeMember(groupId, userId){
+            try{
+                const resp = await fetch(`/api/teacher/groups/${groupId}/members/${userId}`, { method:'DELETE', headers: authHeader() });
+                if(!resp.ok){ const e=await resp.json().catch(()=>({})); showError(e.error||'Не удалось удалить'); return; }
+                showSuccess('Участник удалён');
+                loadGroups();
+            }catch(e){ console.error(e); showError('Ошибка сети'); }
+        }
+
+        async function assignToGroup(groupId){
+            const title = document.getElementById('a_title_'+groupId).value.trim();
+            const description = document.getElementById('a_desc_'+groupId).value.trim();
+            const subject = document.getElementById('a_subject_'+groupId).value.trim();
+            const grade = parseInt(document.getElementById('a_grade_'+groupId).value||'0',10);
+            const level = parseInt(document.getElementById('a_level_'+groupId).value||'0',10);
+            const dueRaw = document.getElementById('a_due_'+groupId).value;
+            const body = { title, description, subject, grade, level };
+            if(dueRaw){ body.due_at = new Date(dueRaw).toISOString(); }
+            if(!title){ showError('Введите заголовок'); return; }
+            try{
+                const resp = await fetch(`/api/teacher/groups/${groupId}/assignments`,{ method:'POST', headers: authHeader(), body: JSON.stringify(body)});
+                if(!resp.ok){ const e=await resp.json().catch(()=>({})); showError(e.error||'Не удалось выдать ДЗ'); return; }
+                showSuccess('ДЗ выдано группе');
+            }catch(e){ console.error(e); showError('Ошибка сети'); }
+        }
+
+        function logout(){ localStorage.removeItem('authToken'); window.location.href='/'; }
+        function showSuccess(m){ alert('✅ '+m); }
+        function showError(m){ alert('❌ '+m); }
+    </script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand"><i class="fas fa-users"></i> <span>EduBot - Группы</span></div>
+            <div class="nav-menu">
+                <a href="/teacher-dashboard" class="nav-link">Панель</a>
+                <a href="/teacher-students" class="nav-link">Ученики</a>
+                <a href="/teacher-assignments" class="nav-link">Задания</a>
+                <button class="btn btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1><i class="fas fa-people-group"></i> Группы</h1>
+            </div>
+
+            <div class="card" style="margin-bottom:1rem;">
+                <h3 style="margin-top:0;">Создать группу</h3>
+                <div class="row">
+                    <div class="form-group"><label>Название</label><input id="gName" placeholder="Например: Физика 11А"></div>
+                    <div class="form-group"><label>Предмет</label><input id="gSubject" placeholder="физика"></div>
+                    <div class="form-group"><label>Класс</label><input id="gGrade" type="number" placeholder="10/11"></div>
+                </div>
+                <div class="row-2">
+                    <div class="form-group"><label>Уровень</label><input id="gLevel" type="number" placeholder="1-5"></div>
+                    <div class="form-group"><label>&nbsp;</label><button class="btn" onclick="createGroup()"><i class="fas fa-plus"></i> Создать</button></div>
+                </div>
+            </div>
+
+            <div id="groupsGrid" class="grid"></div>
+        </div>
+    </main>
+</body>
+</html>
+
+

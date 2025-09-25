@@ -204,7 +204,15 @@
                 <h3 style="margin-top:0; margin-bottom:1rem;"><i class="fas fa-user-plus"></i> Добавить ученика</h3>
                 <div class="search-row">
                     <div class="form-group">
-                        <label for="studentFirstName">Имя</label>
+                        <label for="assignTelegramId">Telegram ID</label>
+                        <input type="text" id="assignTelegramId" placeholder="Напр. 123456789">
+                    </div>
+                    <div class="form-group">
+                        <label for="assignUsername">@username</label>
+                        <input type="text" id="assignUsername" placeholder="Напр. @ivanov">
+                    </div>
+                    <div class="form-group">
+                        <label for="studentFirstName">Имя (для создания нового)</label>
                         <input type="text" id="studentFirstName" placeholder="Иван">
                     </div>
                     <div class="form-group">
@@ -231,7 +239,10 @@
                     </div>
                     <div class="form-group">
                         <label>&nbsp;</label>
-                        <button class="btn btn-primary" onclick="createStudent()"><i class="fas fa-save"></i> Создать</button>
+                        <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+                            <button class="btn" onclick="assignStudent()"><i class="fas fa-user-check"></i> Назначить</button>
+                            <button class="btn btn-outline" onclick="createStudent()"><i class="fas fa-save"></i> Создать</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -387,6 +398,54 @@
             } catch (e) {
                 console.error(e);
                 showError('Ошибка сети при создании ученика');
+            }
+        }
+
+        // Назначение существующего пользователя учеником
+        async function assignStudent() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                showError('Требуется авторизация. Войдите через Telegram на главной.');
+                return;
+            }
+            const telegramIdStr = document.getElementById('assignTelegramId').value.trim();
+            const username = document.getElementById('assignUsername').value.trim().replace(/^@/, '');
+            const gradeVal = document.getElementById('studentGrade').value;
+            const subjects = document.getElementById('studentSubjects').value.trim();
+
+            const payload = { username: username, subjects: subjects };
+            if (telegramIdStr) {
+                const idNum = parseInt(telegramIdStr, 10);
+                if (!isNaN(idNum)) payload.telegram_id = idNum;
+            }
+            if (gradeVal) {
+                const g = parseInt(gradeVal, 10);
+                if (!isNaN(g)) payload.grade = g;
+            }
+
+            if (!payload.telegram_id && !payload.username) {
+                showError('Укажите Telegram ID или @username');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/teacher/students/assign', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    showSuccess('Ученик назначен');
+                    document.getElementById('assignTelegramId').value = '';
+                    document.getElementById('assignUsername').value = '';
+                    loadStudents();
+                } else {
+                    const err = await response.json().catch(() => ({}));
+                    showError('Ошибка: ' + (err.error || 'не удалось назначить'));
+                }
+            } catch (e) {
+                console.error(e);
+                showError('Ошибка сети при назначении ученика');
             }
         }
 

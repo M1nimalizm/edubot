@@ -32,17 +32,19 @@ type MediaService interface {
 }
 
 type mediaService struct {
-	mediaRepo repository.MediaRepository
-	userRepo  repository.UserRepository
-	bot       *telegram.Bot
+	mediaRepo      repository.MediaRepository
+	userRepo       repository.UserRepository
+	bot            *telegram.Bot
+	assignmentRepo *repository.AssignmentRepository
 }
 
 // NewMediaService создает новый сервис медиафайлов
-func NewMediaService(mediaRepo repository.MediaRepository, userRepo repository.UserRepository, bot *telegram.Bot) MediaService {
+func NewMediaService(mediaRepo repository.MediaRepository, userRepo repository.UserRepository, bot *telegram.Bot, assignmentRepo *repository.AssignmentRepository) MediaService {
 	return &mediaService{
-		mediaRepo: mediaRepo,
-		userRepo:  userRepo,
-		bot:       bot,
+		mediaRepo:      mediaRepo,
+		userRepo:       userRepo,
+		bot:            bot,
+		assignmentRepo: assignmentRepo,
 	}
 }
 
@@ -86,13 +88,14 @@ func (s *mediaService) GetMediaStream(id uuid.UUID, userID uuid.UUID) (io.ReadCl
 		return nil, fmt.Errorf("media not found: %w", err)
 	}
 
-	user, err := s.userRepo.GetByID(userID)
-	if err != nil {
-		return nil, fmt.Errorf("user not found: %w", err)
-	}
+	// user не нужен здесь, доступ проверяем через CheckMediaAccess
 
-	// Проверяем права доступа
-	if !media.CanUserAccess(userID, user.Role) {
+	// Проверяем права доступа (расширенная матрица)
+	allowed, err := s.CheckMediaAccess(id, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
 		return nil, fmt.Errorf("access denied")
 	}
 
@@ -123,13 +126,14 @@ func (s *mediaService) GetMediaThumbnail(id uuid.UUID, userID uuid.UUID) (io.Rea
 		return nil, fmt.Errorf("media not found: %w", err)
 	}
 
-	user, err := s.userRepo.GetByID(userID)
-	if err != nil {
-		return nil, fmt.Errorf("user not found: %w", err)
-	}
+	// user не нужен здесь, доступ проверяем через CheckMediaAccess
 
-	// Проверяем права доступа
-	if !media.CanUserAccess(userID, user.Role) {
+	// Проверяем права доступа (расширенная матрица)
+	allowed, err := s.CheckMediaAccess(id, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
 		return nil, fmt.Errorf("access denied")
 	}
 
@@ -227,10 +231,88 @@ func (s *mediaService) CheckMediaAccess(mediaID, userID uuid.UUID) (bool, error)
 		return false, fmt.Errorf("media not found: %w", err)
 	}
 
+	// Public — всем
+	if media.IsPublic() {
+		return true, nil
+	}
+
+	// Владелец — всегда
+	if media.OwnerID == userID {
+		return true, nil
+	}
+
 	user, err := s.userRepo.GetByID(userID)
 	if err != nil {
 		return false, fmt.Errorf("user not found: %w", err)
 	}
 
-	return media.CanUserAccess(userID, user.Role), nil
+	// Учительские материалы (teacher scope)
+	if media.Scope == models.MediaScopeTeacher {
+		if user.Role != models.RoleTeacher {
+			return false, nil
+		}
+		// Если привязано к заданию/сабмишену/ревью — разрешаем только учителю этого задания
+		if media.EntityType == models.EntityTypeAssignment && media.EntityID != nil {
+			a, err := s.assignmentRepo.GetByID(*media.EntityID)
+			if err != nil {
+				return false, err
+			}
+			return a.TeacherID == userID, nil
+		}
+		if (media.EntityType == models.EntityTypeSubmission || media.EntityType == models.EntityTypeReview) && media.EntityID != nil {
+			sub, err := s.assignmentRepo.GetSubmissionByID(*media.EntityID)
+			if err != nil {
+				return false, err
+			}
+			a, err := s.assignmentRepo.GetByID(sub.AssignmentID)
+			if err != nil {
+				return false, err
+			}
+			return a.TeacherID == userID, nil
+		}
+		// Иначе — любой учитель
+		return true, nil
+	}
+
+	// Студенческие материалы (student scope)
+	if media.Scope == models.MediaScopeStudent {
+		// Assignment: студент задания или его учитель
+		if media.EntityType == models.EntityTypeAssignment && media.EntityID != nil {
+			a, err := s.assignmentRepo.GetByID(*media.EntityID)
+			if err != nil {
+				return false, err
+			}
+			return a.StudentID == userID || a.TeacherID == userID, nil
+		}
+		// Submission/Review: автор сабмишена или учитель задания
+		if (media.EntityType == models.EntityTypeSubmission || media.EntityType == models.EntityTypeReview) && media.EntityID != nil {
+			sub, err := s.assignmentRepo.GetSubmissionByID(*media.EntityID)
+			if err != nil {
+				return false, err
+			}
+			a, err := s.assignmentRepo.GetByID(sub.AssignmentID)
+			if err != nil {
+				return false, err
+			}
+			return sub.UserID == userID || a.TeacherID == userID, nil
+		}
+		// Без сущности — по роли (ученик/учитель) запрещено, кроме владельца (уже проверили)
+		return user.Role == models.RoleTeacher, nil
+	}
+
+	// Приватные: доступ только по явному доступу в ACL
+	if media.Scope == models.MediaScopePrivate {
+		accessList, err := s.mediaRepo.GetAccessList(media.ID)
+		if err != nil {
+			return false, err
+		}
+		for _, a := range accessList {
+			if a.UserID == userID {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+
+	return false, nil
 }

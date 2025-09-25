@@ -3,15 +3,23 @@ package telegram
 import (
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 // Bot представляет Telegram бота
 type Bot struct {
-	api     *tgbotapi.BotAPI
-	token   string
-	webhook string
+	api           *tgbotapi.BotAPI
+	token         string
+	webhook       string
+	assignStudent func(teacherTelegramID int64, telegramID *int64, username string, grade *int, subjects string) error
+	getUserRole   func(telegramID int64) string
+	listGroups    func(teacherTelegramID int64) ([]struct {
+		ID   string
+		Name string
+	}, error)
 }
 
 // NewBot создает новый экземпляр бота
@@ -28,6 +36,22 @@ func NewBot(token, webhook string) (*Bot, error) {
 		token:   token,
 		webhook: webhook,
 	}, nil
+}
+
+// SetAssignStudent callback to backend
+func (b *Bot) SetAssignStudent(cb func(teacherTelegramID int64, telegramID *int64, username string, grade *int, subjects string) error) {
+	b.assignStudent = cb
+}
+
+// SetGetUserRole callback
+func (b *Bot) SetGetUserRole(cb func(telegramID int64) string) { b.getUserRole = cb }
+
+// SetListTeacherGroups callback
+func (b *Bot) SetListTeacherGroups(cb func(teacherTelegramID int64) ([]struct {
+	ID   string
+	Name string
+}, error)) {
+	b.listGroups = cb
 }
 
 // SetWebhook устанавливает webhook для бота
@@ -245,14 +269,11 @@ func (b *Bot) ProcessUpdate(update map[string]interface{}) {
 	// Обработка команд бота
 	switch text {
 	case "/start":
-		// Проверяем, новый ли это пользователь
-		firstName, _ := from["first_name"].(string)
-		if firstName == "" {
-			firstName = "друг"
+		role := "guest"
+		if b.getUserRole != nil {
+			role = b.getUserRole(int64(userID))
 		}
-		
-		// Отправляем персонализированное приветствие
-		b.SendWelcomeToNewUser(int64(chatID), firstName)
+		b.sendMainMenu(int64(chatID), role)
 	case "/help":
 		b.sendHelpMessage(int64(chatID))
 	case "/app":
@@ -260,44 +281,160 @@ func (b *Bot) ProcessUpdate(update map[string]interface{}) {
 	case "/info":
 		b.sendTeacherInfo(int64(chatID))
 	default:
-		b.SendMessage(int64(chatID), "Используйте команду /start для начала работы с ботом.")
+		if strings.HasPrefix(text, "/add_student") {
+			b.handleAddStudent(int64(userID), text)
+			return
+		}
+		// Проверяем, есть ли медиафайлы в сообщении
+		if b.hasMediaFiles(message) {
+			b.handleMediaMessage(message)
+		} else {
+			b.SendMessage(int64(chatID), "Используйте команду /start для начала работы с ботом.")
+		}
 	}
 }
 
-// processCallbackQuery обрабатывает нажатия на inline-кнопки
-func (b *Bot) processCallbackQuery(callbackQuery map[string]interface{}) {
-	data, _ := callbackQuery["data"].(string)
-	from, _ := callbackQuery["from"].(map[string]interface{})
-	message, _ := callbackQuery["message"].(map[string]interface{})
+func (b *Bot) handleAddStudent(teacherTelegramID int64, text string) {
+	if b.assignStudent == nil {
+		b.SendMessage(teacherTelegramID, "Функция назначения ученика недоступна")
+		return
+	}
+	parts := strings.Fields(text)
+	if len(parts) < 2 {
+		b.SendMessage(teacherTelegramID, "Формат: /add_student @username|telegram_id [класс] [предметы]")
+		return
+	}
+	var tgID *int64
+	uname := ""
+	// попытка распознать ID
+	if id, err := strconv.ParseInt(parts[1], 10, 64); err == nil {
+		tgID = &id
+	} else {
+		uname = strings.TrimPrefix(parts[1], "@")
+	}
+	var grade *int
+	if len(parts) >= 3 {
+		if g, err := strconv.Atoi(parts[2]); err == nil {
+			grade = &g
+		}
+	}
+	subjects := ""
+	if len(parts) >= 4 {
+		subjects = strings.Join(parts[3:], " ")
+	}
+	if err := b.assignStudent(teacherTelegramID, tgID, uname, grade, subjects); err != nil {
+		b.SendMessage(teacherTelegramID, fmt.Sprintf("Не удалось назначить ученика: %v", err))
+		return
+	}
+	b.SendMessage(teacherTelegramID, "✅ Ученик назначен")
+}
+
+// sendMainMenu показывает главное меню по роли
+func (b *Bot) sendMainMenu(chatID int64, role string) {
+	var rows [][]tgbotapi.InlineKeyboardButton
+	if role == "teacher" {
+		rows = [][]tgbotapi.InlineKeyboardButton{
+			{tgbotapi.NewInlineKeyboardButtonURL("🔔 Уведомления", "https://edubot-0g05.onrender.com/teacher-dashboard")},
+			{tgbotapi.NewInlineKeyboardButtonURL("👥 Ученики", "https://edubot-0g05.onrender.com/teacher-students")},
+			{tgbotapi.NewInlineKeyboardButtonURL("👨‍👩‍👧 Группы (в приложении)", "https://edubot-0g05.onrender.com/teacher-groups")},
+			{tgbotapi.NewInlineKeyboardButtonData("📋 Группы (в боте)", "show_groups")},
+			{tgbotapi.NewInlineKeyboardButtonURL("📝 Задать ДЗ", "https://edubot-0g05.onrender.com/teacher-assignments")},
+			{tgbotapi.NewInlineKeyboardButtonURL("✅ Проверка ДЗ", "https://edubot-0g05.onrender.com/teacher-submissions")},
+			{tgbotapi.NewInlineKeyboardButtonURL("📚 Материалы", "https://edubot-0g05.onrender.com/teacher-content")},
+		}
+	} else if role == "student" {
+		rows = [][]tgbotapi.InlineKeyboardButton{
+			{tgbotapi.NewInlineKeyboardButtonURL("📋 Мои задания", "https://edubot-0g05.onrender.com/student-dashboard")},
+			{tgbotapi.NewInlineKeyboardButtonURL("📤 Сдать ДЗ", "https://edubot-0g05.onrender.com/student-dashboard")},
+			{tgbotapi.NewInlineKeyboardButtonURL("❓ Помощь", "https://edubot-0g05.onrender.com")},
+		}
+	} else {
+		rows = [][]tgbotapi.InlineKeyboardButton{
+			{tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com")},
+			{tgbotapi.NewInlineKeyboardButtonData("ℹ️ Помощь", "help")},
+		}
+	}
+	kb := tgbotapi.NewInlineKeyboardMarkup(rows...)
+	msg := tgbotapi.NewMessage(chatID, "Выберите действие:")
+	msg.ReplyMarkup = kb
+	_, _ = b.api.Send(msg)
+}
+
+// processCallbackQuery обрабатывает инлайн-кнопки
+func (b *Bot) processCallbackQuery(cb map[string]interface{}) {
+	data, _ := cb["data"].(string)
+	from, _ := cb["from"].(map[string]interface{})
+	userID, _ := from["id"].(float64)
+	message, _ := cb["message"].(map[string]interface{})
+	chat, _ := message["chat"].(map[string]interface{})
+	chatID, _ := chat["id"].(float64)
+
+	switch data {
+	case "help":
+		b.sendHelpMessage(int64(chatID))
+	case "show_groups":
+		b.renderGroupsList(int64(chatID), int64(userID))
+	default:
+		// no-op
+	}
+}
+
+func (b *Bot) renderGroupsList(chatID, teacherTelegramID int64) {
+	if b.listGroups == nil {
+		b.SendMessage(chatID, "Список групп недоступен")
+		return
+	}
+	groups, err := b.listGroups(teacherTelegramID)
+	if err != nil || len(groups) == 0 {
+		b.SendMessage(chatID, "Группы не найдены. Создайте их в приложении.")
+		return
+	}
+	// Рисуем до 10 кнопок; для простоты без пагинации
+	var rows [][]tgbotapi.InlineKeyboardButton
+	for i, g := range groups {
+		if i >= 10 {
+			break
+		}
+		// Кнопка открывает страницу группы в приложении
+		rows = append(rows, []tgbotapi.InlineKeyboardButton{
+			tgbotapi.NewInlineKeyboardButtonURL("👥 "+g.Name, "https://edubot-0g05.onrender.com/teacher-groups"),
+		})
+	}
+	rows = append(rows, []tgbotapi.InlineKeyboardButton{tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "/start")})
+	kb := tgbotapi.NewInlineKeyboardMarkup(rows...)
+	msg := tgbotapi.NewMessage(chatID, "Ваши группы:")
+	msg.ReplyMarkup = kb
+	_, _ = b.api.Send(msg)
+}
+
+// hasMediaFiles проверяет, содержит ли сообщение медиафайлы
+func (b *Bot) hasMediaFiles(message map[string]interface{}) bool {
+	// Проверяем различные типы медиафайлов
+	_, hasPhoto := message["photo"]
+	_, hasVideo := message["video"]
+	_, hasAudio := message["audio"]
+	_, hasDocument := message["document"]
+	_, hasVoice := message["voice"]
+
+	return hasPhoto || hasVideo || hasAudio || hasDocument || hasVoice
+}
+
+// handleMediaMessage обрабатывает сообщения с медиафайлами
+func (b *Bot) handleMediaMessage(message map[string]interface{}) {
+	from, _ := message["from"].(map[string]interface{})
 	chat, _ := message["chat"].(map[string]interface{})
 
 	userID, _ := from["id"].(float64)
 	chatID, _ := chat["id"].(float64)
-	callbackID, _ := callbackQuery["id"].(string)
 
-	log.Printf("Received callback: %s from user %d", data, int64(userID))
+	log.Printf("Received media message from user %d", int64(userID))
 
-	// Отвечаем на callback query
-	callback := tgbotapi.NewCallback(callbackID, "")
-	b.api.Request(callback)
-
-	// Обрабатываем данные кнопки
-	switch data {
-	case "help":
-		b.sendHelpMessage(int64(chatID))
-	case "start":
-		// Получаем имя пользователя для персонализации
-		firstName, _ := from["first_name"].(string)
-		if firstName == "" {
-			firstName = "друг"
-		}
-		b.SendWelcomeToNewUser(int64(chatID), firstName)
-	case "info":
-		b.sendTeacherInfo(int64(chatID))
-	default:
-		b.SendMessage(int64(chatID), "Используйте команду /start для начала работы с ботом.")
-	}
+	// Здесь нужно будет интегрировать с MediaService
+	// Пока просто отправляем подтверждение
+	b.SendMessage(int64(chatID), "📎 Медиафайл получен! Спасибо за отправку.")
 }
+
+// duplicate callback handler removed (используется новая версия выше)
 
 // sendWelcomeMessage отправляет приветственное сообщение с кнопкой
 func (b *Bot) sendWelcomeMessage(chatID int64) error {
@@ -550,7 +687,7 @@ func (b *Bot) SendMediaUploadInstructions(chatID int64, mediaType string) error 
 • Качество: HD (720p) или выше
 
 Просто отправьте видео-файл в этот чат!`
-		
+
 		keyboard = tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonURL("📱 Открыть приложение", "https://edubot-0g05.onrender.com"),
@@ -567,7 +704,7 @@ func (b *Bot) SendMediaUploadInstructions(chatID int64, mediaType string) error 
 • Аудио-комментарии
 
 <b>Можно отправить несколько файлов!</b>`
-		
+
 		keyboard = tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonURL("📚 Мои задания", "https://edubot-0g05.onrender.com"),
@@ -584,7 +721,7 @@ func (b *Bot) SendMediaUploadInstructions(chatID int64, mediaType string) error 
 • Фото с пометками
 
 Это поможет ученику лучше понять материал!`
-		
+
 		keyboard = tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonURL("👨‍🏫 Панель учителя", "https://edubot-0g05.onrender.com"),
@@ -751,4 +888,33 @@ func (b *Bot) HandleTeacherFeedback(update tgbotapi.Update, mediaService interfa
 	// Здесь нужно будет добавить проверку роли пользователя
 
 	return b.HandleMediaUpload(update, mediaService)
+}
+
+// SendFeedbackNotification отправляет уведомление о фидбэке от учителя
+func (b *Bot) SendFeedbackNotification(userTelegramID int64, assignmentTitle, subject, grade, comments string) {
+	gradeText := grade
+	if grade == "needs_revision" {
+		gradeText = "на доработку"
+	}
+
+	message := fmt.Sprintf(
+		"📝 *Ваше задание проверено!*\n\n"+
+			"📚 Задание: %s\n"+
+			"📖 Предмет: %s\n"+
+			"⭐ Оценка: %s\n\n",
+		assignmentTitle, subject, gradeText,
+	)
+
+	if comments != "" {
+		message += fmt.Sprintf("💬 Комментарий учителя:\n%s\n\n", comments)
+	}
+
+	if grade == "needs_revision" {
+		message += "🔄 Пожалуйста, доработайте задание и отправьте заново."
+	} else {
+		message += "✅ Отличная работа! Продолжайте в том же духе."
+	}
+
+	b.SendMessage(userTelegramID, message)
+	log.Printf("Feedback notification sent to user %d for assignment %s", userTelegramID, assignmentTitle)
 }
