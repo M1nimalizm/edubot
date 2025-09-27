@@ -490,32 +490,62 @@ async function checkAuthAndUpdateVisibility() {
 }
 
 async function startTelegramLogin(){
+    console.log('Начинаем авторизацию через Telegram...');
     try{
         // Вариант 1: Mini App
         if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user){
+            console.log('Обнаружен Telegram WebApp, выполняем авто-авторизацию');
             const u = window.Telegram.WebApp.initDataUnsafe.user;
             await telegramAuth(u.id, u.first_name||'', u.last_name||'', u.username||'', '');
             return;
         }
+        
         // Вариант 2: Desktop/Web — открыть модальное окно с Telegram Login Widget
+        console.log('Открываем модалку с Telegram Login Widget для Web/Desktop');
         openStudentLoginModal();
         mountTelegramLoginWidget();
     }catch(e){ 
         console.error('Ошибка авторизации:', e);
-        alert('Ошибка авторизации: ' + e.message);
+        showNotification('Ошибка авторизации: ' + e.message, 'error');
     }
 }
 
 async function telegramAuth(id, firstName, lastName, username, photoUrl){
+    console.log('Отправляем данные авторизации на сервер:', { id, firstName, lastName, username, photoUrl });
+    
     const body = { id, first_name:firstName, last_name:lastName, username, photo_url:photoUrl, auth_date: Math.floor(Date.now()/1000), hash: '' };
-    const resp = await fetch('/api/public/auth/telegram', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), credentials:'include' });
-    if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.error||'Auth failed'); }
-    const data = await resp.json();
-    if(data && data.token){ 
-        localStorage.setItem('authToken', data.token); 
-        await checkAuthAndUpdateVisibility();
-        // Остаёмся на текущей странице без редиректов
-        closeStudentLoginModal();
+    
+    try {
+        const resp = await fetch('/api/public/auth/telegram', { 
+            method:'POST', 
+            headers:{'Content-Type':'application/json'}, 
+            body: JSON.stringify(body), 
+            credentials:'include' 
+        });
+        
+        console.log('Ответ сервера:', resp.status, resp.statusText);
+        
+        if(!resp.ok){ 
+            const e = await resp.json().catch(()=>({})); 
+            console.error('Ошибка авторизации:', e);
+            throw new Error(e.error||'Auth failed'); 
+        }
+        
+        const data = await resp.json();
+        console.log('Авторизация успешна, получен результат:', data);
+        
+        if(data && data.token){ 
+            localStorage.setItem('authToken', data.token); 
+            console.log('Токен сохранен в localStorage');
+            await checkAuthAndUpdateVisibility();
+            // Остаёмся на текущей странице без редиректов
+            closeStudentLoginModal();
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('Ошибка при авторизации:', error);
+        throw error;
     }
 }
 
@@ -556,9 +586,17 @@ function closeStudentLoginModal(){
 
 // Смонтировать Telegram Login Widget внутрь модалки
 function mountTelegramLoginWidget(){
+    console.log('Монтируем Telegram Login Widget...');
     const container = document.getElementById('telegramLoginContainer');
-    if (!container) return;
+    if (!container) {
+        console.error('Контейнер для Telegram Login Widget не найден!');
+        return;
+    }
+    
+    // Очищаем контейнер
     container.innerHTML = '';
+    
+    // Создаем скрипт для Telegram Login Widget
     const s = document.createElement('script');
     s.async = true;
     s.src = 'https://telegram.org/js/telegram-widget.js?22';
@@ -567,15 +605,68 @@ function mountTelegramLoginWidget(){
     s.setAttribute('data-userpic', 'false');
     s.setAttribute('data-request-access', 'write');
     s.setAttribute('data-onauth', 'onTelegramAuth');
+    
+    // Добавляем обработчик загрузки
+    s.onload = function() {
+        console.log('Telegram Login Widget загружен успешно');
+    };
+    
+    s.onerror = function() {
+        console.error('Ошибка загрузки Telegram Login Widget');
+        container.innerHTML = '<p style="color: red;">Ошибка загрузки виджета Telegram. Проверьте настройки бота.</p>';
+    };
+    
     container.appendChild(s);
+    console.log('Telegram Login Widget добавлен в контейнер');
+}
+
+// Обновление интерфейса для авторизованного пользователя
+function updateUIForUser(user) {
+    console.log('Обновляем UI для пользователя:', user);
+    
+    // Переопределяем кнопку входа
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        if (user.role === 'teacher') {
+            loginBtn.textContent = 'Панель преподавателя';
+            loginBtn.onclick = () => window.location.href = '/teacher-dashboard';
+        } else {
+            loginBtn.textContent = 'Личный кабинет';
+            loginBtn.onclick = () => window.location.href = '/student-dashboard';
+        }
+    }
+    
+    // Обновляем кнопки записи на пробное занятие
+    const trialButtons = document.querySelectorAll('[onclick="openTrialModal()"]');
+    trialButtons.forEach(btn => {
+        if (user.role === 'teacher') {
+            btn.textContent = 'Панель преподавателя';
+            btn.onclick = () => window.location.href = '/teacher-dashboard';
+        } else {
+            btn.textContent = 'Личный кабинет';
+            btn.onclick = () => window.location.href = '/student-dashboard';
+        }
+    });
 }
 
 // Колбэк телеграм-виджета
 function onTelegramAuth(user){
-    telegramAuth(user.id, user.first_name||'', user.last_name||'', user.username||'', user.photo_url||'').catch(err=>{
-        console.error(err);
-        alert('Ошибка авторизации через Telegram');
-    });
+    console.log('Telegram Login Widget callback received:', user);
+    
+    telegramAuth(user.id, user.first_name||'', user.last_name||'', user.username||'', user.photo_url||'')
+        .then(result => {
+            console.log('Авторизация успешна:', result);
+            // Закрываем модалку после успешной авторизации
+            closeStudentLoginModal();
+            // Обновляем UI
+            updateUIForUser(result.user);
+            // Показываем уведомление об успехе
+            showNotification('Добро пожаловать! Авторизация прошла успешно.', 'success');
+        })
+        .catch(err => {
+            console.error('Ошибка авторизации через Telegram:', err);
+            showNotification('Ошибка авторизации: ' + err.message, 'error');
+        });
 }
 </script>
 </html>
