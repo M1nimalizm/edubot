@@ -436,6 +436,25 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', async function () {
+    console.log('DOM загружен, инициализируем приложение...');
+    
+    // Проверяем кнопку входа
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        console.log('Кнопка "Войти" найдена:', loginBtn);
+        console.log('Кнопка активна:', !loginBtn.disabled);
+        console.log('Кнопка видима:', loginBtn.offsetParent !== null);
+        
+        // Добавляем дополнительный обработчик для отладки
+        loginBtn.addEventListener('click', function(e) {
+            console.log('Кнопка "Войти" нажата через addEventListener');
+            e.preventDefault();
+            startTelegramLogin();
+        });
+    } else {
+        console.error('Кнопка "Войти" не найдена!');
+    }
+    
     // Проверяем авторизацию при загрузке страницы
     await checkAuthAndUpdateVisibility();
     
@@ -490,7 +509,9 @@ async function checkAuthAndUpdateVisibility() {
 }
 
 async function startTelegramLogin(){
-    console.log('Начинаем авторизацию через Telegram...');
+    console.log('=== НАЧАЛО АВТОРИЗАЦИИ ===');
+    console.log('Кнопка "Войти" нажата, начинаем авторизацию через Telegram...');
+    
     try{
         // Вариант 1: Mini App
         if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user){
