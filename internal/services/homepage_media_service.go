@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/disintegration/imaging"
 )
 
 type HomepageMediaService interface {
@@ -78,11 +77,9 @@ func (s *homepageMediaService) UploadFile(file *multipart.FileHeader, mediaType 
 	// Определяем размеры изображения (если это изображение)
 	var width, height int
 	if strings.HasPrefix(file.Header.Get("Content-Type"), "image/") {
-		img, err := imaging.Open(filePath)
-		if err == nil {
-			width = img.Bounds().Dx()
-			height = img.Bounds().Dy()
-		}
+		// Попробуем определить размеры изображения без внешних библиотек
+		// Для простоты пока оставляем 0, 0 - размеры можно добавить позже
+		width, height = 0, 0
 	}
 	
 	// Создаем запись в базе данных
