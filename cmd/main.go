@@ -147,6 +147,10 @@ func main() {
 	// Middleware
 	router.Use(handlers.CORSMiddleware())
 
+	// Статические файлы и HTML шаблоны
+	router.Static("/static", "./web/static")
+	router.LoadHTMLGlob("web/templates/*")
+
 	// Публичные маршруты для медиафайлов главной страницы
 	router.GET("/media/homepage/:filename", homepageMediaHandler.ServeMedia)
 	router.GET("/api/public/homepage-media/:type", homepageMediaHandler.GetActiveMedia)
