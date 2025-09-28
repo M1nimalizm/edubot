@@ -164,6 +164,16 @@ func main() {
 		})
 	})
 
+	// Тестовый маршрут для проверки работы сервера
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+			"message": "EduBot server is running",
+			"base_url": cfg.BaseURL,
+			"port": cfg.Port,
+		})
+	})
+
 	// Главная страница
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{
