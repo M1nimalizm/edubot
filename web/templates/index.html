@@ -426,11 +426,57 @@
             }
         }
         
+        // Загружаем медиафайлы главной страницы
+        async function loadHomepageMedia() {
+            try {
+                // Загружаем фото преподавателя
+                const teacherPhotoResponse = await fetch('/api/public/homepage-media/teacher_photo');
+                if (teacherPhotoResponse.ok) {
+                    const teacherPhoto = await teacherPhotoResponse.json();
+                    updateTeacherPhoto(teacherPhoto);
+                }
+                
+                // Загружаем приветственное видео
+                const welcomeVideoResponse = await fetch('/api/public/homepage-media/welcome_video');
+                if (welcomeVideoResponse.ok) {
+                    const welcomeVideo = await welcomeVideoResponse.json();
+                    updateWelcomeVideo(welcomeVideo);
+                }
+            } catch (error) {
+                console.log('Медиафайлы главной страницы не загружены:', error);
+            }
+        }
+
+        // Обновляем фото преподавателя
+        function updateTeacherPhoto(media) {
+            const teacherPhoto = document.querySelector('.teacher-photo');
+            if (teacherPhoto && media.url) {
+                teacherPhoto.innerHTML = `<img src="${media.url}" alt="Александр Пугачев" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+            }
+        }
+
+        // Обновляем приветственное видео
+        function updateWelcomeVideo(media) {
+            const videoContainer = document.getElementById('welcomeVideoContainer');
+            const videoFallback = document.getElementById('welcomeVideoFallback');
+            
+            if (videoContainer && media.url) {
+                videoFallback.style.display = 'none';
+                videoContainer.innerHTML = `
+                    <video controls style="width: 100%; max-width: 800px; border-radius: var(--border-radius); box-shadow: var(--shadow);">
+                        <source src="${media.url}" type="${media.mime_type}">
+                        Ваш браузер не поддерживает видео.
+                    </video>
+                `;
+            }
+        }
+        
         // Автоматически загружаем приветственный ролик при загрузке страницы
         document.addEventListener('DOMContentLoaded', () => {
             // Небольшая задержка для лучшего UX
             setTimeout(() => {
                 loadWelcomeVideo();
+                loadHomepageMedia();
             }, 1000);
         });
     </script>

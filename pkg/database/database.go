@@ -57,6 +57,7 @@ func (d *Database) Migrate() error {
 		&models.MediaView{},
 		&models.Group{},
 		&models.GroupMember{},
+		&models.HomepageMedia{},
 	)
 }
 

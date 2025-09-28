@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление медиафайлами - EduBot</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=2025-09-27-2">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Управление медиафайлами главной страницы</h1>
+        
+        <!-- Загрузка фото преподавателя -->
+        <div class="media-section">
+            <h2><i class="fas fa-user"></i> Фото преподавателя</h2>
+            <div class="upload-area" id="teacherPhotoUpload">
+                <div class="upload-content">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Перетащите фото преподавателя сюда или нажмите для выбора</p>
+                    <p class="upload-hint">Поддерживаемые форматы: JPG, PNG, WebP (максимум 50MB)</p>
+                </div>
+                <input type="file" id="teacherPhotoInput" accept="image/*" style="display: none;">
+            </div>
+            <div id="teacherPhotoPreview" class="preview-area" style="display: none;">
+                <img id="teacherPhotoImg" src="" alt="Фото преподавателя">
+                <div class="preview-actions">
+                    <button class="btn btn-primary" onclick="uploadTeacherPhoto()">
+                        <i class="fas fa-upload"></i> Загрузить
+                    </button>
+                    <button class="btn btn-outline" onclick="cancelTeacherPhoto()">
+                        <i class="fas fa-times"></i> Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Загрузка приветственного видео -->
+        <div class="media-section">
+            <h2><i class="fas fa-video"></i> Приветственное видео</h2>
+            <div class="upload-area" id="welcomeVideoUpload">
+                <div class="upload-content">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Перетащите приветственное видео сюда или нажмите для выбора</p>
+                    <p class="upload-hint">Поддерживаемые форматы: MP4, WebM, OGG (максимум 50MB)</p>
+                </div>
+                <input type="file" id="welcomeVideoInput" accept="video/*" style="display: none;">
+            </div>
+            <div id="welcomeVideoPreview" class="preview-area" style="display: none;">
+                <video id="welcomeVideoPlayer" controls style="max-width: 100%; height: 200px;">
+                    <source id="welcomeVideoSource" src="" type="">
+                    Ваш браузер не поддерживает видео.
+                </video>
+                <div class="preview-actions">
+                    <button class="btn btn-primary" onclick="uploadWelcomeVideo()">
+                        <i class="fas fa-upload"></i> Загрузить
+                    </button>
+                    <button class="btn btn-outline" onclick="cancelWelcomeVideo()">
+                        <i class="fas fa-times"></i> Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Список загруженных файлов -->
+        <div class="media-section">
+            <h2><i class="fas fa-list"></i> Загруженные файлы</h2>
+            <div id="mediaList" class="media-list">
+                <!-- Список будет загружен динамически -->
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .media-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--gray-light);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: var(--background-color);
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-color);
+            background: rgba(243, 156, 18, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--accent-color);
+            background: rgba(243, 156, 18, 0.1);
+        }
+
+        .upload-content i {
+            font-size: 3rem;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
+
+        .upload-hint {
+            font-size: 0.9rem;
+            color: var(--gray-medium);
+            margin-top: 0.5rem;
+        }
+
+        .preview-area {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--background-color);
+            border-radius: var(--border-radius);
+            text-align: center;
+        }
+
+        .preview-area img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        .preview-actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .media-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .media-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background: var(--background-color);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--gray-light);
+        }
+
+        .media-item.active {
+            border-color: var(--success-color);
+            background: rgba(39, 174, 96, 0.05);
+        }
+
+        .media-item img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: var(--border-radius);
+            margin-right: 1rem;
+        }
+
+        .media-info {
+            flex: 1;
+        }
+
+        .media-info h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--primary-color);
+        }
+
+        .media-info p {
+            margin: 0;
+            color: var(--gray-medium);
+            font-size: 0.9rem;
+        }
+
+        .media-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+    </style>
+
+    <script>
+        let selectedTeacherPhoto = null;
+        let selectedWelcomeVideo = null;
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            setupUploadAreas();
+            loadMediaList();
+        });
+
+        // Настройка областей загрузки
+        function setupUploadAreas() {
+            // Фото преподавателя
+            const teacherUpload = document.getElementById('teacherPhotoUpload');
+            const teacherInput = document.getElementById('teacherPhotoInput');
+
+            teacherUpload.addEventListener('click', () => teacherInput.click());
+            teacherUpload.addEventListener('dragover', handleDragOver);
+            teacherUpload.addEventListener('dragleave', handleDragLeave);
+            teacherUpload.addEventListener('drop', (e) => handleDrop(e, 'teacher'));
+
+            teacherInput.addEventListener('change', (e) => handleFileSelect(e, 'teacher'));
+
+            // Приветственное видео
+            const videoUpload = document.getElementById('welcomeVideoUpload');
+            const videoInput = document.getElementById('welcomeVideoInput');
+
+            videoUpload.addEventListener('click', () => videoInput.click());
+            videoUpload.addEventListener('dragover', handleDragOver);
+            videoUpload.addEventListener('dragleave', handleDragLeave);
+            videoUpload.addEventListener('drop', (e) => handleDrop(e, 'video'));
+
+            videoInput.addEventListener('change', (e) => handleFileSelect(e, 'video'));
+        }
+
+        // Обработка перетаскивания
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(e, type) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0], type);
+            }
+        }
+
+        function handleFileSelect(e, type) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                handleFile(files[0], type);
+            }
+        }
+
+        function handleFile(file, type) {
+            if (type === 'teacher') {
+                selectedTeacherPhoto = file;
+                showTeacherPhotoPreview(file);
+            } else if (type === 'video') {
+                selectedWelcomeVideo = file;
+                showWelcomeVideoPreview(file);
+            }
+        }
+
+        function showTeacherPhotoPreview(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('teacherPhotoImg').src = e.target.result;
+                document.getElementById('teacherPhotoPreview').style.display = 'block';
+                document.getElementById('teacherPhotoUpload').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showWelcomeVideoPreview(file) {
+            const url = URL.createObjectURL(file);
+            const video = document.getElementById('welcomeVideoPlayer');
+            const source = document.getElementById('welcomeVideoSource');
+            
+            source.src = url;
+            source.type = file.type;
+            video.load();
+            
+            document.getElementById('welcomeVideoPreview').style.display = 'block';
+            document.getElementById('welcomeVideoUpload').style.display = 'none';
+        }
+
+        function cancelTeacherPhoto() {
+            selectedTeacherPhoto = null;
+            document.getElementById('teacherPhotoPreview').style.display = 'none';
+            document.getElementById('teacherPhotoUpload').style.display = 'block';
+            document.getElementById('teacherPhotoInput').value = '';
+        }
+
+        function cancelWelcomeVideo() {
+            selectedWelcomeVideo = null;
+            document.getElementById('welcomeVideoPreview').style.display = 'none';
+            document.getElementById('welcomeVideoUpload').style.display = 'block';
+            document.getElementById('welcomeVideoInput').value = '';
+        }
+
+        async function uploadTeacherPhoto() {
+            if (!selectedTeacherPhoto) return;
+            
+            const formData = new FormData();
+            formData.append('file', selectedTeacherPhoto);
+            
+            try {
+                const response = await fetch('/api/teacher/homepage-media/teacher_photo', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('Фото преподавателя загружено успешно!');
+                    cancelTeacherPhoto();
+                    loadMediaList();
+                } else {
+                    alert('Ошибка загрузки: ' + result.error);
+                }
+            } catch (error) {
+                alert('Ошибка загрузки: ' + error.message);
+            }
+        }
+
+        async function uploadWelcomeVideo() {
+            if (!selectedWelcomeVideo) return;
+            
+            const formData = new FormData();
+            formData.append('file', selectedWelcomeVideo);
+            
+            try {
+                const response = await fetch('/api/teacher/homepage-media/welcome_video', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('Приветственное видео загружено успешно!');
+                    cancelWelcomeVideo();
+                    loadMediaList();
+                } else {
+                    alert('Ошибка загрузки: ' + result.error);
+                }
+            } catch (error) {
+                alert('Ошибка загрузки: ' + error.message);
+            }
+        }
+
+        async function loadMediaList() {
+            try {
+                const response = await fetch('/api/teacher/homepage-media', {
+                    credentials: 'include'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    displayMediaList(result.media);
+                } else {
+                    console.error('Ошибка загрузки списка медиафайлов:', result.error);
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки списка медиафайлов:', error);
+            }
+        }
+
+        function displayMediaList(mediaList) {
+            const container = document.getElementById('mediaList');
+            
+            if (mediaList.length === 0) {
+                container.innerHTML = '<p>Нет загруженных файлов</p>';
+                return;
+            }
+            
+            container.innerHTML = mediaList.map(media => `
+                <div class="media-item ${media.is_active ? 'active' : ''}">
+                    ${media.mime_type.startsWith('image/') ? 
+                        `<img src="${media.url}" alt="${media.filename}">` : 
+                        `<div style="width: 60px; height: 60px; background: var(--accent-color); border-radius: var(--border-radius); display: flex; align-items: center; justify-content: center; color: white;"><i class="fas fa-video"></i></div>`
+                    }
+                    <div class="media-info">
+                        <h4>${getMediaTypeName(media.type)}</h4>
+                        <p>${media.filename} (${formatFileSize(media.size)})</p>
+                        <p>${media.is_active ? 'Активный' : 'Неактивный'}</p>
+                    </div>
+                    <div class="media-actions">
+                        ${!media.is_active ? 
+                            `<button class="btn btn-primary btn-small" onclick="setActiveMedia('${media.type}', '${media.id}')">
+                                <i class="fas fa-check"></i> Активировать
+                            </button>` : ''
+                        }
+                        <button class="btn btn-outline btn-small" onclick="deleteMedia('${media.id}')">
+                            <i class="fas fa-trash"></i> Удалить
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getMediaTypeName(type) {
+            switch(type) {
+                case 'teacher_photo': return 'Фото преподавателя';
+                case 'welcome_video': return 'Приветственное видео';
+                case 'hero_image': return 'Главное изображение';
+                default: return type;
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function setActiveMedia(type, mediaId) {
+            try {
+                const response = await fetch(`/api/teacher/homepage-media/${type}/active`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ media_id: mediaId }),
+                    credentials: 'include'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('Медиафайл активирован!');
+                    loadMediaList();
+                } else {
+                    alert('Ошибка активации: ' + result.error);
+                }
+            } catch (error) {
+                alert('Ошибка активации: ' + error.message);
+            }
+        }
+
+        async function deleteMedia(mediaId) {
+            if (!confirm('Вы уверены, что хотите удалить этот файл?')) return;
+            
+            try {
+                const response = await fetch(`/api/teacher/homepage-media/${mediaId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('Файл удален!');
+                    loadMediaList();
+                } else {
+                    alert('Ошибка удаления: ' + result.error);
+                }
+            } catch (error) {
+                alert('Ошибка удаления: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

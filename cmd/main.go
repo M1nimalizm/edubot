@@ -66,6 +66,7 @@ func main() {
 	assignmentRepo := repository.NewAssignmentRepository(db.DB)
 	groupRepo := repository.NewGroupRepository(db.DB)
 	mediaRepo := repository.NewMediaRepository(db.DB)
+	homepageMediaRepo := repository.NewHomepageMediaRepository(db.DB)
 
 	// Создаем сервисы
 	authService := services.NewAuthService(
@@ -80,12 +81,14 @@ func main() {
 	mediaService := services.NewMediaService(mediaRepo, userRepo, telegramBot, assignmentRepo)
 	assignmentService := services.NewAssignmentService(assignmentRepo, userRepo, mediaService, telegramBot)
 	groupService := services.NewGroupService(groupRepo, userRepo, assignmentRepo, telegramBot)
+	homepageMediaService := services.NewHomepageMediaService(homepageMediaRepo, cfg.BaseURL, "./uploads/homepage")
 
 	// Создаем обработчики
 	authHandler := handlers.NewAuthHandler(authService)
 	assignmentHandler := handlers.NewAssignmentHandler(assignmentService)
 	groupHandler := handlers.NewGroupHandler(groupService)
 	mediaHandler := handlers.NewMediaHandler(mediaService)
+	homepageMediaHandler := handlers.NewHomepageMediaHandler(homepageMediaService)
 
 	// Подключаем колбэки бота к бэкенду (после инициализации сервисов)
 	telegramBot.SetAssignStudent(func(teacherTelegramID int64, telegramID *int64, username string, grade *int, subjects string) error {
@@ -144,9 +147,9 @@ func main() {
 	// Middleware
 	router.Use(handlers.CORSMiddleware())
 
-	// Статические файлы
-	router.Static("/static", "./web/static")
-	router.LoadHTMLGlob("web/templates/*")
+	// Публичные маршруты для медиафайлов главной страницы
+	router.GET("/media/homepage/:filename", homepageMediaHandler.ServeMedia)
+	router.GET("/api/public/homepage-media/:type", homepageMediaHandler.GetActiveMedia)
 
 	// Специальный endpoint для Telegram WebApp
 	router.GET("/telegram-check", func(c *gin.Context) {
@@ -199,6 +202,12 @@ func main() {
 	router.GET("/teacher-groups", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
 		c.HTML(http.StatusOK, "teacher-groups.html", gin.H{
 			"title": "Группы - EduBot",
+		})
+	})
+
+	router.GET("/homepage-media", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+		c.HTML(http.StatusOK, "homepage-media.html", gin.H{
+			"title": "Управление медиафайлами - EduBot",
 		})
 	})
 
@@ -331,6 +340,13 @@ func main() {
 		teacher.GET("/content", assignmentHandler.GetTeacherContent)
 		teacher.PUT("/content/:id", assignmentHandler.UpdateContent)
 		teacher.DELETE("/content/:id", assignmentHandler.DeleteContent)
+
+		// Управление медиафайлами главной страницы
+		teacher.POST("/homepage-media/:type", homepageMediaHandler.UploadMedia)
+		teacher.GET("/homepage-media", homepageMediaHandler.ListMedia)
+		teacher.GET("/homepage-media/:id", homepageMediaHandler.GetMedia)
+		teacher.PUT("/homepage-media/:type/active", homepageMediaHandler.SetActiveMedia)
+		teacher.DELETE("/homepage-media/:id", homepageMediaHandler.DeleteMedia)
 	}
 
 	// Выбор роли после Telegram-авторизации (без пароля)

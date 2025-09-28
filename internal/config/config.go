@@ -12,8 +12,9 @@ import (
 // Config содержит все настройки приложения
 type Config struct {
 	// Server
-	Port string
-	Host string
+	Port    string
+	Host    string
+	BaseURL string
 
 	// Database
 	DBPath string
@@ -43,6 +44,7 @@ func Load() (*Config, error) {
 	config := &Config{
 		Port:               getEnv("PORT", "10000"),
 		Host:               getEnv("HOST", "0.0.0.0"),
+		BaseURL:            getEnv("BASE_URL", "http://localhost:10000"),
 		DBPath:             getEnv("DB_PATH", "/tmp/edubot.db"),
 		TelegramBotToken:   getEnv("TELEGRAM_BOT_TOKEN", ""),
 		TelegramWebhookURL: getEnv("TELEGRAM_WEBHOOK_URL", ""),
