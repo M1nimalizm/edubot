@@ -11,7 +11,7 @@
     
     <!-- Telegram WebApp -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="/static/css/style.css?v=2025-09-27-1">
+    <link rel="stylesheet" href="/static/css/style.css?v=2025-09-27-2">
     <link rel="stylesheet" href="/static/css/media.css?v=2025-09-22-1">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -56,10 +56,12 @@
                 <a href="#about" class="nav-link">О преподавателе</a>
                 <a href="#subjects" class="nav-link">Предметы</a>
                 <a href="#contact" class="nav-link">Контакты</a>
-                <!-- Кнопка входа -->
-                <button class="btn btn-outline login-btn" id="loginBtn" data-auth="guest" onclick="startTelegramLogin()">
-                    <i class="fab fa-telegram"></i> Войти
-                </button>
+                <!-- Кнопка входа / Аватарка пользователя -->
+                <div id="authContainer">
+                    <button class="btn btn-outline login-btn" id="loginBtn" data-auth="guest" onclick="startTelegramLogin()">
+                        <i class="fab fa-telegram"></i> Войти через Telegram
+                    </button>
+                </div>
                 <button class="btn btn-primary" onclick="openTrialModal()">
                     <i class="fas fa-calendar-plus"></i>
                     Записаться на пробное занятие
@@ -503,6 +505,11 @@ async function checkAuthAndUpdateVisibility() {
             if (need === 'user' && !isUser) node.style.display = 'none';
             if (need === 'guest' && isUser) node.style.display = 'none';
         });
+
+        // Обновляем UI для авторизованного пользователя
+        if (isUser) {
+            updateUIForUser(data);
+        }
     } catch (e) {
         console.warn('Failed to check auth on page load:', e);
     }
@@ -572,12 +579,28 @@ async function telegramAuth(id, firstName, lastName, username, photoUrl){
 
 // Функция выхода
 function logout() {
+    console.log('Выход из системы');
     localStorage.removeItem('authToken');
+    authToken = null;
+    currentUser = null;
+    
+    // Восстанавливаем кнопку входа
+    const authContainer = document.getElementById('authContainer');
+    if (authContainer) {
+        authContainer.innerHTML = `
+            <button class="btn btn-outline login-btn" id="loginBtn" data-auth="guest" onclick="startTelegramLogin()">
+                <i class="fab fa-telegram"></i> Войти через Telegram
+            </button>
+        `;
+    }
+    
     // Скрываем все элементы для авторизованных пользователей
     document.querySelectorAll('[data-auth="user"]').forEach(el => el.style.display = 'none');
     document.querySelectorAll('[data-role]').forEach(el => el.style.display = 'none');
     // Показываем элементы для гостей
     document.querySelectorAll('[data-auth="guest"]').forEach(el => el.style.display = '');
+    
+    // Перезагружаем страницу для сброса состояния
     location.reload();
 }
 
@@ -645,17 +668,24 @@ function mountTelegramLoginWidget(){
 function updateUIForUser(user) {
     console.log('Обновляем UI для пользователя:', user);
     
-    // Переопределяем кнопку входа
-    const loginBtn = document.getElementById('loginBtn');
-    if (loginBtn) {
-        if (user.role === 'teacher') {
-            loginBtn.textContent = 'Панель преподавателя';
-            loginBtn.onclick = () => window.location.href = '/teacher-dashboard';
-        } else {
-            loginBtn.textContent = 'Личный кабинет';
-            loginBtn.onclick = () => window.location.href = '/student-dashboard';
-        }
-    }
+    const authContainer = document.getElementById('authContainer');
+    if (!authContainer) return;
+    
+    // Создаем HTML для аватарки пользователя
+    const userAvatarHTML = `
+        <div class="user-avatar" onclick="showUserMenu()">
+            ${user.photo_url ? `<img src="${user.photo_url}" alt="${user.first_name}" />` : `<div style="width: 32px; height: 32px; border-radius: 50%; background: var(--accent-color); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.first_name ? user.first_name[0].toUpperCase() : 'U'}</div>`}
+            <div class="user-info">
+                <div class="user-name">${user.first_name} ${user.last_name || ''}</div>
+                <div class="user-role">${user.role === 'teacher' ? 'Преподаватель' : 'Ученик'}</div>
+            </div>
+            <button class="logout-btn" onclick="logout()" title="Выйти">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    `;
+    
+    authContainer.innerHTML = userAvatarHTML;
     
     // Обновляем кнопки записи на пробное занятие
     const trialButtons = document.querySelectorAll('[onclick="openTrialModal()"]');
@@ -668,6 +698,17 @@ function updateUIForUser(user) {
             btn.onclick = () => window.location.href = '/student-dashboard';
         }
     });
+}
+
+// Показать меню пользователя
+function showUserMenu() {
+    // Здесь можно добавить выпадающее меню с настройками профиля
+    console.log('Показываем меню пользователя');
+    if (currentUser && currentUser.role === 'teacher') {
+        window.location.href = '/teacher-dashboard';
+    } else if (currentUser && currentUser.role === 'student') {
+        window.location.href = '/student-dashboard';
+    }
 }
 
 // Колбэк телеграм-виджета
