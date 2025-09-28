@@ -24,17 +24,24 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
+	log.Printf("Configuration loaded successfully")
+	log.Printf("Port: %s", cfg.Port)
+	log.Printf("Host: %s", cfg.Host)
+	log.Printf("Base URL: %s", cfg.BaseURL)
+
 	// Подключаемся к базе данных
 	db, err := database.NewDatabase(cfg.DBPath)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer db.Close()
+	log.Printf("Database connected successfully")
 
 	// Создаем пользователя-преподавателя по умолчанию
 	if err := db.CreateDefaultTeacher(cfg.TeacherTelegramID); err != nil {
 		log.Printf("Failed to create default teacher: %v", err)
 	}
+	log.Printf("Default teacher setup completed")
 
 	// Инициализируем файловое хранилище
 	_, err = storage.NewStorage(cfg.UploadPath, cfg.MaxFileSize, cfg.MaxUserStorage)
@@ -167,10 +174,10 @@ func main() {
 	// Тестовый маршрут для проверки работы сервера
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-			"message": "EduBot server is running",
+			"status":   "ok",
+			"message":  "EduBot server is running",
 			"base_url": cfg.BaseURL,
-			"port": cfg.Port,
+			"port":     cfg.Port,
 		})
 	})
 
