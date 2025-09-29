@@ -50,23 +50,28 @@ func main() {
 		log.Fatalf("Failed to initialize storage: %v", err)
 	}
 
-	// Инициализируем Telegram бота
-	telegramBot, err := telegram.NewBot(cfg.TelegramBotToken, cfg.TelegramWebhookURL)
-	if err != nil {
-		log.Fatalf("Failed to initialize Telegram bot: %v", err)
-	}
-
-	// Устанавливаем команды бота (после инициализации сервисов подключим колбэки)
-	if err := telegramBot.SetCommands(); err != nil {
-		log.Printf("Failed to set bot commands: %v", err)
-	}
-
-	// Устанавливаем webhook если указан URL
-	if cfg.TelegramWebhookURL != "" {
-		if err := telegramBot.SetWebhook(); err != nil {
-			log.Printf("Failed to set webhook: %v", err)
-		}
-	}
+    // Инициализируем Telegram бота (без падения, если токен отсутствует)
+    var telegramBot *telegram.Bot
+    if cfg.TelegramBotToken == "" {
+        log.Printf("Telegram bot token is empty. Bot is disabled on this environment")
+    } else {
+        tb, botErr := telegram.NewBot(cfg.TelegramBotToken, cfg.TelegramWebhookURL)
+        if botErr != nil {
+            log.Printf("Failed to initialize Telegram bot: %v. Continuing without bot.", botErr)
+        } else {
+            telegramBot = tb
+            // Устанавливаем команды бота (после инициализации сервисов подключим колбэки)
+            if err := telegramBot.SetCommands(); err != nil {
+                log.Printf("Failed to set bot commands: %v", err)
+            }
+            // Устанавливаем webhook если указан URL
+            if cfg.TelegramWebhookURL != "" {
+                if err := telegramBot.SetWebhook(); err != nil {
+                    log.Printf("Failed to set webhook: %v", err)
+                }
+            }
+        }
+    }
 
 	// Создаем репозитории
 	userRepo := repository.NewUserRepository(db.DB)
@@ -98,52 +103,56 @@ func main() {
 	mediaHandler := handlers.NewMediaHandler(mediaService)
 	homepageMediaHandler := handlers.NewHomepageMediaHandler(homepageMediaService)
 
-	// Подключаем колбэки бота к бэкенду (после инициализации сервисов)
-	telegramBot.SetAssignStudent(func(teacherTelegramID int64, telegramID *int64, username string, grade *int, subjects string) error {
-		teacher, err := userRepo.GetByTelegramID(teacherTelegramID)
-		if err != nil {
-			return fmt.Errorf("teacher not found")
-		}
-		_, err = authService.AssignStudentToTeacher(teacher.ID, services.AssignStudentParams{
-			TelegramID: telegramID,
-			Username:   username,
-			Grade:      grade,
-			Subjects:   subjects,
-		})
-		return err
-	})
-	telegramBot.SetGetUserRole(func(telegramID int64) string {
-		u, err := userRepo.GetByTelegramID(telegramID)
-		if err != nil || u == nil {
-			return "guest"
-		}
-		return string(u.Role)
-	})
+    // Подключаем колбэки бота к бэкенду (если бот доступен)
+    if telegramBot != nil {
+        telegramBot.SetAssignStudent(func(teacherTelegramID int64, telegramID *int64, username string, grade *int, subjects string) error {
+            teacher, err := userRepo.GetByTelegramID(teacherTelegramID)
+            if err != nil {
+                return fmt.Errorf("teacher not found")
+            }
+            _, err = authService.AssignStudentToTeacher(teacher.ID, services.AssignStudentParams{
+                TelegramID: telegramID,
+                Username:   username,
+                Grade:      grade,
+                Subjects:   subjects,
+            })
+            return err
+        })
+        telegramBot.SetGetUserRole(func(telegramID int64) string {
+            u, err := userRepo.GetByTelegramID(telegramID)
+            if err != nil || u == nil {
+                return "guest"
+            }
+            return string(u.Role)
+        })
 
-	telegramBot.SetListTeacherGroups(func(teacherTelegramID int64) ([]struct {
-		ID   string
-		Name string
-	}, error) {
-		teacher, err := userRepo.GetByTelegramID(teacherTelegramID)
-		if err != nil {
-			return nil, err
-		}
-		gs, err := groupService.ListGroups(teacher.ID)
-		if err != nil {
-			return nil, err
-		}
-		res := make([]struct {
-			ID   string
-			Name string
-		}, 0, len(gs))
-		for _, g := range gs {
-			res = append(res, struct {
-				ID   string
-				Name string
-			}{ID: g.ID.String(), Name: g.Name})
-		}
-		return res, nil
-	})
+        telegramBot.SetListTeacherGroups(func(teacherTelegramID int64) ([]struct {
+            ID   string
+            Name string
+        }, error) {
+            teacher, err := userRepo.GetByTelegramID(teacherTelegramID)
+            if err != nil {
+                return nil, err
+            }
+            gs, err := groupService.ListGroups(teacher.ID)
+            if err != nil {
+                return nil, err
+            }
+            res := make([]struct {
+                ID   string
+                Name string
+            }, 0, len(gs))
+            for _, g := range gs {
+                res = append(res, struct {
+                    ID   string
+                    Name string
+                }{ID: g.ID.String(), Name: g.Name})
+            }
+            return res, nil
+        })
+    } else {
+        log.Printf("Telegram bot callbacks are not registered (bot disabled)")
+    }
 
 	// Настраиваем Gin
 	if gin.Mode() == gin.ReleaseMode {
@@ -402,7 +411,7 @@ func main() {
 	if port == "" {
 		port = cfg.Port
 	}
-	
+
 	addr := fmt.Sprintf(":%s", port)
 	log.Printf("Starting EduBot server on %s", addr)
 	log.Printf("Base URL: %s", cfg.BaseURL)
