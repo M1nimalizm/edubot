@@ -887,10 +887,10 @@ section {
 }
 
 /* Приветствие: карточка белая/темно-синяя вариант */
-.video-container { background: #ffffff; }
-.video-fallback { background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); }
-.video-fallback h3 { color: var(--primary-color); }
-.video-fallback p { color: var(--text-color); }
+.video-container { background: #0f1720; }
+.video-fallback { background: linear-gradient(135deg, #0f1720 0%, #152231 100%); }
+.video-fallback h3 { color: #ffffff; }
+.video-fallback p { color: #c9d6e2; }
 
 .video-fallback .btn {
     background: linear-gradient(135deg, var(--primary-color), #FF8A00);
