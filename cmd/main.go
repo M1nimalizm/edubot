@@ -223,11 +223,22 @@ func main() {
 		c.HTML(http.StatusOK, "index.html", gin.H{"title": "EduBot - Mini App"})
 	})
 
+	// Панели управления доступны всегда (для Mini App)
+	router.GET("/teacher-dashboard", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+		c.HTML(http.StatusOK, "teacher-dashboard.html", gin.H{"title": "Панель управления - EduBot"})
+	})
+	router.GET("/student-dashboard", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
+		c.HTML(http.StatusOK, "student-dashboard.html", gin.H{"title": "Мои задания - EduBot"})
+	})
+	router.GET("/student-progress", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
+		c.HTML(http.StatusOK, "student-progress.html", gin.H{"title": "Мой прогресс - EduBot"})
+	})
+	router.GET("/student-chat", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
+		c.HTML(http.StatusOK, "student-chat.html", gin.H{"title": "Чат с преподавателем - EduBot"})
+	})
+
 	// HTML-страницы доступны только когда сайт включен
 	if !disableSite {
-		router.GET("/teacher-dashboard", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-			c.HTML(http.StatusOK, "teacher-dashboard.html", gin.H{"title": "Панель управления - EduBot"})
-		})
 		router.GET("/teacher/assignments/create", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
 			c.HTML(http.StatusOK, "teacher-assignments.html", gin.H{"title": "Создание задания - EduBot"})
 		})
@@ -245,15 +256,6 @@ func main() {
 		})
 		router.GET("/homepage-media", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
 			c.HTML(http.StatusOK, "homepage-media.html", gin.H{"title": "Управление медиафайлами - EduBot"})
-		})
-		router.GET("/student-dashboard", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
-			c.HTML(http.StatusOK, "student-dashboard.html", gin.H{"title": "Мои задания - EduBot"})
-		})
-		router.GET("/student-progress", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
-			c.HTML(http.StatusOK, "student-progress.html", gin.H{"title": "Мой прогресс - EduBot"})
-		})
-		router.GET("/student-chat", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
-			c.HTML(http.StatusOK, "student-chat.html", gin.H{"title": "Чат с преподавателем - EduBot"})
 		})
 	}
 
