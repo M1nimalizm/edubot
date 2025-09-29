@@ -403,9 +403,7 @@ func main() {
 		teacher.DELETE("/groups/:id/members/:user_id", groupHandler.RemoveMember)
 		teacher.POST("/groups/:id/assignments", groupHandler.AssignHomework)
 
-		// Управление заданиями
-		teacher.POST("/assignments", assignmentHandler.CreateAssignment)
-		teacher.GET("/assignments", assignmentHandler.GetTeacherAssignments)
+		// Управление заданиями (legacy - используем TeacherInboxHandler)
 		teacher.PUT("/assignments/:id", assignmentHandler.UpdateAssignment)
 		teacher.DELETE("/assignments/:id", assignmentHandler.DeleteAssignment)
 
