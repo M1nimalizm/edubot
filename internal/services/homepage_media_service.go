@@ -83,12 +83,12 @@ func (s *homepageMediaService) UploadFile(file *multipart.FileHeader, mediaType 
 	}
 	
 	// Создаем запись в базе данных
-	media := &models.HomepageMedia{
+    media := &models.HomepageMedia{
 		ID:        uuid.New(),
 		Type:      mediaType,
 		Filename:  filename,
 		Path:      filePath,
-		URL:       fmt.Sprintf("%s/media/homepage/%s", s.baseURL, filename),
+        URL:       s.buildURL(filename),
 		Size:      fileInfo.Size(),
 		MimeType:  file.Header.Get("Content-Type"),
 		Width:     width,
@@ -109,15 +109,35 @@ func (s *homepageMediaService) UploadFile(file *multipart.FileHeader, mediaType 
 }
 
 func (s *homepageMediaService) GetActiveMedia(mediaType models.HomepageMediaType) (*models.HomepageMedia, error) {
-	return s.mediaRepo.GetActiveByType(mediaType)
+    media, err := s.mediaRepo.GetActiveByType(mediaType)
+    if err != nil {
+        return nil, err
+    }
+    // Переопределяем URL на относительный, чтобы не зависеть от baseURL
+    media.URL = s.buildURL(media.Filename)
+    return media, nil
 }
 
 func (s *homepageMediaService) GetMediaByID(id uuid.UUID) (*models.HomepageMedia, error) {
-	return s.mediaRepo.GetByID(id)
+    media, err := s.mediaRepo.GetByID(id)
+    if err != nil {
+        return nil, err
+    }
+    media.URL = s.buildURL(media.Filename)
+    return media, nil
 }
 
 func (s *homepageMediaService) ListMedia() ([]*models.HomepageMedia, error) {
-	return s.mediaRepo.List()
+    items, err := s.mediaRepo.List()
+    if err != nil {
+        return nil, err
+    }
+    for _, m := range items {
+        if m != nil {
+            m.URL = s.buildURL(m.Filename)
+        }
+    }
+    return items, nil
 }
 
 func (s *homepageMediaService) DeleteMedia(id uuid.UUID) error {
@@ -142,5 +162,13 @@ func (s *homepageMediaService) SetActiveMedia(mediaType models.HomepageMediaType
 }
 
 func (s *homepageMediaService) GetMediaURL(media *models.HomepageMedia) string {
-	return media.URL
+    if media == nil {
+        return ""
+    }
+    return s.buildURL(media.Filename)
+}
+
+// buildURL возвращает относительный URL до медиафайла
+func (s *homepageMediaService) buildURL(filename string) string {
+    return fmt.Sprintf("/media/homepage/%s", filename)
 }
