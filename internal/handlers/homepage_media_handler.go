@@ -120,8 +120,9 @@ func (h *HomepageMediaHandler) GetActiveMedia(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "No active media found for this type"})
 		return
 	}
-	
-	c.JSON(http.StatusOK, media)
+    // Нормализуем URL перед отдачей
+    media.URL = h.mediaService.GetMediaURL(media)
+    c.JSON(http.StatusOK, media)
 }
 
 // ListMedia получает список всех медиафайлов
