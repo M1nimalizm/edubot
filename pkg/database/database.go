@@ -8,6 +8,7 @@ import (
 	"edubot/internal/models"
 
 	"github.com/google/uuid"
+	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -20,17 +21,24 @@ type Database struct {
 
 // NewDatabase создает новое подключение к базе данных
 func NewDatabase(dbPath string) (*Database, error) {
-	// Создаем директорию для базы данных если она не существует
-	if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
-		return nil, fmt.Errorf("failed to create database directory: %w", err)
-	}
+	var db *gorm.DB
+	var err error
 
-	// Подключаемся к SQLite базе данных
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
+		// Предпочитаем Postgres, если задан DATABASE_URL
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Info)})
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to postgres: %w", err)
+		}
+	} else {
+		// SQLite: создаем директорию и подключаемся по локальному пути
+		if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
+			return nil, fmt.Errorf("failed to create database directory: %w", err)
+		}
+		db, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{Logger: logger.Default.LogMode(logger.Info)})
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to sqlite: %w", err)
+		}
 	}
 
 	database := &Database{DB: db}

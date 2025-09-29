@@ -94,9 +94,9 @@ func main() {
 	mediaService := services.NewMediaService(mediaRepo, userRepo, telegramBot, assignmentRepo)
 	assignmentService := services.NewAssignmentService(assignmentRepo, userRepo, mediaService, telegramBot)
 	groupService := services.NewGroupService(groupRepo, userRepo, assignmentRepo, telegramBot)
-    // Используем базовый путь загрузок из конфигурации и подпапку homepage
-    homepageUploadPath := fmt.Sprintf("%s/%s", cfg.UploadPath, "homepage")
-    homepageMediaService := services.NewHomepageMediaService(homepageMediaRepo, cfg.BaseURL, homepageUploadPath)
+	// Используем базовый путь загрузок из конфигурации и подпапку homepage
+	homepageUploadPath := fmt.Sprintf("%s/%s", cfg.UploadPath, "homepage")
+	homepageMediaService := services.NewHomepageMediaService(homepageMediaRepo, cfg.BaseURL, homepageUploadPath)
 
 	// Создаем обработчики
 	authHandler := handlers.NewAuthHandler(authService)
@@ -193,12 +193,48 @@ func main() {
 		})
 	})
 
-	// Главная страница
-	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"title": "EduBot - Образовательная платформа",
+	// Выключаем сайт по флагу DISABLE_SITE
+	disableSite := os.Getenv("DISABLE_SITE") == "true"
+	if !disableSite {
+		router.Static("/static", "./web/static")
+		router.LoadHTMLGlob("web/templates/*")
+		router.GET("/", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "index.html", gin.H{"title": "EduBot - Образовательная платформа"})
 		})
-	})
+		// Оставляем HTML-страницы только если сайт включен
+		router.GET("/teacher-dashboard", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "teacher-dashboard.html", gin.H{"title": "Панель управления - EduBot"})
+		})
+		router.GET("/teacher/assignments/create", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "teacher-assignments.html", gin.H{"title": "Создание задания - EduBot"})
+		})
+		router.GET("/teacher-submissions", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "teacher-submissions.html", gin.H{"title": "Проверка заданий - EduBot"})
+		})
+		router.GET("/teacher/content/create", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "teacher-content.html", gin.H{"title": "Добавление материалов - EduBot"})
+		})
+		router.GET("/teacher/students", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "teacher-students.html", gin.H{"title": "Ученики - EduBot"})
+		})
+		router.GET("/teacher-groups", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "teacher-groups.html", gin.H{"title": "Группы - EduBot"})
+		})
+		router.GET("/homepage-media", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "homepage-media.html", gin.H{"title": "Управление медиафайлами - EduBot"})
+		})
+		router.GET("/student-dashboard", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "student-dashboard.html", gin.H{"title": "Мои задания - EduBot"})
+		})
+		router.GET("/student-progress", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "student-progress.html", gin.H{"title": "Мой прогресс - EduBot"})
+		})
+	} else {
+		// Сайт выключен: корень возвращает заглушку
+		router.GET("/", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"message": "Откройте Mini App в Telegram", "status": "site_disabled"})
+		})
+	}
 
 	// Панель управления учителя (HTML guard)
 	router.GET("/teacher-dashboard", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
