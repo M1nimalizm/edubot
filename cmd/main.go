@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-    "strings"
+	"strings"
 
 	"edubot/internal/config"
 	"edubot/internal/handlers"
@@ -167,9 +167,9 @@ func main() {
 	// Middleware
 	router.Use(handlers.CORSMiddleware())
 
-    // Статика и шаблоны нужны для Mini App даже при отключенном сайте
-    router.Static("/static", "./web/static")
-    router.LoadHTMLGlob("web/templates/*")
+	// Статика и шаблоны нужны для Mini App даже при отключенном сайте
+	router.Static("/static", "./web/static")
+	router.LoadHTMLGlob("web/templates/*")
 
 	// Публичные маршруты для медиафайлов главной страницы
 	router.GET("/media/homepage/:filename", homepageMediaHandler.ServeMedia)
@@ -195,48 +195,53 @@ func main() {
 	})
 
     // Выключаем сайт по флагу DISABLE_SITE, но пускаем Mini App из Telegram
-    disableSite := os.Getenv("DISABLE_SITE") == "true"
-    router.GET("/", func(c *gin.Context) {
-        if disableSite && !isTelegramWebApp(c.Request) {
-            c.JSON(http.StatusOK, gin.H{"message": "Откройте Mini App в Telegram", "status": "site_disabled"})
-            return
-        }
-        c.HTML(http.StatusOK, "index.html", gin.H{"title": "EduBot - Образовательная платформа"})
+	disableSite := os.Getenv("DISABLE_SITE") == "true"
+	router.GET("/", func(c *gin.Context) {
+		if disableSite && !isTelegramWebApp(c.Request) {
+			c.JSON(http.StatusOK, gin.H{"message": "Откройте Mini App в Telegram", "status": "site_disabled"})
+			return
+		}
+		c.HTML(http.StatusOK, "index.html", gin.H{"title": "EduBot - Образовательная платформа"})
+	})
+
+    // Специальный путь для Mini App, всегда отдаёт index.html (настрой в боте open_web_app на /app)
+    router.GET("/app", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "index.html", gin.H{"title": "EduBot - Mini App"})
     })
 
-    // HTML-страницы доступны только когда сайт включен
-    if !disableSite {
-        router.GET("/teacher-dashboard", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-            c.HTML(http.StatusOK, "teacher-dashboard.html", gin.H{"title": "Панель управления - EduBot"})
-        })
-        router.GET("/teacher/assignments/create", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-            c.HTML(http.StatusOK, "teacher-assignments.html", gin.H{"title": "Создание задания - EduBot"})
-        })
-        router.GET("/teacher-submissions", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-            c.HTML(http.StatusOK, "teacher-submissions.html", gin.H{"title": "Проверка заданий - EduBot"})
-        })
-        router.GET("/teacher/content/create", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-            c.HTML(http.StatusOK, "teacher-content.html", gin.H{"title": "Добавление материалов - EduBot"})
-        })
-        router.GET("/teacher/students", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-            c.HTML(http.StatusOK, "teacher-students.html", gin.H{"title": "Ученики - EduBot"})
-        })
-        router.GET("/teacher-groups", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-            c.HTML(http.StatusOK, "teacher-groups.html", gin.H{"title": "Группы - EduBot"})
-        })
-        router.GET("/homepage-media", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-            c.HTML(http.StatusOK, "homepage-media.html", gin.H{"title": "Управление медиафайлами - EduBot"})
-        })
-        router.GET("/student-dashboard", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
-            c.HTML(http.StatusOK, "student-dashboard.html", gin.H{"title": "Мои задания - EduBot"})
-        })
-        router.GET("/student-progress", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
-            c.HTML(http.StatusOK, "student-progress.html", gin.H{"title": "Мой прогресс - EduBot"})
-        })
-    }
+	// HTML-страницы доступны только когда сайт включен
+	if !disableSite {
+		router.GET("/teacher-dashboard", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "teacher-dashboard.html", gin.H{"title": "Панель управления - EduBot"})
+		})
+		router.GET("/teacher/assignments/create", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "teacher-assignments.html", gin.H{"title": "Создание задания - EduBot"})
+		})
+		router.GET("/teacher-submissions", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "teacher-submissions.html", gin.H{"title": "Проверка заданий - EduBot"})
+		})
+		router.GET("/teacher/content/create", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "teacher-content.html", gin.H{"title": "Добавление материалов - EduBot"})
+		})
+		router.GET("/teacher/students", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "teacher-students.html", gin.H{"title": "Ученики - EduBot"})
+		})
+		router.GET("/teacher-groups", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "teacher-groups.html", gin.H{"title": "Группы - EduBot"})
+		})
+		router.GET("/homepage-media", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "homepage-media.html", gin.H{"title": "Управление медиафайлами - EduBot"})
+		})
+		router.GET("/student-dashboard", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "student-dashboard.html", gin.H{"title": "Мои задания - EduBot"})
+		})
+		router.GET("/student-progress", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "student-progress.html", gin.H{"title": "Мой прогресс - EduBot"})
+		})
+	}
 
-    // helper: определяем запросы из Telegram Mini App по User-Agent/параметрам
-    // (упрощенно: User-Agent содержит "Telegram" или есть tgWebAppData в query)
+	// helper: определяем запросы из Telegram Mini App по User-Agent/параметрам
+	// (упрощенно: User-Agent содержит "Telegram" или есть tgWebAppData в query)
 
 	// Панель управления учителя (HTML guard)
 	router.GET("/teacher-dashboard", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
@@ -466,16 +471,16 @@ func main() {
 
 // isTelegramWebApp пытается определить, что запрос пришел из Telegram Mini App
 func isTelegramWebApp(r *http.Request) bool {
-    ua := r.Header.Get("User-Agent")
-    if strings.Contains(strings.ToLower(ua), "telegram") {
-        return true
-    }
-    // Также считаем Mini App, если прилетели параметры WebApp
-    if r.URL != nil {
-        q := r.URL.Query()
-        if q.Get("tgWebAppData") != "" || q.Get("tgWebAppStartParam") != "" {
-            return true
-        }
-    }
-    return false
+	ua := r.Header.Get("User-Agent")
+	if strings.Contains(strings.ToLower(ua), "telegram") {
+		return true
+	}
+	// Также считаем Mini App, если прилетели параметры WebApp
+	if r.URL != nil {
+		q := r.URL.Query()
+		if q.Get("tgWebAppData") != "" || q.Get("tgWebAppStartParam") != "" {
+			return true
+		}
+	}
+	return false
 }
