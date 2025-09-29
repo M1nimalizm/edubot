@@ -886,39 +886,11 @@ section {
     border-radius: 2px;
 }
 
-.video-container {
-    max-width: 800px;
-    margin: 0 auto;
-    background: #0f1720;
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-    overflow: hidden;
-    position: relative;
-    z-index: 1;
-}
-
-.video-fallback {
-    padding: 60px 40px;
-    text-align: center;
-    background: linear-gradient(135deg, #0f1720 0%, #152231 100%);
-}
-
-.video-fallback h3 {
-    font-size: 1.8rem;
-    font-weight: 600;
-    color: #ffffff;
-    margin-bottom: 1rem;
-}
-
-.video-fallback p {
-    font-size: 1.1rem;
-    color: #c9d6e2;
-    line-height: 1.6;
-    margin-bottom: 2rem;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-}
+/* Приветствие: карточка белая/темно-синяя вариант */
+.video-container { background: #ffffff; }
+.video-fallback { background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); }
+.video-fallback h3 { color: var(--primary-color); }
+.video-fallback p { color: var(--text-color); }
 
 .video-fallback .btn {
     background: linear-gradient(135deg, var(--primary-color), #FF8A00);

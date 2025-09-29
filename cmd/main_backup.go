@@ -166,7 +166,7 @@ func main() {
 	router.GET("/telegram-check", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status":       "telegram_ready",
-			"webapp_url":   "https://edubot-0g05.onrender.com",
+            "webapp_url":   "https://edubot-0g05.onrender.com/app",
 			"bot_username": "EduBot_by_Pugachev_bot",
 		})
 	})
