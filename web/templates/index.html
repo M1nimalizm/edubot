@@ -506,6 +506,17 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Проверяем авторизацию при загрузке страницы
     await checkAuthAndUpdateVisibility();
     
+    // Автоматическая авторизация в Mini App через Telegram WebApp
+    if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user){
+        console.log('Mini App: Обнаружен Telegram WebApp, выполняем авто-авторизацию');
+        const u = window.Telegram.WebApp.initDataUnsafe.user;
+        try {
+            await telegramAuth(u.id, u.first_name||'', u.last_name||'', u.username||'', '');
+        } catch(e) {
+            console.error('Ошибка авто-авторизации в Mini App:', e);
+        }
+    }
+    
     // Загружаем приветственный ролик
     setTimeout(() => {
         loadWelcomeVideo();
@@ -516,7 +527,11 @@ document.addEventListener('DOMContentLoaded', async function () {
 async function checkAuthAndUpdateVisibility() {
     try {
         const token = localStorage.getItem('authToken');
-        if (!token) return;
+        if (!token) {
+            // Если токена нет, показываем гостевой интерфейс
+            updateUIForGuest();
+            return;
+        }
 
         const resp = await fetch('/api/profile', { 
             headers: { 'Authorization': `Bearer ${token}` },
@@ -526,6 +541,7 @@ async function checkAuthAndUpdateVisibility() {
         if (!resp.ok) {
             // Токен недействителен, удаляем его
             localStorage.removeItem('authToken');
+            updateUIForGuest();
             return;
         }
         
@@ -555,9 +571,12 @@ async function checkAuthAndUpdateVisibility() {
         // Обновляем UI для авторизованного пользователя
         if (isUser) {
             updateUIForUser(data);
+        } else {
+            updateUIForGuest();
         }
     } catch (e) {
         console.warn('Failed to check auth on page load:', e);
+        updateUIForGuest();
     }
 }
 
@@ -711,6 +730,25 @@ function mountTelegramLoginWidget(){
 }
 
 // Обновление интерфейса для авторизованного пользователя
+function updateUIForGuest() {
+    console.log('Обновляем UI для гостя');
+    
+    const authContainer = document.getElementById('authContainer');
+    if (!authContainer) return;
+    
+    // Создаем HTML для гостевого интерфейса
+    const guestHTML = `
+        <div class="guest-auth">
+            <button class="login-btn" onclick="startTelegramLogin()">
+                <i class="fab fa-telegram"></i>
+                Войти через Telegram
+            </button>
+        </div>
+    `;
+    
+    authContainer.innerHTML = guestHTML;
+}
+
 function updateUIForUser(user) {
     console.log('Обновляем UI для пользователя:', user);
     
