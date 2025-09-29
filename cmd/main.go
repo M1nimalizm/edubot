@@ -219,7 +219,7 @@ func main() {
 	})
 
 	// Специальный путь для Mini App, всегда отдаёт index.html (настрой в боте open_web_app на /app)
-	router.GET("/app", handlers.GuestMiddleware(authService), func(c *gin.Context) {
+	router.GET("/app", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{"title": "EduBot - Mini App"})
 	})
 
