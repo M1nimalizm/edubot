@@ -25,28 +25,28 @@ func (h *HomepageMediaHandler) UploadMedia(c *gin.Context) {
 	// Получаем тип медиафайла из параметра
 	mediaTypeStr := c.Param("type")
 	mediaType := models.HomepageMediaType(mediaTypeStr)
-	
+
 	// Проверяем валидность типа
-	if mediaType != models.HomepageMediaTypeTeacherPhoto && 
-	   mediaType != models.HomepageMediaTypeWelcomeVideo &&
-	   mediaType != models.HomepageMediaTypeHeroImage {
+	if mediaType != models.HomepageMediaTypeTeacherPhoto &&
+		mediaType != models.HomepageMediaTypeWelcomeVideo &&
+		mediaType != models.HomepageMediaTypeHeroImage {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid media type"})
 		return
 	}
-	
+
 	// Получаем файл из формы
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
 		return
 	}
-	
+
 	// Проверяем размер файла (максимум 50MB)
 	if file.Size > 50*1024*1024 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "File too large. Maximum size is 50MB"})
 		return
 	}
-	
+
 	// Проверяем тип файла
 	ext := filepath.Ext(file.Filename)
 	if mediaType == models.HomepageMediaTypeTeacherPhoto || mediaType == models.HomepageMediaTypeHeroImage {
@@ -78,14 +78,14 @@ func (h *HomepageMediaHandler) UploadMedia(c *gin.Context) {
 			return
 		}
 	}
-	
+
 	// Загружаем файл
 	media, err := h.mediaService.UploadFile(file, mediaType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload file: " + err.Error()})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "File uploaded successfully",
 		"media":   media,
@@ -100,13 +100,13 @@ func (h *HomepageMediaHandler) GetMedia(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid media ID"})
 		return
 	}
-	
+
 	media, err := h.mediaService.GetMediaByID(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Media not found"})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, media)
 }
 
@@ -114,15 +114,15 @@ func (h *HomepageMediaHandler) GetMedia(c *gin.Context) {
 func (h *HomepageMediaHandler) GetActiveMedia(c *gin.Context) {
 	mediaTypeStr := c.Param("type")
 	mediaType := models.HomepageMediaType(mediaTypeStr)
-	
+
 	media, err := h.mediaService.GetActiveMedia(mediaType)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "No active media found for this type"})
 		return
 	}
-    // Нормализуем URL перед отдачей
-    media.URL = h.mediaService.GetMediaURL(media)
-    c.JSON(http.StatusOK, media)
+	// Нормализуем URL перед отдачей
+	media.URL = h.mediaService.GetMediaURL(media)
+	c.JSON(http.StatusOK, media)
 }
 
 // ListMedia получает список всех медиафайлов
@@ -132,7 +132,7 @@ func (h *HomepageMediaHandler) ListMedia(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get media list"})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"media": media})
 }
 
@@ -140,38 +140,38 @@ func (h *HomepageMediaHandler) ListMedia(c *gin.Context) {
 func (h *HomepageMediaHandler) SetActiveMedia(c *gin.Context) {
 	mediaTypeStr := c.Param("type")
 	mediaType := models.HomepageMediaType(mediaTypeStr)
-	
+
 	var req struct {
-        MediaID string `json:"media_id"`
-        ID      string `json:"id"`
+		MediaID string `json:"media_id"`
+		ID      string `json:"id"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
-    // Совместимость: поддерживаем и media_id, и id
-    rawID := req.MediaID
-    if rawID == "" {
-        rawID = req.ID
-    }
-    if rawID == "" {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "media_id or id is required"})
-        return
-    }
-    mediaID, err := uuid.Parse(rawID)
+
+	// Совместимость: поддерживаем и media_id, и id
+	rawID := req.MediaID
+	if rawID == "" {
+		rawID = req.ID
+	}
+	if rawID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "media_id or id is required"})
+		return
+	}
+	mediaID, err := uuid.Parse(rawID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid media ID"})
 		return
 	}
-	
+
 	err = h.mediaService.SetActiveMedia(mediaType, mediaID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set active media: " + err.Error()})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"message": "Active media updated successfully"})
 }
 
@@ -183,13 +183,13 @@ func (h *HomepageMediaHandler) DeleteMedia(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid media ID"})
 		return
 	}
-	
+
 	err = h.mediaService.DeleteMedia(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete media: " + err.Error()})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"message": "Media deleted successfully"})
 }
 
@@ -200,20 +200,20 @@ func (h *HomepageMediaHandler) ServeMedia(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Filename required"})
 		return
 	}
-	
+
 	// Безопасность: проверяем, что файл не содержит путь
 	if filepath.Base(filename) != filename {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid filename"})
 		return
 	}
-	
+
 	// Ищем медиафайл в базе данных
 	mediaList, err := h.mediaService.ListMedia()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get media list"})
 		return
 	}
-	
+
 	var targetMedia *models.HomepageMedia
 	for _, media := range mediaList {
 		if media.Filename == filename {
@@ -221,12 +221,15 @@ func (h *HomepageMediaHandler) ServeMedia(c *gin.Context) {
 			break
 		}
 	}
-	
+
 	if targetMedia == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Media not found"})
 		return
 	}
-	
-	// Отдаем файл
-	c.File(targetMedia.Path)
+
+    // Отдаем файл с корректным Content-Type
+    if targetMedia.MimeType != "" {
+        c.Header("Content-Type", targetMedia.MimeType)
+    }
+    c.File(targetMedia.Path)
 }
