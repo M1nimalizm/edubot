@@ -142,7 +142,8 @@ func (h *HomepageMediaHandler) SetActiveMedia(c *gin.Context) {
 	mediaType := models.HomepageMediaType(mediaTypeStr)
 	
 	var req struct {
-		MediaID string `json:"media_id" binding:"required"`
+        MediaID string `json:"media_id"`
+        ID      string `json:"id"`
 	}
 	
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -150,7 +151,16 @@ func (h *HomepageMediaHandler) SetActiveMedia(c *gin.Context) {
 		return
 	}
 	
-	mediaID, err := uuid.Parse(req.MediaID)
+    // Совместимость: поддерживаем и media_id, и id
+    rawID := req.MediaID
+    if rawID == "" {
+        rawID = req.ID
+    }
+    if rawID == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "media_id or id is required"})
+        return
+    }
+    mediaID, err := uuid.Parse(rawID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid media ID"})
 		return
