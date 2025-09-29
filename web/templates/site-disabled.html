@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduBot — Откройте в Telegram</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=site-disabled-1">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(135deg, #2C3E50 0%, #1F2D3A 100%); min-height: 100vh; display:flex; align-items:center; justify-content:center; }
+        .placeholder {
+            width: min(720px, 92vw);
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.25);
+            padding: 32px 28px;
+            text-align: center;
+        }
+        .brand { display:flex; align-items:center; gap:10px; justify-content:center; color:#2C3E50; font-weight:700; font-size:20px; margin-bottom:8px; }
+        .brand i { color:#F39C12; }
+        h1 { color:#2C3E50; font-size:28px; margin:6px 0 8px; }
+        p { color:#6b6b6b; margin:0 auto 18px; max-width:540px; }
+        .cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:8px; }
+        .btn-cta { padding:14px 18px; border-radius:10px; border:2px solid #2C3E50; background:#2C3E50; color:#fff; font-weight:600; cursor:pointer; transition:all .2s ease; }
+        .btn-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(44,62,80,.35); }
+        .btn-outline { background:#fff; color:#2C3E50; }
+        .hint { font-size:14px; color:#95A5A6; margin-top:8px; }
+    </style>
+    <script>
+        function openInTelegram(){ window.location.href = 'https://t.me/EduBot_by_Pugachev_bot'; }
+        function openWebApp(){ window.location.href = '/app'; }
+    </script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function(){
+            try { if (window.Telegram && Telegram.WebApp) { openWebApp(); } } catch (e) {}
+        });
+    </script>
+    <style>@media (max-width:520px){ h1{font-size:22px;} .btn-cta{width:100%;} }</style>
+    <style>/* small pulse */ .btn-cta i{margin-right:6px}</style>
+</head>
+<body>
+    <div class="placeholder">
+        <div class="brand"><i class="fas fa-graduation-cap"></i><span>EduBot</span></div>
+        <h1>Сайт временно недоступен</h1>
+        <p>Пожалуйста, открывайте наш сервис в Telegram Mini App. Нажмите «Открыть в Telegram», либо, если вы уже в Telegram, — «Открыть Mini App».</p>
+        <div class="cta">
+            <button class="btn-cta" onclick="openWebApp()"><i class="fab fa-telegram"></i>Открыть Mini App</button>
+            <a class="btn-cta btn-outline" href="https://t.me/EduBot_by_Pugachev_bot" target="_blank" rel="noopener"><i class="fab fa-telegram"></i>Открыть в Telegram</a>
+        </div>
+        <div class="hint">Если кнопка не сработала — откройте бота @EduBot_by_Pugachev_bot вручную.</div>
+    </div>
+</body>
+</html>
+
+

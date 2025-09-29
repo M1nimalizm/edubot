@@ -194,20 +194,20 @@ func main() {
 		})
 	})
 
-    // Выключаем сайт по флагу DISABLE_SITE, но пускаем Mini App из Telegram
+	// Выключаем сайт по флагу DISABLE_SITE, но пускаем Mini App из Telegram
 	disableSite := os.Getenv("DISABLE_SITE") == "true"
 	router.GET("/", func(c *gin.Context) {
-		if disableSite && !isTelegramWebApp(c.Request) {
-			c.JSON(http.StatusOK, gin.H{"message": "Откройте Mini App в Telegram", "status": "site_disabled"})
-			return
-		}
+        if disableSite && !isTelegramWebApp(c.Request) {
+            c.HTML(http.StatusOK, "site-disabled.html", nil)
+            return
+        }
 		c.HTML(http.StatusOK, "index.html", gin.H{"title": "EduBot - Образовательная платформа"})
 	})
 
-    // Специальный путь для Mini App, всегда отдаёт index.html (настрой в боте open_web_app на /app)
-    router.GET("/app", func(c *gin.Context) {
-        c.HTML(http.StatusOK, "index.html", gin.H{"title": "EduBot - Mini App"})
-    })
+	// Специальный путь для Mini App, всегда отдаёт index.html (настрой в боте open_web_app на /app)
+	router.GET("/app", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", gin.H{"title": "EduBot - Mini App"})
+	})
 
 	// HTML-страницы доступны только когда сайт включен
 	if !disableSite {

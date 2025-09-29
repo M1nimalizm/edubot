@@ -848,7 +848,7 @@ section {
 /* Стили для блока приветствия от преподавателя */
 .welcome-video-section {
     padding: 80px 0;
-    background: linear-gradient(135deg, var(--background-color) 0%, var(--white) 100%);
+    background: linear-gradient(135deg, #1F2D3A 0%, #2C3E50 50%, #33485F 100%);
     position: relative;
     overflow: hidden;
 }
@@ -868,7 +868,7 @@ section {
     text-align: center;
     font-size: 2.5rem;
     font-weight: 700;
-    color: var(--primary-color);
+    color: #ffffff;
     margin-bottom: 2rem;
     position: relative;
     z-index: 1;
@@ -889,9 +889,9 @@ section {
 .video-container {
     max-width: 800px;
     margin: 0 auto;
-    background: var(--white);
+    background: #0f1720;
     border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
     overflow: hidden;
     position: relative;
     z-index: 1;
@@ -900,19 +900,19 @@ section {
 .video-fallback {
     padding: 60px 40px;
     text-align: center;
-    background: linear-gradient(135deg, var(--white) 0%, #f8f9fa 100%);
+    background: linear-gradient(135deg, #0f1720 0%, #152231 100%);
 }
 
 .video-fallback h3 {
     font-size: 1.8rem;
     font-weight: 600;
-    color: var(--primary-color);
+    color: #ffffff;
     margin-bottom: 1rem;
 }
 
 .video-fallback p {
     font-size: 1.1rem;
-    color: var(--text-color);
+    color: #c9d6e2;
     line-height: 1.6;
     margin-bottom: 2rem;
     max-width: 600px;
