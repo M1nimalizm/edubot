@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат с преподавателем - EduBot</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .chat-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            height: calc(100vh - 120px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chat-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .chat-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .chat-details h3 {
+            margin: 0;
+            color: var(--text-color);
+        }
+        
+        .chat-details p {
+            margin: 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .chat-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+        }
+        
+        .chat-main {
+            flex: 1;
+            display: flex;
+            gap: 1rem;
+            min-height: 0;
+        }
+        
+        .chat-sidebar {
+            width: 300px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        
+        .chat-sidebar h4 {
+            margin: 0 0 1rem 0;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .thread-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .thread-item {
+            padding: 1rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .thread-item:hover {
+            border-color: var(--primary-color);
+            background: rgba(52, 152, 219, 0.05);
+        }
+        
+        .thread-item.active {
+            border-color: var(--primary-color);
+            background: rgba(52, 152, 219, 0.1);
+        }
+        
+        .thread-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .thread-title {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .thread-time {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .thread-preview {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .thread-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .thread-type {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            background: var(--accent-color);
+            color: white;
+        }
+        
+        .unread-badge {
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .message {
+            display: flex;
+            gap: 0.75rem;
+            max-width: 80%;
+        }
+        
+        .message.own {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+        
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        
+        .message-content {
+            background: #f8f9fa;
+            padding: 0.75rem 1rem;
+            border-radius: 18px;
+            position: relative;
+        }
+        
+        .message.own .message-content {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .message-text {
+            margin: 0;
+            line-height: 1.4;
+        }
+        
+        .message-media {
+            margin-top: 0.5rem;
+        }
+        
+        .message-media img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+        }
+        
+        .message-media video {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+        }
+        
+        .message-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        
+        .message-time {
+            font-size: 0.8rem;
+        }
+        
+        .message-status {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .chat-input {
+            padding: 1rem;
+            border-top: 1px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+        
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+        
+        .message-input {
+            width: 100%;
+            min-height: 40px;
+            max-height: 120px;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            resize: none;
+            font-family: inherit;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .message-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .input-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-icon:hover {
+            background: var(--accent-color);
+        }
+        
+        .btn-icon:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .media-preview {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .media-preview h5 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+        
+        .media-list {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .media-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+        
+        .media-item i {
+            color: var(--primary-color);
+        }
+        
+        .remove-media {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 0.5rem;
+        }
+        
+        .no-messages {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 1rem;
+            color: #666;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            color: #666;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 0.25rem;
+        }
+        
+        .typing-dots span {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #666;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        
+        @media (max-width: 768px) {
+            .chat-container {
+                padding: 1rem;
+                height: calc(100vh - 100px);
+            }
+            
+            .chat-main {
+                flex-direction: column;
+            }
+            
+            .chat-sidebar {
+                width: 100%;
+                max-height: 200px;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-comments"></i>
+                <span>EduBot - Чат</span>
+            </div>
+            <div class="nav-menu">
+                <button class="btn btn-outline back-btn" onclick="goBack()">
+                    <i class="fas fa-arrow-left"></i> Назад
+                </button>
+                <button class="btn btn-outline" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <div class="chat-container">
+            <!-- Заголовок чата -->
+            <div class="chat-header">
+                <div class="chat-info">
+                    <div class="chat-avatar" id="chatAvatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="chat-details">
+                        <h3 id="chatTitle">Чат с преподавателем</h3>
+                        <p id="chatSubtitle">Выберите чат для общения</p>
+                    </div>
+                </div>
+                <div class="chat-status">
+                    <div class="status-indicator" id="statusIndicator"></div>
+                    <span id="statusText">Онлайн</span>
+                </div>
+            </div>
+            
+            <!-- Основная область чата -->
+            <div class="chat-main">
+                <!-- Боковая панель с чатами -->
+                <div class="chat-sidebar">
+                    <h4><i class="fas fa-list"></i> Чаты</h4>
+                    <div class="thread-list" id="threadList">
+                        <div class="loading">Загрузка чатов...</div>
+                    </div>
+                </div>
+                
+                <!-- Область сообщений -->
+                <div class="chat-area">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="no-messages">
+                            <i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 1rem; color: #ddd;"></i>
+                            <h3>Выберите чат для общения</h3>
+                            <p>Начните диалог с преподавателем или присоединитесь к групповому чату</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Индикатор печати -->
+                    <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                        <span id="typingUser">Кто-то</span> печатает
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Поле ввода -->
+                    <div class="chat-input" id="chatInput" style="display: none;">
+                        <div class="input-container">
+                            <div class="input-wrapper">
+                                <textarea 
+                                    id="messageInput" 
+                                    class="message-input" 
+                                    placeholder="Напишите сообщение..."
+                                    rows="1"
+                                ></textarea>
+                                
+                                <!-- Предварительный просмотр медиафайлов -->
+                                <div class="media-preview" id="mediaPreview" style="display: none;">
+                                    <h5>Выбранные файлы:</h5>
+                                    <div class="media-list" id="mediaList"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="input-actions">
+                                <input type="file" id="mediaInput" multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx" style="display: none;">
+                                <button class="btn-icon" onclick="document.getElementById('mediaInput').click()" title="Прикрепить файл">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                                <button class="btn-icon" id="sendButton" onclick="sendMessage()" title="Отправить сообщение">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentUser = null;
+        let currentThread = null;
+        let threads = [];
+        let selectedMediaFiles = [];
+        let messagePollingInterval = null;
+        let typingTimeout = null;
+        
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeChat();
+        });
+        
+        async function initializeChat() {
+            await loadUserProfile();
+            await loadThreads();
+            setupEventListeners();
+        }
+        
+        // Загрузка профиля пользователя
+        async function loadUserProfile() {
+            try {
+                const response = await fetch('/api/profile');
+                if (response.ok) {
+                    currentUser = await response.json();
+                    updateChatHeader();
+                } else {
+                    showError('Ошибка загрузки профиля');
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showError('Ошибка загрузки профиля');
+            }
+        }
+        
+        // Обновление заголовка чата
+        function updateChatHeader() {
+            if (currentUser) {
+                const avatar = document.getElementById('chatAvatar');
+                avatar.textContent = currentUser.first_name.charAt(0).toUpperCase();
+            }
+        }
+        
+        // Загрузка списка чатов
+        async function loadThreads() {
+            try {
+                const response = await fetch('/api/chat/threads');
+                if (response.ok) {
+                    const data = await response.json();
+                    threads = data.threads || [];
+                    displayThreads();
+                } else {
+                    showError('Ошибка загрузки чатов');
+                }
+            } catch (error) {
+                console.error('Error loading threads:', error);
+                showError('Ошибка загрузки чатов');
+            }
+        }
+        
+        // Отображение списка чатов
+        function displayThreads() {
+            const threadList = document.getElementById('threadList');
+            
+            if (threads.length === 0) {
+                threadList.innerHTML = `
+                    <div class="no-messages">
+                        <i class="fas fa-comments" style="font-size: 2rem; margin-bottom: 1rem; color: #ddd;"></i>
+                        <p>У вас пока нет чатов</p>
+                        <button class="btn btn-primary btn-sm" onclick="createStudentTeacherChat()">
+                            <i class="fas fa-plus"></i> Начать чат с преподавателем
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            threadList.innerHTML = threads.map(thread => `
+                <div class="thread-item ${currentThread && currentThread.id === thread.id ? 'active' : ''}" 
+                     onclick="selectThread('${thread.id}')">
+                    <div class="thread-header">
+                        <div class="thread-title">${getThreadTitle(thread)}</div>
+                        <div class="thread-time">${formatTime(thread.last_message_at)}</div>
+                    </div>
+                    <div class="thread-preview">${getThreadPreview(thread)}</div>
+                    <div class="thread-meta">
+                        <span class="thread-type">${getThreadTypeText(thread.type)}</span>
+                        ${thread.unread_count > 0 ? `<div class="unread-badge">${thread.unread_count}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Получение заголовка чата
+        function getThreadTitle(thread) {
+            if (thread.type === 'student_teacher') {
+                return thread.teacher ? `${thread.teacher.first_name} ${thread.teacher.last_name}` : 'Преподаватель';
+            } else if (thread.type === 'group') {
+                return thread.group ? thread.group.name : 'Групповой чат';
+            }
+            return 'Чат';
+        }
+        
+        // Получение превью чата
+        function getThreadPreview(thread) {
+            // Здесь можно добавить логику для отображения последнего сообщения
+            return 'Нажмите для просмотра сообщений';
+        }
+        
+        // Получение типа чата
+        function getThreadTypeText(type) {
+            switch(type) {
+                case 'student_teacher': return 'С преподавателем';
+                case 'group': return 'Групповой';
+                default: return type;
+            }
+        }
+        
+        // Выбор чата
+        async function selectThread(threadId) {
+            const thread = threads.find(t => t.id === threadId);
+            if (!thread) return;
+            
+            currentThread = thread;
+            updateChatHeader();
+            displayThreads(); // Обновляем активный чат
+            
+            // Обновляем заголовок
+            document.getElementById('chatTitle').textContent = getThreadTitle(thread);
+            document.getElementById('chatSubtitle').textContent = getThreadTypeText(thread.type);
+            
+            // Показываем поле ввода
+            document.getElementById('chatInput').style.display = 'block';
+            
+            // Загружаем сообщения
+            await loadMessages(threadId);
+            
+            // Отмечаем как прочитанное
+            await markAsRead(threadId);
+            
+            // Запускаем опрос новых сообщений
+            startMessagePolling();
+        }
+        
+        // Загрузка сообщений
+        async function loadMessages(threadId) {
+            try {
+                const response = await fetch(`/api/chat/threads/${threadId}/messages`);
+                if (response.ok) {
+                    const data = await response.json();
+                    displayMessages(data.messages || []);
+                } else {
+                    showError('Ошибка загрузки сообщений');
+                }
+            } catch (error) {
+                console.error('Error loading messages:', error);
+                showError('Ошибка загрузки сообщений');
+            }
+        }
+        
+        // Отображение сообщений
+        function displayMessages(messages) {
+            const chatMessages = document.getElementById('chatMessages');
+            
+            if (messages.length === 0) {
+                chatMessages.innerHTML = `
+                    <div class="no-messages">
+                        <i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 1rem; color: #ddd;"></i>
+                        <h3>Пока нет сообщений</h3>
+                        <p>Начните диалог, отправив первое сообщение</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            chatMessages.innerHTML = messages.map(message => `
+                <div class="message ${message.sender_id === currentUser.id ? 'own' : ''}">
+                    <div class="message-avatar">
+                        ${message.sender ? message.sender.first_name.charAt(0).toUpperCase() : '?'}
+                    </div>
+                    <div class="message-content">
+                        <p class="message-text">${message.text || ''}</p>
+                        ${message.media && message.media.length > 0 ? `
+                            <div class="message-media">
+                                ${message.media.map(media => `
+                                    ${media.mime_type.startsWith('image/') ? 
+                                        `<img src="${media.url}" alt="${media.filename}">` : 
+                                        media.mime_type.startsWith('video/') ?
+                                        `<video controls><source src="${media.url}" type="${media.mime_type}"></video>` :
+                                        `<div class="media-item">
+                                            <i class="fas fa-file"></i>
+                                            <span>${media.filename}</span>
+                                        </div>`
+                                    }
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        <div class="message-meta">
+                            <span class="message-time">${formatTime(message.created_at)}</span>
+                            ${message.sender_id === currentUser.id ? `
+                                <div class="message-status">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Прокручиваем вниз
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // Отправка сообщения
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const text = messageInput.value.trim();
+            
+            if (!text && selectedMediaFiles.length === 0) return;
+            if (!currentThread) return;
+            
+            try {
+                // Отправляем медиафайлы если есть
+                let mediaIds = [];
+                if (selectedMediaFiles.length > 0) {
+                    mediaIds = await uploadMediaFiles();
+                }
+                
+                // Отправляем сообщение
+                const response = await fetch(`/api/chat/threads/${currentThread.id}/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text || null,
+                        media_ids: mediaIds
+                    })
+                });
+                
+                if (response.ok) {
+                    messageInput.value = '';
+                    selectedMediaFiles = [];
+                    updateMediaPreview();
+                    
+                    // Перезагружаем сообщения
+                    await loadMessages(currentThread.id);
+                } else {
+                    const error = await response.json();
+                    showError(error.error || 'Ошибка отправки сообщения');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showError('Ошибка отправки сообщения');
+            }
+        }
+        
+        // Загрузка медиафайлов
+        async function uploadMediaFiles() {
+            const uploadPromises = selectedMediaFiles.map(async (file) => {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('type', getMediaType(file.type));
+                    formData.append('caption', file.name);
+                    
+                    const response = await fetch('/api/media/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Ошибка загрузки файла ${file.name}`);
+                    }
+                    
+                    const media = await response.json();
+                    return media.media.id;
+                } catch (error) {
+                    console.error(`Error uploading media file ${file.name}:`, error);
+                    throw error;
+                }
+            });
+            
+            return await Promise.all(uploadPromises);
+        }
+        
+        // Определение типа медиафайла
+        function getMediaType(fileType) {
+            if (fileType.startsWith('video/')) return 'video';
+            if (fileType.startsWith('audio/')) return 'audio';
+            if (fileType.startsWith('image/')) return 'image';
+            return 'document';
+        }
+        
+        // Отметка как прочитанное
+        async function markAsRead(threadId) {
+            try {
+                await fetch(`/api/chat/threads/${threadId}/read`, {
+                    method: 'POST'
+                });
+            } catch (error) {
+                console.error('Error marking as read:', error);
+            }
+        }
+        
+        // Создание чата с преподавателем
+        async function createStudentTeacherChat() {
+            try {
+                const response = await fetch('/api/chat/threads/student-teacher', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        teacher_id: currentUser.teacher_id // Предполагаем, что у студента есть teacher_id
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    await loadThreads(); // Перезагружаем список чатов
+                    selectThread(data.thread.id);
+                } else {
+                    const error = await response.json();
+                    showError(error.error || 'Ошибка создания чата');
+                }
+            } catch (error) {
+                console.error('Error creating chat:', error);
+                showError('Ошибка создания чата');
+            }
+        }
+        
+        // Опрос новых сообщений
+        function startMessagePolling() {
+            if (messagePollingInterval) {
+                clearInterval(messagePollingInterval);
+            }
+            
+            messagePollingInterval = setInterval(async () => {
+                if (currentThread) {
+                    await loadMessages(currentThread.id);
+                    await loadThreads(); // Обновляем список чатов для счетчиков
+                }
+            }, 3000); // Проверяем каждые 3 секунды
+        }
+        
+        // Остановка опроса
+        function stopMessagePolling() {
+            if (messagePollingInterval) {
+                clearInterval(messagePollingInterval);
+                messagePollingInterval = null;
+            }
+        }
+        
+        // Настройка обработчиков событий
+        function setupEventListeners() {
+            const messageInput = document.getElementById('messageInput');
+            const mediaInput = document.getElementById('mediaInput');
+            
+            // Отправка по Enter
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            // Автоматическое изменение высоты
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+            
+            // Выбор медиафайлов
+            mediaInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                addMediaFiles(files);
+            });
+            
+            // Очистка при размонтировании
+            window.addEventListener('beforeunload', function() {
+                stopMessagePolling();
+            });
+        }
+        
+        // Добавление медиафайлов
+        function addMediaFiles(files) {
+            files.forEach(file => {
+                // Проверяем тип файла
+                if (!isValidMediaFile(file)) {
+                    showError(`Неподдерживаемый тип файла: ${file.name}`);
+                    return;
+                }
+                
+                // Проверяем размер файла (максимум 50MB)
+                if (file.size > 50 * 1024 * 1024) {
+                    showError(`Файл слишком большой: ${file.name} (максимум 50MB)`);
+                    return;
+                }
+                
+                selectedMediaFiles.push(file);
+            });
+            
+            updateMediaPreview();
+        }
+        
+        // Проверка валидности медиафайла
+        function isValidMediaFile(file) {
+            const validTypes = [
+                'video/mp4', 'video/avi', 'video/mov', 'video/webm',
+                'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a',
+                'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+                'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
+            
+            return validTypes.includes(file.type);
+        }
+        
+        // Обновление предварительного просмотра медиафайлов
+        function updateMediaPreview() {
+            const preview = document.getElementById('mediaPreview');
+            const mediaList = document.getElementById('mediaList');
+            
+            if (selectedMediaFiles.length === 0) {
+                preview.style.display = 'none';
+                return;
+            }
+            
+            preview.style.display = 'block';
+            mediaList.innerHTML = selectedMediaFiles.map((file, index) => `
+                <div class="media-item">
+                    <i class="${getFileIcon(file.type)}"></i>
+                    <span>${file.name}</span>
+                    <button class="remove-media" onclick="removeMediaFile(${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+        
+        // Получение иконки файла
+        function getFileIcon(type) {
+            if (type.startsWith('video/')) return 'fas fa-video';
+            if (type.startsWith('audio/')) return 'fas fa-music';
+            if (type.startsWith('image/')) return 'fas fa-image';
+            if (type === 'application/pdf') return 'fas fa-file-pdf';
+            if (type.includes('word')) return 'fas fa-file-word';
+            return 'fas fa-file';
+        }
+        
+        // Удаление медиафайла
+        function removeMediaFile(index) {
+            selectedMediaFiles.splice(index, 1);
+            updateMediaPreview();
+        }
+        
+        // Вспомогательные функции
+        function formatTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) { // Менее минуты
+                return 'только что';
+            } else if (diff < 3600000) { // Менее часа
+                return Math.floor(diff / 60000) + ' мин назад';
+            } else if (diff < 86400000) { // Менее дня
+                return Math.floor(diff / 3600000) + ' ч назад';
+            } else {
+                return date.toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            }
+        }
+        
+        function goBack() {
+            // Возвращаемся к предыдущей странице или к дашборду
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/app';
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/';
+        }
+        
+        function showError(message) {
+            alert('❌ ' + message);
+        }
+        
+        function showSuccess(message) {
+            alert('✅ ' + message);
+        }
+    </script>
+</body>
+</html>

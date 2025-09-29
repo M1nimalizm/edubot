@@ -33,7 +33,7 @@ type homepageMediaService struct {
 func NewHomepageMediaService(mediaRepo repository.HomepageMediaRepository, baseURL, uploadDir string) HomepageMediaService {
 	// Создаем директорию для загрузок, если её нет
 	os.MkdirAll(uploadDir, 0755)
-	
+
 	return &homepageMediaService{
 		mediaRepo: mediaRepo,
 		baseURL:   baseURL,
@@ -45,35 +45,35 @@ func (s *homepageMediaService) UploadFile(file *multipart.FileHeader, mediaType 
 	// Генерируем уникальное имя файла
 	ext := filepath.Ext(file.Filename)
 	filename := fmt.Sprintf("%s_%d%s", string(mediaType), time.Now().Unix(), ext)
-	
+
 	// Создаем путь для сохранения
 	filePath := filepath.Join(s.uploadDir, filename)
-	
+
 	// Открываем загружаемый файл
 	src, err := file.Open()
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 	defer src.Close()
-	
+
 	// Создаем файл назначения
 	dst, err := os.Create(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file: %w", err)
 	}
 	defer dst.Close()
-	
+
 	// Копируем содержимое
 	if _, err = io.Copy(dst, src); err != nil {
 		return nil, fmt.Errorf("failed to copy file: %w", err)
 	}
-	
+
 	// Получаем информацию о файле
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get file info: %w", err)
 	}
-	
+
 	// Определяем размеры изображения (если это изображение)
 	var width, height int
 	if strings.HasPrefix(file.Header.Get("Content-Type"), "image/") {
@@ -81,14 +81,14 @@ func (s *homepageMediaService) UploadFile(file *multipart.FileHeader, mediaType 
 		// Для простоты пока оставляем 0, 0 - размеры можно добавить позже
 		width, height = 0, 0
 	}
-	
+
 	// Создаем запись в базе данных
-    media := &models.HomepageMedia{
+	media := &models.HomepageMedia{
 		ID:        uuid.New(),
 		Type:      mediaType,
 		Filename:  filename,
 		Path:      filePath,
-        URL:       s.buildURL(filename),
+		URL:       s.buildURL(filename),
 		Size:      fileInfo.Size(),
 		MimeType:  file.Header.Get("Content-Type"),
 		Width:     width,
@@ -97,47 +97,47 @@ func (s *homepageMediaService) UploadFile(file *multipart.FileHeader, mediaType 
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	// Сохраняем в базу данных
 	if err := s.mediaRepo.Create(media); err != nil {
 		// Удаляем файл, если не удалось сохранить в БД
 		os.Remove(filePath)
 		return nil, fmt.Errorf("failed to save media to database: %w", err)
 	}
-	
+
 	return media, nil
 }
 
 func (s *homepageMediaService) GetActiveMedia(mediaType models.HomepageMediaType) (*models.HomepageMedia, error) {
-    media, err := s.mediaRepo.GetActiveByType(mediaType)
-    if err != nil {
-        return nil, err
-    }
-    // Переопределяем URL на относительный, чтобы не зависеть от baseURL
-    media.URL = s.buildURL(media.Filename)
-    return media, nil
+	media, err := s.mediaRepo.GetActiveByType(mediaType)
+	if err != nil {
+		return nil, err
+	}
+	// Переопределяем URL на относительный, чтобы не зависеть от baseURL
+	media.URL = s.buildURL(media.Filename)
+	return media, nil
 }
 
 func (s *homepageMediaService) GetMediaByID(id uuid.UUID) (*models.HomepageMedia, error) {
-    media, err := s.mediaRepo.GetByID(id)
-    if err != nil {
-        return nil, err
-    }
-    media.URL = s.buildURL(media.Filename)
-    return media, nil
+	media, err := s.mediaRepo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	media.URL = s.buildURL(media.Filename)
+	return media, nil
 }
 
 func (s *homepageMediaService) ListMedia() ([]*models.HomepageMedia, error) {
-    items, err := s.mediaRepo.List()
-    if err != nil {
-        return nil, err
-    }
-    for _, m := range items {
-        if m != nil {
-            m.URL = s.buildURL(m.Filename)
-        }
-    }
-    return items, nil
+	items, err := s.mediaRepo.List()
+	if err != nil {
+		return nil, err
+	}
+	for _, m := range items {
+		if m != nil {
+			m.URL = s.buildURL(m.Filename)
+		}
+	}
+	return items, nil
 }
 
 func (s *homepageMediaService) DeleteMedia(id uuid.UUID) error {
@@ -146,13 +146,13 @@ func (s *homepageMediaService) DeleteMedia(id uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Удаляем файл с диска
 	if err := os.Remove(media.Path); err != nil {
 		// Логируем ошибку, но не прерываем выполнение
 		fmt.Printf("Warning: failed to delete file %s: %v\n", media.Path, err)
 	}
-	
+
 	// Удаляем запись из базы данных
 	return s.mediaRepo.Delete(id)
 }
@@ -162,13 +162,13 @@ func (s *homepageMediaService) SetActiveMedia(mediaType models.HomepageMediaType
 }
 
 func (s *homepageMediaService) GetMediaURL(media *models.HomepageMedia) string {
-    if media == nil {
-        return ""
-    }
-    return s.buildURL(media.Filename)
+	if media == nil {
+		return ""
+	}
+	return s.buildURL(media.Filename)
 }
 
 // buildURL возвращает относительный URL до медиафайла
 func (s *homepageMediaService) buildURL(filename string) string {
-    return fmt.Sprintf("/media/homepage/%s", filename)
+	return fmt.Sprintf("/media/homepage/%s", filename)
 }

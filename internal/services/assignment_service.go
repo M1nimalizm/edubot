@@ -10,15 +10,15 @@ import (
 	"github.com/google/uuid"
 )
 
-type AssignmentService struct {
-	assignmentRepo *repository.AssignmentRepository
+type LegacyAssignmentService struct {
+	assignmentRepo repository.AssignmentRepository
 	userRepo       repository.UserRepository
 	mediaService   MediaService
 	telegramBot    *telegram.Bot
 }
 
-func NewAssignmentService(assignmentRepo *repository.AssignmentRepository, userRepo repository.UserRepository, mediaService MediaService, telegramBot *telegram.Bot) *AssignmentService {
-	return &AssignmentService{
+func NewLegacyAssignmentService(assignmentRepo repository.AssignmentRepository, userRepo repository.UserRepository, mediaService MediaService, telegramBot *telegram.Bot) *LegacyAssignmentService {
+	return &LegacyAssignmentService{
 		assignmentRepo: assignmentRepo,
 		userRepo:       userRepo,
 		mediaService:   mediaService,
@@ -27,46 +27,48 @@ func NewAssignmentService(assignmentRepo *repository.AssignmentRepository, userR
 }
 
 // Assignment methods
-func (s *AssignmentService) CreateAssignment(assignment *models.Assignment) error {
+func (s *LegacyAssignmentService) CreateAssignment(assignment *models.Assignment) error {
 	assignment.CreatedAt = time.Now()
 	if err := s.assignmentRepo.Create(assignment); err != nil {
 		return err
 	}
 
 	// Загружаем ученика для уведомления
-	student, err := s.userRepo.GetByID(assignment.StudentID)
-	if err == nil && student.TelegramID != 0 {
-		s.telegramBot.SendAssignmentNotification(student.TelegramID, assignment.Title, assignment.Subject, assignment.DueDate.Format("02.01.2006 15:04"))
+	if assignment.StudentID != nil {
+		student, err := s.userRepo.GetByID(*assignment.StudentID)
+		if err == nil && student.TelegramID != 0 {
+			s.telegramBot.SendAssignmentNotification(student.TelegramID, assignment.Title, assignment.Subject, assignment.DueDate.Format("02.01.2006 15:04"))
+		}
 	}
 	return nil
 }
 
-func (s *AssignmentService) GetAssignmentByID(id uuid.UUID) (*models.Assignment, error) {
+func (s *LegacyAssignmentService) GetAssignmentByID(id uuid.UUID) (*models.Assignment, error) {
 	return s.assignmentRepo.GetByID(id)
 }
 
-func (s *AssignmentService) GetAssignmentsByStudentID(studentID uuid.UUID) ([]models.Assignment, error) {
+func (s *LegacyAssignmentService) GetAssignmentsByStudentID(studentID uuid.UUID) ([]models.Assignment, error) {
 	return s.assignmentRepo.GetByStudentID(studentID)
 }
 
-func (s *AssignmentService) GetAssignmentsByTeacherID(teacherID uuid.UUID) ([]models.Assignment, error) {
+func (s *LegacyAssignmentService) GetAssignmentsByTeacherID(teacherID uuid.UUID) ([]models.Assignment, error) {
 	return s.assignmentRepo.GetByTeacherID(teacherID)
 }
 
-func (s *AssignmentService) GetUpcomingDeadlines(studentID uuid.UUID, days int) ([]models.Assignment, error) {
+func (s *LegacyAssignmentService) GetUpcomingDeadlines(studentID uuid.UUID, days int) ([]models.Assignment, error) {
 	return s.assignmentRepo.GetUpcomingDeadlines(studentID, days)
 }
 
-func (s *AssignmentService) UpdateAssignment(assignment *models.Assignment) error {
+func (s *LegacyAssignmentService) UpdateAssignment(assignment *models.Assignment) error {
 	return s.assignmentRepo.Update(assignment)
 }
 
-func (s *AssignmentService) MarkAssignmentCompleted(assignmentID uuid.UUID, studentID uuid.UUID) error {
+func (s *LegacyAssignmentService) MarkAssignmentCompleted(assignmentID uuid.UUID, studentID uuid.UUID) error {
 	assignment, err := s.assignmentRepo.GetByID(assignmentID)
 	if err != nil {
 		return err
 	}
-	if assignment.StudentID != studentID {
+	if assignment.StudentID != nil && *assignment.StudentID != studentID {
 		return errors.New("assignment does not belong to student")
 	}
 	if err := s.assignmentRepo.MarkCompleted(assignmentID); err != nil {
@@ -82,7 +84,7 @@ func (s *AssignmentService) MarkAssignmentCompleted(assignmentID uuid.UUID, stud
 	return nil
 }
 
-func (s *AssignmentService) DeleteAssignment(assignmentID uuid.UUID, teacherID uuid.UUID) error {
+func (s *LegacyAssignmentService) DeleteAssignment(assignmentID uuid.UUID, teacherID uuid.UUID) error {
 	// Проверяем, что задание принадлежит учителю
 	assignment, err := s.assignmentRepo.GetByID(assignmentID)
 	if err != nil {
@@ -97,7 +99,7 @@ func (s *AssignmentService) DeleteAssignment(assignmentID uuid.UUID, teacherID u
 }
 
 // Comment methods
-func (s *AssignmentService) AddComment(comment *models.Comment) error {
+func (s *LegacyAssignmentService) AddComment(comment *models.Comment) error {
 	comment.ID = uuid.New()
 	comment.CreatedAt = time.Now()
 	if err := s.assignmentRepo.CreateComment(comment); err != nil {
@@ -111,9 +113,11 @@ func (s *AssignmentService) AddComment(comment *models.Comment) error {
 
 	var recipientTelegramID int64
 	if comment.AuthorType == "teacher" {
-		student, err := s.userRepo.GetByID(assignment.StudentID)
-		if err == nil {
-			recipientTelegramID = student.TelegramID
+		if assignment.StudentID != nil {
+			student, err := s.userRepo.GetByID(*assignment.StudentID)
+			if err == nil {
+				recipientTelegramID = student.TelegramID
+			}
 		}
 	} else {
 		teacher, err := s.userRepo.GetByID(assignment.TeacherID)
@@ -128,41 +132,41 @@ func (s *AssignmentService) AddComment(comment *models.Comment) error {
 	return nil
 }
 
-func (s *AssignmentService) GetCommentsByAssignmentID(assignmentID uuid.UUID) ([]models.Comment, error) {
+func (s *LegacyAssignmentService) GetCommentsByAssignmentID(assignmentID uuid.UUID) ([]models.Comment, error) {
 	return s.assignmentRepo.GetCommentsByAssignmentID(assignmentID)
 }
 
-func (s *AssignmentService) UpdateComment(comment *models.Comment) error {
+func (s *LegacyAssignmentService) UpdateComment(comment *models.Comment) error {
 	return s.assignmentRepo.UpdateComment(comment)
 }
 
-func (s *AssignmentService) DeleteComment(commentID uuid.UUID) error {
+func (s *LegacyAssignmentService) DeleteComment(commentID uuid.UUID) error {
 	return s.assignmentRepo.DeleteComment(commentID)
 }
 
 // Content methods
-func (s *AssignmentService) CreateContent(content *models.Content) error {
+func (s *LegacyAssignmentService) CreateContent(content *models.Content) error {
 	content.CreatedAt = time.Now()
 	return s.assignmentRepo.CreateContent(content)
 }
 
-func (s *AssignmentService) GetContentByID(id uuid.UUID) (*models.Content, error) {
+func (s *LegacyAssignmentService) GetContentByID(id uuid.UUID) (*models.Content, error) {
 	return s.assignmentRepo.GetContentByID(id)
 }
 
-func (s *AssignmentService) GetContentBySubject(subject string, grade int) ([]models.Content, error) {
+func (s *LegacyAssignmentService) GetContentBySubject(subject string, grade int) ([]models.Content, error) {
 	return s.assignmentRepo.GetContentBySubject(subject, grade)
 }
 
-func (s *AssignmentService) GetContentByTeacherID(teacherID uuid.UUID) ([]models.Content, error) {
+func (s *LegacyAssignmentService) GetContentByTeacherID(teacherID uuid.UUID) ([]models.Content, error) {
 	return s.assignmentRepo.GetContentByTeacherID(teacherID)
 }
 
-func (s *AssignmentService) UpdateContent(content *models.Content) error {
+func (s *LegacyAssignmentService) UpdateContent(content *models.Content) error {
 	return s.assignmentRepo.UpdateContent(content)
 }
 
-func (s *AssignmentService) DeleteContent(contentID uuid.UUID, teacherID uuid.UUID) error {
+func (s *LegacyAssignmentService) DeleteContent(contentID uuid.UUID, teacherID uuid.UUID) error {
 	// Проверяем, что контент принадлежит учителю
 	content, err := s.assignmentRepo.GetContentByID(contentID)
 	if err != nil {
@@ -177,15 +181,15 @@ func (s *AssignmentService) DeleteContent(contentID uuid.UUID, teacherID uuid.UU
 }
 
 // Progress methods
-func (s *AssignmentService) GetStudentProgress(studentID uuid.UUID) ([]models.StudentProgress, error) {
+func (s *LegacyAssignmentService) GetStudentProgress(studentID uuid.UUID) ([]models.StudentProgress, error) {
 	return s.assignmentRepo.GetProgressByStudentID(studentID)
 }
 
-func (s *AssignmentService) GetStudentProgressBySubject(studentID uuid.UUID, subject string) (*models.StudentProgress, error) {
+func (s *LegacyAssignmentService) GetStudentProgressBySubject(studentID uuid.UUID, subject string) (*models.StudentProgress, error) {
 	return s.assignmentRepo.GetProgressBySubject(studentID, subject)
 }
 
-func (s *AssignmentService) updateStudentProgress(studentID uuid.UUID, subject string) {
+func (s *LegacyAssignmentService) updateStudentProgress(studentID uuid.UUID, subject string) {
 	// Получаем или создаем прогресс
 	progress, err := s.assignmentRepo.GetProgressBySubject(studentID, subject)
 	if err != nil {
@@ -231,7 +235,7 @@ func (s *AssignmentService) updateStudentProgress(studentID uuid.UUID, subject s
 }
 
 // AddAssignmentMedia добавляет медиафайл к заданию
-func (s *AssignmentService) AddAssignmentMedia(assignmentID uuid.UUID, mediaID uuid.UUID, userID uuid.UUID) error {
+func (s *LegacyAssignmentService) AddAssignmentMedia(assignmentID uuid.UUID, mediaID uuid.UUID, userID uuid.UUID) error {
 	// Проверяем, что пользователь является создателем задания
 	assignment, err := s.assignmentRepo.GetByID(assignmentID)
 	if err != nil {
@@ -257,7 +261,7 @@ func (s *AssignmentService) AddAssignmentMedia(assignmentID uuid.UUID, mediaID u
 }
 
 // GetAssignmentMedia получает медиафайлы задания
-func (s *AssignmentService) GetAssignmentMedia(assignmentID uuid.UUID, userID uuid.UUID) ([]*models.Media, error) {
+func (s *LegacyAssignmentService) GetAssignmentMedia(assignmentID uuid.UUID, userID uuid.UUID) ([]*models.Media, error) {
 	// Проверяем доступ к заданию
 	assignment, err := s.assignmentRepo.GetByID(assignmentID)
 	if err != nil {
@@ -270,7 +274,7 @@ func (s *AssignmentService) GetAssignmentMedia(assignmentID uuid.UUID, userID uu
 	}
 
 	// Проверяем права доступа
-	if assignment.StudentID != userID && assignment.TeacherID != userID && user.Role != models.RoleTeacher {
+	if (assignment.StudentID != nil && *assignment.StudentID != userID) && assignment.TeacherID != userID && user.Role != models.RoleTeacher {
 		return nil, errors.New("access denied")
 	}
 
@@ -279,7 +283,7 @@ func (s *AssignmentService) GetAssignmentMedia(assignmentID uuid.UUID, userID uu
 }
 
 // SubmitAssignmentWithMedia создает submission с медиафайлами
-func (s *AssignmentService) SubmitAssignmentWithMedia(assignmentID uuid.UUID, userID uuid.UUID, mediaIDs []uuid.UUID, comments string) error {
+func (s *LegacyAssignmentService) SubmitAssignmentWithMedia(assignmentID uuid.UUID, userID uuid.UUID, mediaIDs []uuid.UUID, comments string) error {
 	// Проверяем, что пользователь является учеником
 	user, err := s.userRepo.GetByID(userID)
 	if err != nil {
@@ -296,7 +300,7 @@ func (s *AssignmentService) SubmitAssignmentWithMedia(assignmentID uuid.UUID, us
 		return err
 	}
 
-	if assignment.StudentID != userID {
+	if assignment.StudentID != nil && *assignment.StudentID != userID {
 		return errors.New("assignment not assigned to this student")
 	}
 
@@ -306,7 +310,7 @@ func (s *AssignmentService) SubmitAssignmentWithMedia(assignmentID uuid.UUID, us
 		AssignmentID: assignmentID,
 		UserID:       userID,
 		Status:       "submitted",
-		Comments:     comments,
+		Text:         &comments,
 		SubmittedAt:  time.Now(),
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
@@ -335,8 +339,6 @@ func (s *AssignmentService) SubmitAssignmentWithMedia(assignmentID uuid.UUID, us
 
 	// Обновляем статус задания
 	assignment.Status = "completed"
-	now := time.Now()
-	assignment.CompletedAt = &now
 	assignment.UpdatedAt = time.Now()
 
 	if err := s.assignmentRepo.Update(assignment); err != nil {
@@ -358,7 +360,7 @@ func (s *AssignmentService) SubmitAssignmentWithMedia(assignmentID uuid.UUID, us
 }
 
 // GetSubmissionMedia получает медиафайлы submission
-func (s *AssignmentService) GetSubmissionMedia(submissionID uuid.UUID, userID uuid.UUID) ([]*models.Media, error) {
+func (s *LegacyAssignmentService) GetSubmissionMedia(submissionID uuid.UUID, userID uuid.UUID) ([]*models.Media, error) {
 	// Получаем submission
 	submission, err := s.assignmentRepo.GetSubmissionByID(submissionID)
 	if err != nil {
@@ -386,7 +388,7 @@ func (s *AssignmentService) GetSubmissionMedia(submissionID uuid.UUID, userID uu
 }
 
 // AddFeedbackMedia добавляет медиафайл с фидбэком к submission
-func (s *AssignmentService) AddFeedbackMedia(submissionID uuid.UUID, mediaID uuid.UUID, userID uuid.UUID) error {
+func (s *LegacyAssignmentService) AddFeedbackMedia(submissionID uuid.UUID, mediaID uuid.UUID, userID uuid.UUID) error {
 	// Получаем submission
 	submission, err := s.assignmentRepo.GetSubmissionByID(submissionID)
 	if err != nil {
@@ -424,7 +426,7 @@ func (s *AssignmentService) AddFeedbackMedia(submissionID uuid.UUID, mediaID uui
 }
 
 // GetFeedbackMedia получает медиафайлы с фидбэком
-func (s *AssignmentService) GetFeedbackMedia(submissionID uuid.UUID, userID uuid.UUID) ([]*models.Media, error) {
+func (s *LegacyAssignmentService) GetFeedbackMedia(submissionID uuid.UUID, userID uuid.UUID) ([]*models.Media, error) {
 	// Получаем submission
 	submission, err := s.assignmentRepo.GetSubmissionByID(submissionID)
 	if err != nil {
@@ -452,7 +454,7 @@ func (s *AssignmentService) GetFeedbackMedia(submissionID uuid.UUID, userID uuid
 }
 
 // GetTeacherSubmissions получает все submissions для учителя
-func (s *AssignmentService) GetTeacherSubmissions(teacherID uuid.UUID) ([]*models.Submission, error) {
+func (s *LegacyAssignmentService) GetTeacherSubmissions(teacherID uuid.UUID) ([]*models.Submission, error) {
 	teacher, err := s.userRepo.GetByID(teacherID)
 	if err != nil {
 		return nil, err
@@ -484,7 +486,7 @@ func (s *AssignmentService) GetTeacherSubmissions(teacherID uuid.UUID) ([]*model
 }
 
 // SubmitTeacherFeedback добавляет фидбэк учителя к submission
-func (s *AssignmentService) SubmitTeacherFeedback(submissionID uuid.UUID, teacherID uuid.UUID, comments string, grade string) error {
+func (s *LegacyAssignmentService) SubmitTeacherFeedback(submissionID uuid.UUID, teacherID uuid.UUID, comments string, grade string) error {
 	submission, err := s.assignmentRepo.GetSubmissionByID(submissionID)
 	if err != nil {
 		return err

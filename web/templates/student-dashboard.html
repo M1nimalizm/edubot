@@ -310,6 +310,10 @@
             border-color: var(--primary-color);
         }
         
+        .back-btn {
+            margin-right: 1rem;
+        }
+        
         @media (max-width: 768px) {
             .welcome-content {
                 flex-direction: column;
@@ -341,6 +345,12 @@
             </div>
             <div class="nav-menu">
                 <a href="/" class="nav-link">На главную</a>
+                <button class="btn btn-outline" onclick="openProgress()">
+                    <i class="fas fa-chart-line"></i> Прогресс
+                </button>
+                <button class="btn btn-outline" onclick="openChat()">
+                    <i class="fas fa-comments"></i> Чат
+                </button>
                 <button class="btn btn-outline" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> Выйти
                 </button>
@@ -500,13 +510,78 @@
         let filteredAssignments = [];
         let currentAssignment = null;
         let selectedSubmissionFiles = [];
+        
+        // Navigation state management
+        let navigationStack = [];
+        let currentView = 'dashboard';
 
-        // Загружаем данные при загрузке страницы
-        document.addEventListener('DOMContentLoaded', function() {
-            loadUserProfile();
-            loadAssignments();
-            initializeSubmissionUploader();
-        });
+        // Navigation functions
+        function navigateTo(view, data = null) {
+            navigationStack.push({ view: currentView, data: currentAssignment });
+            currentView = view;
+            
+            switch(view) {
+                case 'assignment':
+                    showAssignmentView(data);
+                    break;
+                case 'dashboard':
+                default:
+                    showDashboardView();
+                    break;
+            }
+        }
+        
+        function navigateBack() {
+            if (navigationStack.length > 0) {
+                const previous = navigationStack.pop();
+                currentView = previous.view;
+                currentAssignment = previous.data;
+                
+                switch(currentView) {
+                    case 'assignment':
+                        showAssignmentView(currentAssignment);
+                        break;
+                    case 'dashboard':
+                    default:
+                        showDashboardView();
+                        break;
+                }
+            }
+        }
+        
+        function showDashboardView() {
+            // Hide modal if open
+            document.getElementById('assignmentModal').style.display = 'none';
+            currentAssignment = null;
+            
+            // Show main content
+            document.querySelector('.student-container').style.display = 'block';
+        }
+        
+        function showAssignmentView(assignment) {
+            currentAssignment = assignment;
+            openAssignment(assignment.id);
+        }
+        
+        // Add back button functionality
+        function addBackButton() {
+            const backButton = document.createElement('button');
+            backButton.className = 'btn btn-outline back-btn';
+            backButton.innerHTML = '<i class="fas fa-arrow-left"></i> Назад';
+            backButton.onclick = navigateBack;
+            
+            const navMenu = document.querySelector('.nav-menu');
+            if (navMenu && !document.querySelector('.back-btn')) {
+                navMenu.insertBefore(backButton, navMenu.firstChild);
+            }
+        }
+        
+        function removeBackButton() {
+            const backButton = document.querySelector('.back-btn');
+            if (backButton) {
+                backButton.remove();
+            }
+        }
 
         // Загрузка профиля пользователя
         async function loadUserProfile() {
@@ -539,9 +614,10 @@
         // Загрузка заданий
         async function loadAssignments() {
             try {
-                const response = await fetch('/api/assignments');
+                const response = await fetch('/api/student/assignments');
                 if (response.ok) {
-                    allAssignments = await response.json();
+                    const data = await response.json();
+                    allAssignments = data.assignments || [];
                     filteredAssignments = [...allAssignments];
                     updateStats();
                     displayAssignments();
@@ -557,8 +633,9 @@
         // Обновление статистики
         function updateStats() {
             const total = allAssignments.length;
-            const completed = allAssignments.filter(a => a.status === 'completed').length;
-            const pending = allAssignments.filter(a => a.status === 'assigned').length;
+            const completed = allAssignments.filter(a => a.status === 'submitted' || a.status === 'graded').length;
+            const pending = allAssignments.filter(a => a.status === 'pending').length;
+            const overdue = allAssignments.filter(a => a.status === 'overdue').length;
             const averageScore = total > 0 ? Math.round((completed / total) * 100) : 0;
 
             document.getElementById('totalAssignments').textContent = total;
@@ -591,9 +668,9 @@
             }
 
             assignmentsList.innerHTML = filteredAssignments.map(assignment => `
-                <div class="assignment-card" onclick="openAssignment(${assignment.id})">
+                <div class="assignment-card" onclick="openAssignment('${assignment.id}')">
                     <div class="assignment-header">
-                        <h3 class="assignment-title">${assignment.title}</h3>
+                        <h3 class="assignment-title">${assignment.assignment.title || 'Задание'}</h3>
                         <span class="assignment-status status-${assignment.status}">
                             ${getStatusText(assignment.status)}
                         </span>
@@ -602,27 +679,27 @@
                     <div class="assignment-meta">
                         <div class="meta-item">
                             <i class="fas fa-book"></i>
-                            <span>${assignment.subject}</span>
+                            <span>${assignment.assignment.subject || 'Предмет'}</span>
                         </div>
                         <div class="meta-item">
                             <i class="fas fa-graduation-cap"></i>
-                            <span>${assignment.grade} класс</span>
+                            <span>${assignment.assignment.grade || 'Класс'} класс</span>
                         </div>
                         <div class="meta-item">
                             <i class="fas fa-signal"></i>
-                            <span>Уровень ${assignment.level}</span>
+                            <span>Уровень ${assignment.assignment.level || '1'}</span>
                         </div>
-                        ${assignment.due_date ? `
+                        ${assignment.assignment.due_date ? `
                         <div class="meta-item">
                             <i class="fas fa-calendar"></i>
-                            <span>До ${formatDate(assignment.due_date)}</span>
+                            <span>До ${formatDate(assignment.assignment.due_date)}</span>
                         </div>
                         ` : ''}
                     </div>
                     
-                    ${assignment.description ? `
+                    ${assignment.assignment.description ? `
                     <div class="assignment-description">
-                        ${assignment.description}
+                        ${assignment.assignment.description}
                     </div>
                     ` : ''}
                     
@@ -630,7 +707,7 @@
                         <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openAssignment('${assignment.id}')">
                             <i class="fas fa-eye"></i> Подробнее
                         </button>
-                        ${assignment.status === 'assigned' ? `
+                        ${assignment.status === 'pending' ? `
                         <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); completeAssignment('${assignment.id}')">
                             <i class="fas fa-check"></i> Выполнить
                         </button>
@@ -651,9 +728,15 @@
             } else if (status === 'overdue') {
                 const now = new Date();
                 filteredAssignments = allAssignments.filter(assignment => 
-                    assignment.status === 'assigned' && 
-                    assignment.due_date && 
-                    new Date(assignment.due_date) < now
+                    assignment.status === 'pending' && 
+                    assignment.assignment.due_date && 
+                    new Date(assignment.assignment.due_date) < now
+                );
+            } else if (status === 'assigned') {
+                filteredAssignments = allAssignments.filter(assignment => assignment.status === 'pending');
+            } else if (status === 'completed') {
+                filteredAssignments = allAssignments.filter(assignment => 
+                    assignment.status === 'submitted' || assignment.status === 'graded'
                 );
             } else {
                 filteredAssignments = allAssignments.filter(assignment => assignment.status === status);
@@ -795,36 +878,38 @@
             const assignment = allAssignments.find(a => a.id === assignmentId);
             if (!assignment) return;
 
-            currentAssignment = assignment;
+            // Use navigation system
+            navigateTo('assignment', assignment);
+            addBackButton();
             
-            document.getElementById('modalTitle').textContent = assignment.title;
+            document.getElementById('modalTitle').textContent = assignment.assignment.title || 'Задание';
             document.getElementById('modalContent').innerHTML = `
                 <div class="assignment-details">
                     <div class="assignment-meta">
                         <div class="meta-item">
                             <i class="fas fa-book"></i>
-                            <span>Предмет: ${assignment.subject}</span>
+                            <span>Предмет: ${assignment.assignment.subject || 'Предмет'}</span>
                         </div>
                         <div class="meta-item">
                             <i class="fas fa-graduation-cap"></i>
-                            <span>Класс: ${assignment.grade}</span>
+                            <span>Класс: ${assignment.assignment.grade || 'Класс'}</span>
                         </div>
                         <div class="meta-item">
                             <i class="fas fa-signal"></i>
-                            <span>Уровень: ${assignment.level}</span>
+                            <span>Уровень: ${assignment.assignment.level || '1'}</span>
                         </div>
-                        ${assignment.due_date ? `
+                        ${assignment.assignment.due_date ? `
                         <div class="meta-item">
                             <i class="fas fa-calendar"></i>
-                            <span>Срок: ${formatDate(assignment.due_date)}</span>
+                            <span>Срок: ${formatDate(assignment.assignment.due_date)}</span>
                         </div>
                         ` : ''}
                     </div>
                     
-                    ${assignment.description ? `
+                    ${assignment.assignment.description ? `
                     <div class="assignment-description">
                         <h4>Описание:</h4>
-                        <p>${assignment.description}</p>
+                        <p>${assignment.assignment.description}</p>
                     </div>
                     ` : ''}
                     
@@ -836,7 +921,7 @@
 
             // Показываем секцию для сдачи ДЗ только для активных заданий
             const submissionSection = document.getElementById('submissionSection');
-            if (assignment.status === 'assigned') {
+            if (assignment.status === 'pending') {
                 submissionSection.style.display = 'block';
                 // Очищаем предыдущие файлы
                 selectedSubmissionFiles = [];
@@ -845,7 +930,7 @@
                 submissionSection.style.display = 'none';
             }
 
-            document.getElementById('submitBtn').style.display = assignment.status === 'assigned' ? 'block' : 'none';
+            document.getElementById('submitBtn').style.display = assignment.status === 'pending' ? 'block' : 'none';
             document.getElementById('assignmentModal').style.display = 'block';
         }
 
@@ -904,15 +989,15 @@
 
             const mediaIds = await Promise.all(uploadPromises);
 
-            // Отправляем задание с медиафайлами
-            const response = await fetch(`/api/assignments/${assignmentId}/submit`, {
+            // Отправляем задание с медиафайлами через новый API
+            const response = await fetch(`/api/student/assignments/${assignmentId}/submit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     media_ids: mediaIds,
-                    comments: comments
+                    text: comments
                 })
             });
 
@@ -924,14 +1009,14 @@
 
         // Отправка задания без медиафайлов
         async function submitAssignmentWithoutMedia(assignmentId, comments) {
-            const response = await fetch(`/api/assignments/${assignmentId}/submit`, {
+            const response = await fetch(`/api/student/assignments/${assignmentId}/submit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     media_ids: [],
-                    comments: comments
+                    text: comments
                 })
             });
 
@@ -960,7 +1045,8 @@
         // Закрытие модального окна
         function closeAssignmentModal() {
             document.getElementById('assignmentModal').style.display = 'none';
-            currentAssignment = null;
+            removeBackButton();
+            navigateBack();
         }
 
         // Обновление заданий
@@ -971,8 +1057,9 @@
         // Вспомогательные функции
         function getStatusText(status) {
             const statusMap = {
-                'assigned': 'В работе',
-                'completed': 'Выполнено',
+                'pending': 'В работе',
+                'submitted': 'Отправлено',
+                'graded': 'Проверено',
                 'overdue': 'Просрочено'
             };
             return statusMap[status] || status;
@@ -992,6 +1079,14 @@
         function logout() {
             localStorage.removeItem('authToken');
             window.location.href = '/';
+        }
+
+        function openChat() {
+            window.location.href = '/student-chat';
+        }
+
+        function openProgress() {
+            window.location.href = '/student-progress';
         }
 
         function showSuccess(message) {

@@ -78,6 +78,12 @@ func main() {
 	userRepo := repository.NewUserRepository(db.DB)
 	trialRepo := repository.NewTrialRequestRepository(db.DB)
 	assignmentRepo := repository.NewAssignmentRepository(db.DB)
+	assignmentTargetRepo := repository.NewAssignmentTargetRepository(db.DB)
+	feedbackRepo := repository.NewFeedbackRepository(db.DB)
+	submissionRepo := repository.NewSubmissionRepository(db.DB)
+	draftRepo := repository.NewDraftRepository(db.DB)
+	chatRepo := repository.NewChatRepository(db.DB)
+	notificationRepo := repository.NewNotificationRepository(db.DB)
 	groupRepo := repository.NewGroupRepository(db.DB)
 	mediaRepo := repository.NewMediaRepository(db.DB)
 	homepageMediaRepo := repository.NewHomepageMediaRepository(db.DB)
@@ -93,7 +99,12 @@ func main() {
 		cfg.TeacherPassword,
 	)
 	mediaService := services.NewMediaService(mediaRepo, userRepo, telegramBot, assignmentRepo)
-	assignmentService := services.NewAssignmentService(assignmentRepo, userRepo, mediaService, telegramBot)
+	assignmentService := services.NewAssignmentService(assignmentRepo, assignmentTargetRepo, groupRepo, userRepo, notificationRepo, telegramBot)
+	assignmentServiceOld := services.NewLegacyAssignmentService(assignmentRepo, userRepo, mediaService, telegramBot)
+	submissionService := services.NewSubmissionService(submissionRepo, assignmentTargetRepo, draftRepo, userRepo, notificationRepo, telegramBot)
+	gradingService := services.NewGradingService(feedbackRepo, assignmentTargetRepo, submissionRepo, userRepo, notificationRepo, telegramBot)
+	chatService := services.NewChatService(chatRepo, userRepo, groupRepo, notificationRepo, telegramBot)
+	notificationService := services.NewNotificationService(notificationRepo, assignmentTargetRepo, assignmentRepo, userRepo, telegramBot)
 	groupService := services.NewGroupService(groupRepo, userRepo, assignmentRepo, telegramBot)
 	// Используем базовый путь загрузок из конфигурации и подпапку homepage
 	homepageUploadPath := fmt.Sprintf("%s/%s", cfg.UploadPath, "homepage")
@@ -101,7 +112,10 @@ func main() {
 
 	// Создаем обработчики
 	authHandler := handlers.NewAuthHandler(authService)
-	assignmentHandler := handlers.NewAssignmentHandler(assignmentService)
+	assignmentHandler := handlers.NewAssignmentHandler(assignmentServiceOld)
+	studentHandler := handlers.NewStudentHandler(assignmentService, submissionService, gradingService, chatService, notificationService)
+	chatHandler := handlers.NewChatHandler(chatService)
+	teacherInboxHandler := handlers.NewTeacherInboxHandler(gradingService, assignmentService, submissionService, chatService, notificationService)
 	groupHandler := handlers.NewGroupHandler(groupService)
 	mediaHandler := handlers.NewMediaHandler(mediaService)
 	homepageMediaHandler := handlers.NewHomepageMediaHandler(homepageMediaService)
@@ -238,67 +252,13 @@ func main() {
 		router.GET("/student-progress", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
 			c.HTML(http.StatusOK, "student-progress.html", gin.H{"title": "Мой прогресс - EduBot"})
 		})
+		router.GET("/student-chat", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
+			c.HTML(http.StatusOK, "student-chat.html", gin.H{"title": "Чат с преподавателем - EduBot"})
+		})
 	}
 
 	// helper: определяем запросы из Telegram Mini App по User-Agent/параметрам
 	// (упрощенно: User-Agent содержит "Telegram" или есть tgWebAppData в query)
-
-	// Панель управления учителя (HTML guard)
-	router.GET("/teacher-dashboard", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-		c.HTML(http.StatusOK, "teacher-dashboard.html", gin.H{
-			"title": "Панель управления - EduBot",
-		})
-	})
-
-	// Страницы для учителя
-	router.GET("/teacher/assignments/create", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-		c.HTML(http.StatusOK, "teacher-assignments.html", gin.H{
-			"title": "Создание задания - EduBot",
-		})
-	})
-
-	router.GET("/teacher-submissions", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-		c.HTML(http.StatusOK, "teacher-submissions.html", gin.H{
-			"title": "Проверка заданий - EduBot",
-		})
-	})
-
-	router.GET("/teacher/content/create", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-		c.HTML(http.StatusOK, "teacher-content.html", gin.H{
-			"title": "Добавление материалов - EduBot",
-		})
-	})
-
-	router.GET("/teacher/students", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-		c.HTML(http.StatusOK, "teacher-students.html", gin.H{
-			"title": "Ученики - EduBot",
-		})
-	})
-
-	router.GET("/teacher-groups", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-		c.HTML(http.StatusOK, "teacher-groups.html", gin.H{
-			"title": "Группы - EduBot",
-		})
-	})
-
-	router.GET("/homepage-media", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
-		c.HTML(http.StatusOK, "homepage-media.html", gin.H{
-			"title": "Управление медиафайлами - EduBot",
-		})
-	})
-
-	// Страницы для учеников
-	router.GET("/student-dashboard", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
-		c.HTML(http.StatusOK, "student-dashboard.html", gin.H{
-			"title": "Мои задания - EduBot",
-		})
-	})
-
-	router.GET("/student-progress", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleStudent), func(c *gin.Context) {
-		c.HTML(http.StatusOK, "student-progress.html", gin.H{
-			"title": "Мой прогресс - EduBot",
-		})
-	})
 
 	// API маршруты
 	api := router.Group("/api")
@@ -385,6 +345,44 @@ func main() {
 		protected.DELETE("/media/:id/access/:user_id", mediaHandler.RevokeAccess)
 	}
 
+	// Student API routes
+	student := api.Group("/student")
+	student.Use(handlers.AuthMiddleware(authService))
+	student.Use(handlers.RequireRoles(models.RoleStudent))
+	{
+		// Assignments
+		student.GET("/assignments", studentHandler.GetAssignments)
+		student.GET("/assignments/:id", studentHandler.GetAssignment)
+		student.POST("/assignments/:id/submit", studentHandler.SubmitAssignment)
+		student.POST("/assignments/:id/draft", studentHandler.SaveDraft)
+		student.GET("/assignments/:id/draft", studentHandler.GetDraft)
+
+		// Progress
+		student.GET("/progress", studentHandler.GetProgress)
+
+		// Notifications
+		student.GET("/notifications", studentHandler.GetNotifications)
+		student.POST("/notifications/:id/read", studentHandler.MarkNotificationAsRead)
+	}
+
+	// Chat API routes
+	chat := api.Group("/chat")
+	chat.Use(handlers.AuthMiddleware(authService))
+	{
+		// Threads
+		chat.GET("/threads", chatHandler.GetThreads)
+		chat.GET("/threads/:id", chatHandler.GetThread)
+		chat.POST("/threads/student-teacher", chatHandler.GetOrCreateStudentTeacherThread)
+		chat.POST("/threads/group", chatHandler.GetOrCreateGroupThread)
+
+		// Messages
+		chat.GET("/threads/:id/messages", chatHandler.GetMessages)
+		chat.POST("/threads/:id/messages", chatHandler.SendMessage)
+		chat.PUT("/messages/:id", chatHandler.UpdateMessage)
+		chat.DELETE("/messages/:id", chatHandler.DeleteMessage)
+		chat.POST("/threads/:id/read", chatHandler.MarkAsRead)
+	}
+
 	// Маршруты только для преподавателей (защищенные)
 	teacher := api.Group("/teacher")
 	teacher.Use(handlers.AuthMiddleware(authService))
@@ -423,6 +421,16 @@ func main() {
 		teacher.GET("/homepage-media/:id", homepageMediaHandler.GetMedia)
 		teacher.PUT("/homepage-media/:type/active", homepageMediaHandler.SetActiveMedia)
 		teacher.DELETE("/homepage-media/:id", homepageMediaHandler.DeleteMedia)
+
+		// Teacher Inbox API
+		teacher.GET("/inbox", teacherInboxHandler.GetInbox)
+		teacher.GET("/inbox/:id", teacherInboxHandler.GetAssignmentForGrading)
+		teacher.POST("/inbox/:id/grade", teacherInboxHandler.GradeAssignment)
+		teacher.GET("/assignments", teacherInboxHandler.GetAssignments)
+		teacher.POST("/assignments", teacherInboxHandler.CreateAssignment)
+		teacher.GET("/statistics", teacherInboxHandler.GetStatistics)
+		teacher.GET("/notifications", teacherInboxHandler.GetNotifications)
+		teacher.POST("/notifications/:id/read", teacherInboxHandler.MarkNotificationAsRead)
 	}
 
 	// Выбор роли после Telegram-авторизации (без пароля)

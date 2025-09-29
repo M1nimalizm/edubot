@@ -35,11 +35,11 @@ type mediaService struct {
 	mediaRepo      repository.MediaRepository
 	userRepo       repository.UserRepository
 	bot            *telegram.Bot
-	assignmentRepo *repository.AssignmentRepository
+	assignmentRepo repository.AssignmentRepository
 }
 
 // NewMediaService создает новый сервис медиафайлов
-func NewMediaService(mediaRepo repository.MediaRepository, userRepo repository.UserRepository, bot *telegram.Bot, assignmentRepo *repository.AssignmentRepository) MediaService {
+func NewMediaService(mediaRepo repository.MediaRepository, userRepo repository.UserRepository, bot *telegram.Bot, assignmentRepo repository.AssignmentRepository) MediaService {
 	return &mediaService{
 		mediaRepo:      mediaRepo,
 		userRepo:       userRepo,
@@ -282,7 +282,7 @@ func (s *mediaService) CheckMediaAccess(mediaID, userID uuid.UUID) (bool, error)
 			if err != nil {
 				return false, err
 			}
-			return a.StudentID == userID || a.TeacherID == userID, nil
+			return (a.StudentID != nil && *a.StudentID == userID) || a.TeacherID == userID, nil
 		}
 		// Submission/Review: автор сабмишена или учитель задания
 		if (media.EntityType == models.EntityTypeSubmission || media.EntityType == models.EntityTypeReview) && media.EntityID != nil {

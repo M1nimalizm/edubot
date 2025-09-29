@@ -227,9 +227,9 @@ func (h *HomepageMediaHandler) ServeMedia(c *gin.Context) {
 		return
 	}
 
-    // Отдаем файл с корректным Content-Type
-    if targetMedia.MimeType != "" {
-        c.Header("Content-Type", targetMedia.MimeType)
-    }
-    c.File(targetMedia.Path)
+	// Отдаем файл с корректным Content-Type
+	if targetMedia.MimeType != "" {
+		c.Header("Content-Type", targetMedia.MimeType)
+	}
+	c.File(targetMedia.Path)
 }

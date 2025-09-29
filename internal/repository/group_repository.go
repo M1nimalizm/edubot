@@ -19,6 +19,7 @@ type GroupRepository interface {
 	AddMember(member *models.GroupMember) error
 	RemoveMember(groupID, userID uuid.UUID) error
 	ListMembers(groupID uuid.UUID) ([]*models.GroupMember, error)
+	IsMember(groupID, userID uuid.UUID) (bool, error)
 }
 
 type groupRepository struct{ db *gorm.DB }
@@ -71,4 +72,10 @@ func (r *groupRepository) ListMembers(groupID uuid.UUID) ([]*models.GroupMember,
 	var ms []*models.GroupMember
 	err := r.db.Preload("User").Where("group_id = ?", groupID).Find(&ms).Error
 	return ms, err
+}
+
+func (r *groupRepository) IsMember(groupID, userID uuid.UUID) (bool, error) {
+	var count int64
+	err := r.db.Model(&models.GroupMember{}).Where("group_id = ? AND user_id = ?", groupID, userID).Count(&count).Error
+	return count > 0, err
 }

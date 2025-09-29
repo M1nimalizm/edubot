@@ -12,10 +12,10 @@ import (
 )
 
 type AssignmentHandler struct {
-	assignmentService *services.AssignmentService
+	assignmentService *services.LegacyAssignmentService
 }
 
-func NewAssignmentHandler(assignmentService *services.AssignmentService) *AssignmentHandler {
+func NewAssignmentHandler(assignmentService *services.LegacyAssignmentService) *AssignmentHandler {
 	return &AssignmentHandler{
 		assignmentService: assignmentService,
 	}
@@ -76,7 +76,7 @@ func (h *AssignmentHandler) CreateAssignment(c *gin.Context) {
 		Grade:       req.Grade,
 		Level:       req.Level,
 		TeacherID:   teacherID.(uuid.UUID),
-		StudentID:   req.StudentID,
+		StudentID:   &req.StudentID,
 		DueDate:     req.DueDate,
 	}
 

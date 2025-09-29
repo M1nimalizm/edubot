@@ -18,19 +18,20 @@ const (
 
 // User представляет пользователя системы
 type User struct {
-	ID         uuid.UUID      `json:"id" gorm:"type:text;primary_key"`
+	ID         uuid.UUID      `json:"id" gorm:"type:uuid;primaryKey"`
 	TelegramID int64          `json:"telegram_id" gorm:"uniqueIndex;not null"`
 	Username   string         `json:"username"`
 	FirstName  string         `json:"first_name"`
 	LastName   string         `json:"last_name"`
 	Role       UserRole       `json:"role" gorm:"default:'guest'"`
 	Phone      string         `json:"phone"`
-	Grade      int            `json:"grade"`    // 10 или 11 класс
-	Subjects   string         `json:"subjects"` // JSON массив предметов
+	Grade      int            `json:"grade"`                         // 10 или 11 класс
+	Subjects   string         `json:"subjects"`                      // JSON массив предметов
+	Timezone   string         `json:"timezone" gorm:"default:'UTC'"` // Часовой пояс пользователя
 	InviteCode *string        `json:"invite_code" gorm:"uniqueIndex"`
 	CreatedAt  time.Time      `json:"created_at"`
 	UpdatedAt  time.Time      `json:"updated_at"`
-	DeletedAt  gorm.DeletedAt `json:"-" gorm:"index"`
+	DeletedAt  gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 }
 
 // TrialRequest представляет заявку на пробное занятие
@@ -49,31 +50,33 @@ type TrialRequest struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-// Assignment представляет домашнее задание
+// Assignment представляет домашнее задание (может быть индивидуальным или групповым)
 type Assignment struct {
-	ID          uuid.UUID      `json:"id" gorm:"type:text;primary_key"`
+	ID          uuid.UUID      `json:"id" gorm:"type:uuid;primaryKey"`
 	Title       string         `json:"title" gorm:"not null"`
 	Description string         `json:"description"`
 	Subject     string         `json:"subject" gorm:"not null"` // "physics", "math"
 	Grade       int            `json:"grade" gorm:"not null"`   // 10, 11
 	Level       int            `json:"level" gorm:"not null"`   // 1-5
-	TeacherID   uuid.UUID      `json:"teacher_id" gorm:"type:text;not null"`
-	StudentID   uuid.UUID      `json:"student_id" gorm:"type:text;not null"`
+	TeacherID   uuid.UUID      `json:"teacher_id" gorm:"type:uuid;not null"`
+	GroupID     *uuid.UUID     `json:"group_id,omitempty" gorm:"type:uuid"`   // Для групповых заданий
+	StudentID   *uuid.UUID     `json:"student_id,omitempty" gorm:"type:uuid"` // Для индивидуальных заданий
 	DueDate     time.Time      `json:"due_date"`
-	CompletedAt *time.Time     `json:"completed_at,omitempty"`
-	Status      string         `json:"status" gorm:"default:'assigned'"` // assigned, completed, overdue
-	CreatedBy   uuid.UUID      `json:"created_by" gorm:"type:text"`
+	Status      string         `json:"status" gorm:"default:'active'"` // active, archived
+	CreatedBy   uuid.UUID      `json:"created_by" gorm:"type:uuid"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
+	DeletedAt   gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 
 	// Связи
-	Creator         User             `json:"creator" gorm:"foreignKey:CreatedBy"`
-	Teacher         User             `json:"teacher" gorm:"foreignKey:TeacherID"`
-	Student         User             `json:"student" gorm:"foreignKey:StudentID"`
-	Attachments     []Attachment     `json:"attachments" gorm:"foreignKey:AssignmentID"`
-	Submissions     []Submission     `json:"submissions" gorm:"foreignKey:AssignmentID"`
-	UserAssignments []UserAssignment `json:"user_assignments" gorm:"foreignKey:AssignmentID"`
+	Creator         User               `json:"creator" gorm:"foreignKey:CreatedBy"`
+	Teacher         User               `json:"teacher" gorm:"foreignKey:TeacherID"`
+	Group           *Group             `json:"group,omitempty" gorm:"foreignKey:GroupID"`
+	Student         *User              `json:"student,omitempty" gorm:"foreignKey:StudentID"`
+	Attachments     []Attachment       `json:"attachments" gorm:"foreignKey:AssignmentID"`
+	Submissions     []Submission       `json:"submissions" gorm:"foreignKey:AssignmentID"`
+	UserAssignments []UserAssignment   `json:"user_assignments" gorm:"foreignKey:AssignmentID"`
+	Targets         []AssignmentTarget `json:"targets" gorm:"foreignKey:AssignmentID"`
 }
 
 // UserAssignment связывает пользователей с заданиями
@@ -90,22 +93,27 @@ type UserAssignment struct {
 
 // Submission представляет решение задания от ученика
 type Submission struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:text;primary_key"`
-	AssignmentID    uuid.UUID  `json:"assignment_id" gorm:"type:text"`
-	UserID          uuid.UUID  `json:"user_id" gorm:"type:text"`
-	Status          string     `json:"status" gorm:"default:'submitted'"` // "submitted", "reviewed", "needs_revision"
-	Grade           string     `json:"grade"`                             // "5", "4", "3", "2", "needs_revision"
-	Comments        string     `json:"comments"`                          // Комментарии ученика
-	TeacherComments string     `json:"teacher_comments"`                  // Комментарии учителя
-	SubmittedAt     time.Time  `json:"submitted_at"`
-	ReviewedAt      *time.Time `json:"reviewed_at"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
+	ID                 uuid.UUID      `json:"id" gorm:"type:uuid;primaryKey"`
+	AssignmentID       uuid.UUID      `json:"assignment_id" gorm:"type:uuid;not null"`
+	AssignmentTargetID *uuid.UUID     `json:"assignment_target_id,omitempty" gorm:"type:uuid"` // Связь с индивидуальным таргетом
+	UserID             uuid.UUID      `json:"user_id" gorm:"type:uuid;not null"`
+	Text               *string        `json:"text,omitempty"`                    // Комментарии ученика
+	Status             string         `json:"status" gorm:"default:'submitted'"` // "submitted", "reviewed", "needs_revision"
+	Grade              string         `json:"grade"`                             // "5", "4", "3", "2", "needs_revision"
+	TeacherComments    string         `json:"teacher_comments"`                  // Комментарии учителя
+	SubmittedAt        time.Time      `json:"submitted_at"`
+	ReviewedAt         *time.Time     `json:"reviewed_at"`
+	IsLate             bool           `json:"is_late" gorm:"default:false"`
+	Attempt            int            `json:"attempt" gorm:"default:1"` // Номер попытки
+	CreatedAt          time.Time      `json:"created_at"`
+	UpdatedAt          time.Time      `json:"updated_at"`
+	DeletedAt          gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 
 	// Связи
-	Assignment Assignment   `json:"assignment" gorm:"foreignKey:AssignmentID"`
-	User       User         `json:"user" gorm:"foreignKey:UserID"`
-	Files      []Attachment `json:"files" gorm:"foreignKey:SubmissionID"`
+	Assignment       Assignment        `json:"assignment" gorm:"foreignKey:AssignmentID"`
+	AssignmentTarget *AssignmentTarget `json:"assignment_target,omitempty" gorm:"foreignKey:AssignmentTargetID"`
+	User             User              `json:"user" gorm:"foreignKey:UserID"`
+	Files            []Attachment      `json:"files" gorm:"foreignKey:SubmissionID"`
 }
 
 // Attachment представляет прикрепленный файл

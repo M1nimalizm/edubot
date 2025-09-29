@@ -57,6 +57,11 @@ func (d *Database) Migrate() error {
 		&models.User{},
 		&models.TrialRequest{},
 		&models.Assignment{},
+		&models.AssignmentTarget{},
+		&models.Feedback{},
+		&models.Submission{},
+		&models.UserAssignment{},
+		&models.Attachment{},
 		&models.Comment{},
 		&models.Content{},
 		&models.StudentProgress{},
@@ -65,6 +70,10 @@ func (d *Database) Migrate() error {
 		&models.MediaView{},
 		&models.Group{},
 		&models.GroupMember{},
+		&models.ChatThread{},
+		&models.Message{},
+		&models.Notification{},
+		&models.Draft{},
 		&models.HomepageMedia{},
 	)
 }

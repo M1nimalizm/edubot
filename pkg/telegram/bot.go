@@ -336,17 +336,20 @@ func (b *Bot) sendMainMenu(chatID int64, role string) {
 		rows = [][]tgbotapi.InlineKeyboardButton{
 			{tgbotapi.NewInlineKeyboardButtonURL("🔔 Уведомления", "https://edubot-0g05.onrender.com/app/teacher-dashboard")},
 			{tgbotapi.NewInlineKeyboardButtonURL("👥 Ученики", "https://edubot-0g05.onrender.com/app/teacher-students")},
-			{tgbotapi.NewInlineKeyboardButtonURL("👨‍👩‍👧 Группы (в приложении)", "https://edubot-0g05.onrender.com/app/teacher-groups")},
+			{tgbotapi.NewInlineKeyboardButtonURL("👨‍👩‍👧 Группы", "https://edubot-0g05.onrender.com/app/teacher-groups")},
 			{tgbotapi.NewInlineKeyboardButtonData("📋 Группы (в боте)", "show_groups")},
 			{tgbotapi.NewInlineKeyboardButtonURL("📝 Задать ДЗ", "https://edubot-0g05.onrender.com/app/teacher-assignments")},
 			{tgbotapi.NewInlineKeyboardButtonURL("✅ Проверка ДЗ", "https://edubot-0g05.onrender.com/app/teacher-submissions")},
 			{tgbotapi.NewInlineKeyboardButtonURL("📚 Материалы", "https://edubot-0g05.onrender.com/app/teacher-content")},
+			{tgbotapi.NewInlineKeyboardButtonData("📤 Записать фидбэк", "teacher_feedback_mode")},
 		}
 	} else if role == "student" {
 		rows = [][]tgbotapi.InlineKeyboardButton{
 			{tgbotapi.NewInlineKeyboardButtonURL("📋 Мои задания", "https://edubot-0g05.onrender.com/app/student-dashboard")},
-			{tgbotapi.NewInlineKeyboardButtonURL("📤 Сдать ДЗ", "https://edubot-0g05.onrender.com/app/student-dashboard")},
-			{tgbotapi.NewInlineKeyboardButtonURL("❓ Помощь", "https://edubot-0g05.onrender.com/app")},
+			{tgbotapi.NewInlineKeyboardButtonData("📤 Сдать ДЗ", "student_submit_mode")},
+			{tgbotapi.NewInlineKeyboardButtonURL("💬 Чат с учителем", "https://edubot-0g05.onrender.com/app/student-chat")},
+			{tgbotapi.NewInlineKeyboardButtonURL("📊 Мой прогресс", "https://edubot-0g05.onrender.com/app/student-progress")},
+			{tgbotapi.NewInlineKeyboardButtonData("ℹ️ Помощь", "help")},
 		}
 	} else {
 		rows = [][]tgbotapi.InlineKeyboardButton{
@@ -374,6 +377,14 @@ func (b *Bot) processCallbackQuery(cb map[string]interface{}) {
 		b.sendHelpMessage(int64(chatID))
 	case "show_groups":
 		b.renderGroupsList(int64(chatID), int64(userID))
+	case "student_submit_mode":
+		b.enterStudentSubmitMode(int64(chatID), int64(userID))
+	case "teacher_feedback_mode":
+		b.enterTeacherFeedbackMode(int64(chatID), int64(userID))
+	case "exit_submit_mode":
+		b.exitStudentSubmitMode(int64(chatID), int64(userID))
+	case "exit_feedback_mode":
+		b.exitTeacherFeedbackMode(int64(chatID), int64(userID))
 	default:
 		// no-op
 	}
@@ -481,6 +492,7 @@ func (b *Bot) sendHelpMessage(chatID int64) error {
 • 📚 Просмотр образовательных материалов
 • 📋 Получение заданий и их выполнение
 • 📊 Отслеживание прогресса обучения
+• 💬 Общение с преподавателем
 
 🚀 <b>Доступные команды:</b>
 • /start - Начать работу с ботом
@@ -488,10 +500,15 @@ func (b *Bot) sendHelpMessage(chatID int64) error {
 • /app - Открыть приложение
 • /info - Информация о преподавателе
 
-📱 <b>Как начать:</b>
-1. Нажмите кнопку "Открыть приложение"
-2. Заполните форму записи на пробное занятие
-3. Дождитесь связи от преподавателя
+📱 <b>Для учеников:</b>
+• Используйте кнопку "📤 Сдать ДЗ" для отправки файлов с решением
+• Отправляйте фото, видео, аудио или документы прямо в чат
+• Получайте уведомления о новых заданиях и оценках
+
+👨‍🏫 <b>Для преподавателей:</b>
+• Используйте кнопку "📤 Записать фидбэк" для записи отзывов
+• Отправляйте видео-разборы и голосовые комментарии
+• Управляйте группами и заданиями через приложение
 
 ❓ <b>Вопросы?</b>
 Напишите преподавателю через приложение или используйте команду /start`
@@ -819,7 +836,7 @@ func (b *Bot) HandleMediaUpload(update tgbotapi.Update, mediaService interface{}
 	var mediaType string
 
 	// Определяем тип медиафайла и извлекаем информацию
-	if update.Message.Photo != nil && len(update.Message.Photo) > 0 {
+	if len(update.Message.Photo) > 0 {
 		// Изображение
 		photo := update.Message.Photo[len(update.Message.Photo)-1] // Берем самое большое
 		fileName = fmt.Sprintf("image_%d.jpg", photo.FileSize)
@@ -917,4 +934,198 @@ func (b *Bot) SendFeedbackNotification(userTelegramID int64, assignmentTitle, su
 
 	b.SendMessage(userTelegramID, message)
 	log.Printf("Feedback notification sent to user %d for assignment %s", userTelegramID, assignmentTitle)
+}
+
+// enterStudentSubmitMode активирует режим сдачи ДЗ для ученика
+func (b *Bot) enterStudentSubmitMode(chatID, userID int64) {
+	text := `📤 <b>Режим сдачи домашнего задания</b>
+
+Теперь вы можете отправлять файлы с решением заданий прямо в этот чат.
+
+<b>Поддерживаемые форматы:</b>
+• 📷 Фото решений
+• 🎥 Видео с объяснением
+• 📄 Документы (PDF, DOC)
+• 🎵 Аудио-комментарии
+
+<b>Как использовать:</b>
+1. Выберите задание в приложении
+2. Отправьте файлы с решением в этот чат
+3. Добавьте комментарии, если нужно
+
+<b>Совет:</b> Можно отправить несколько файлов подряд - они будут объединены в одну отправку.`
+
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("📋 Мои задания", "https://edubot-0g05.onrender.com/app/student-dashboard"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("❌ Выйти из режима", "exit_submit_mode"),
+		),
+	)
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+	msg.ReplyMarkup = keyboard
+	_, _ = b.api.Send(msg)
+}
+
+// exitStudentSubmitMode выходит из режима сдачи ДЗ
+func (b *Bot) exitStudentSubmitMode(chatID, userID int64) {
+	role := "guest"
+	if b.getUserRole != nil {
+		role = b.getUserRole(userID)
+	}
+	b.sendMainMenu(chatID, role)
+}
+
+// enterTeacherFeedbackMode активирует режим записи фидбэка для учителя
+func (b *Bot) enterTeacherFeedbackMode(chatID, userID int64) {
+	text := `🎯 <b>Режим записи фидбэка</b>
+
+Теперь вы можете записывать отзывы о работах учеников прямо в этот чат.
+
+<b>Доступные форматы:</b>
+• 🎥 Видео с разбором ошибок
+• 🎵 Голосовые комментарии
+• 📄 Документы с подробным анализом
+• 📷 Фото с пометками
+
+<b>Как использовать:</b>
+1. Выберите работу для проверки в приложении
+2. Запишите фидбэк в этом чате
+3. Файл автоматически прикрепится к работе
+
+<b>Совет:</b> Видео-разборы помогают ученикам лучше понять материал!`
+
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("✅ Проверка ДЗ", "https://edubot-0g05.onrender.com/app/teacher-submissions"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("❌ Выйти из режима", "exit_feedback_mode"),
+		),
+	)
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+	msg.ReplyMarkup = keyboard
+	_, _ = b.api.Send(msg)
+}
+
+// exitTeacherFeedbackMode выходит из режима записи фидбэка
+func (b *Bot) exitTeacherFeedbackMode(chatID, userID int64) {
+	role := "guest"
+	if b.getUserRole != nil {
+		role = b.getUserRole(userID)
+	}
+	b.sendMainMenu(chatID, role)
+}
+
+// GenerateDeepLink создает глубокую ссылку в Mini App с параметрами
+func (b *Bot) GenerateDeepLink(path string, params map[string]string) string {
+	baseURL := "https://edubot-0g05.onrender.com/app"
+	if path != "" {
+		baseURL += "/" + path
+	}
+
+	if len(params) > 0 {
+		baseURL += "?"
+		first := true
+		for key, value := range params {
+			if !first {
+				baseURL += "&"
+			}
+			baseURL += key + "=" + value
+			first = false
+		}
+	}
+
+	return baseURL
+}
+
+// SendAssignmentDeepLink отправляет уведомление о новом задании с глубокой ссылкой
+func (b *Bot) SendAssignmentDeepLink(chatID int64, assignmentID string, assignmentTitle, subject string, deadline string) error {
+	deepLink := b.GenerateDeepLink("student-dashboard", map[string]string{
+		"assignment": assignmentID,
+		"action":     "view",
+	})
+
+	text := fmt.Sprintf(`
+📝 <b>Новое задание!</b>
+
+📖 <b>Предмет:</b> %s
+📋 <b>Название:</b> %s
+⏰ <b>Дедлайн:</b> %s
+
+Нажмите кнопку ниже для просмотра задания!`, subject, assignmentTitle, deadline)
+
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("📋 Открыть задание", deepLink),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("📤 Сдать ДЗ", "student_submit_mode"),
+		),
+	)
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+	msg.ReplyMarkup = keyboard
+	_, err := b.api.Send(msg)
+	return err
+}
+
+// SendProgressDeepLink отправляет ссылку на прогресс с параметрами
+func (b *Bot) SendProgressDeepLink(chatID int64, subject string) error {
+	deepLink := b.GenerateDeepLink("student-progress", map[string]string{
+		"subject": subject,
+	})
+
+	text := fmt.Sprintf(`
+📊 <b>Ваш прогресс по %s</b>
+
+Посмотрите статистику выполнения заданий и оценки!`, subject)
+
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("📊 Открыть прогресс", deepLink),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("📋 Все задания", b.GenerateDeepLink("student-dashboard", nil)),
+		),
+	)
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+	msg.ReplyMarkup = keyboard
+	_, err := b.api.Send(msg)
+	return err
+}
+
+// SendChatDeepLink отправляет ссылку на чат с учителем
+func (b *Bot) SendChatDeepLink(chatID int64, teacherName string) error {
+	deepLink := b.GenerateDeepLink("student-chat", map[string]string{
+		"teacher": teacherName,
+	})
+
+	text := fmt.Sprintf(`
+💬 <b>Чат с преподавателем</b>
+
+Напишите %s или задайте вопрос!`, teacherName)
+
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("💬 Открыть чат", deepLink),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("📋 Мои задания", "show_assignments"),
+		),
+	)
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+	msg.ReplyMarkup = keyboard
+	_, err := b.api.Send(msg)
+	return err
 }
