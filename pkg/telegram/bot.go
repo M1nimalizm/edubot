@@ -121,7 +121,7 @@ func (b *Bot) SendWelcomeToNewUser(chatID int64, firstName string) error {
 	// Создаем клавиатуру с кнопкой "Открыть приложение"
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com"),
+			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com/app"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("ℹ️ Помощь", "help"),
@@ -334,23 +334,23 @@ func (b *Bot) sendMainMenu(chatID int64, role string) {
 	var rows [][]tgbotapi.InlineKeyboardButton
 	if role == "teacher" {
 		rows = [][]tgbotapi.InlineKeyboardButton{
-			{tgbotapi.NewInlineKeyboardButtonURL("🔔 Уведомления", "https://edubot-0g05.onrender.com/teacher-dashboard")},
-			{tgbotapi.NewInlineKeyboardButtonURL("👥 Ученики", "https://edubot-0g05.onrender.com/teacher-students")},
-			{tgbotapi.NewInlineKeyboardButtonURL("👨‍👩‍👧 Группы (в приложении)", "https://edubot-0g05.onrender.com/teacher-groups")},
+			{tgbotapi.NewInlineKeyboardButtonURL("🔔 Уведомления", "https://edubot-0g05.onrender.com/app/teacher-dashboard")},
+			{tgbotapi.NewInlineKeyboardButtonURL("👥 Ученики", "https://edubot-0g05.onrender.com/app/teacher-students")},
+			{tgbotapi.NewInlineKeyboardButtonURL("👨‍👩‍👧 Группы (в приложении)", "https://edubot-0g05.onrender.com/app/teacher-groups")},
 			{tgbotapi.NewInlineKeyboardButtonData("📋 Группы (в боте)", "show_groups")},
-			{tgbotapi.NewInlineKeyboardButtonURL("📝 Задать ДЗ", "https://edubot-0g05.onrender.com/teacher-assignments")},
-			{tgbotapi.NewInlineKeyboardButtonURL("✅ Проверка ДЗ", "https://edubot-0g05.onrender.com/teacher-submissions")},
-			{tgbotapi.NewInlineKeyboardButtonURL("📚 Материалы", "https://edubot-0g05.onrender.com/teacher-content")},
+			{tgbotapi.NewInlineKeyboardButtonURL("📝 Задать ДЗ", "https://edubot-0g05.onrender.com/app/teacher-assignments")},
+			{tgbotapi.NewInlineKeyboardButtonURL("✅ Проверка ДЗ", "https://edubot-0g05.onrender.com/app/teacher-submissions")},
+			{tgbotapi.NewInlineKeyboardButtonURL("📚 Материалы", "https://edubot-0g05.onrender.com/app/teacher-content")},
 		}
 	} else if role == "student" {
 		rows = [][]tgbotapi.InlineKeyboardButton{
-			{tgbotapi.NewInlineKeyboardButtonURL("📋 Мои задания", "https://edubot-0g05.onrender.com/student-dashboard")},
-			{tgbotapi.NewInlineKeyboardButtonURL("📤 Сдать ДЗ", "https://edubot-0g05.onrender.com/student-dashboard")},
-			{tgbotapi.NewInlineKeyboardButtonURL("❓ Помощь", "https://edubot-0g05.onrender.com")},
+			{tgbotapi.NewInlineKeyboardButtonURL("📋 Мои задания", "https://edubot-0g05.onrender.com/app/student-dashboard")},
+			{tgbotapi.NewInlineKeyboardButtonURL("📤 Сдать ДЗ", "https://edubot-0g05.onrender.com/app/student-dashboard")},
+			{tgbotapi.NewInlineKeyboardButtonURL("❓ Помощь", "https://edubot-0g05.onrender.com/app")},
 		}
 	} else {
 		rows = [][]tgbotapi.InlineKeyboardButton{
-			{tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com")},
+			{tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com/app")},
 			{tgbotapi.NewInlineKeyboardButtonData("ℹ️ Помощь", "help")},
 		}
 	}
@@ -397,7 +397,7 @@ func (b *Bot) renderGroupsList(chatID, teacherTelegramID int64) {
 		}
 		// Кнопка открывает страницу группы в приложении
 		rows = append(rows, []tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonURL("👥 "+g.Name, "https://edubot-0g05.onrender.com/teacher-groups"),
+			tgbotapi.NewInlineKeyboardButtonURL("👥 "+g.Name, "https://edubot-0g05.onrender.com/app/teacher-groups"),
 		})
 	}
 	rows = append(rows, []tgbotapi.InlineKeyboardButton{tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "/start")})
@@ -457,7 +457,7 @@ func (b *Bot) sendWelcomeMessage(chatID int64) error {
 	// Создаем клавиатуру с кнопкой "Открыть приложение"
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com"),
+			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com/app"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("ℹ️ Помощь", "help"),
@@ -502,7 +502,7 @@ func (b *Bot) sendHelpMessage(chatID int64) error {
 	// Создаем клавиатуру с кнопками
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com"),
+			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com/app"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("👨‍🏫 О преподавателе", "info"),
@@ -537,7 +537,7 @@ func (b *Bot) sendAppLink(chatID int64) error {
 	// Создаем клавиатуру с кнопкой "Открыть приложение"
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com"),
+			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com/app"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🏠 Главная", "start"),
@@ -582,7 +582,7 @@ Telegram: @pugach3
 	// Создаем клавиатуру с кнопками
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com"),
+			tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть приложение", "https://edubot-0g05.onrender.com/app"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("🏠 Главная", "start"),
@@ -615,7 +615,7 @@ func (b *Bot) SendAssignmentCompletedNotification(chatID int64, title, subject, 
 	// Создаем клавиатуру с кнопкой "Открыть приложение"
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("📝 Проверить задание", "https://edubot-0g05.onrender.com"),
+			tgbotapi.NewInlineKeyboardButtonURL("📝 Проверить задание", "https://edubot-0g05.onrender.com/app"),
 		),
 	)
 	msg.ReplyMarkup = keyboard
@@ -645,7 +645,7 @@ func (b *Bot) SendCommentNotification(chatID int64, content, title, subject stri
 	// Создаем клавиатуру с кнопкой "Открыть приложение"
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("💬 Посмотреть комментарий", "https://edubot-0g05.onrender.com"),
+			tgbotapi.NewInlineKeyboardButtonURL("💬 Посмотреть комментарий", "https://edubot-0g05.onrender.com/app"),
 		),
 	)
 	msg.ReplyMarkup = keyboard
@@ -690,7 +690,7 @@ func (b *Bot) SendMediaUploadInstructions(chatID int64, mediaType string) error 
 
 		keyboard = tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonURL("📱 Открыть приложение", "https://edubot-0g05.onrender.com"),
+				tgbotapi.NewInlineKeyboardButtonURL("📱 Открыть приложение", "https://edubot-0g05.onrender.com/app"),
 			),
 		)
 
@@ -707,7 +707,7 @@ func (b *Bot) SendMediaUploadInstructions(chatID int64, mediaType string) error 
 
 		keyboard = tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonURL("📚 Мои задания", "https://edubot-0g05.onrender.com"),
+				tgbotapi.NewInlineKeyboardButtonURL("📚 Мои задания", "https://edubot-0g05.onrender.com/app"),
 			),
 		)
 
@@ -724,7 +724,7 @@ func (b *Bot) SendMediaUploadInstructions(chatID int64, mediaType string) error 
 
 		keyboard = tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonURL("👨‍🏫 Панель учителя", "https://edubot-0g05.onrender.com"),
+				tgbotapi.NewInlineKeyboardButtonURL("👨‍🏫 Панель учителя", "https://edubot-0g05.onrender.com/app"),
 			),
 		)
 

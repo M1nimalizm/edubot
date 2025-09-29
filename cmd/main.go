@@ -179,7 +179,7 @@ func main() {
 	router.GET("/telegram-check", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status":       "telegram_ready",
-			"webapp_url":   "https://edubot-0g05.onrender.com",
+			"webapp_url":   "https://edubot-0g05.onrender.com/app",
 			"bot_username": "EduBot_by_Pugachev_bot",
 		})
 	})
@@ -197,10 +197,10 @@ func main() {
 	// Выключаем сайт по флагу DISABLE_SITE, но пускаем Mini App из Telegram
 	disableSite := os.Getenv("DISABLE_SITE") == "true"
 	router.GET("/", func(c *gin.Context) {
-        if disableSite && !isTelegramWebApp(c.Request) {
-            c.HTML(http.StatusOK, "site-disabled.html", nil)
-            return
-        }
+		if disableSite && !isTelegramWebApp(c.Request) {
+			c.HTML(http.StatusOK, "site-disabled.html", nil)
+			return
+		}
 		c.HTML(http.StatusOK, "index.html", gin.H{"title": "EduBot - Образовательная платформа"})
 	})
 
