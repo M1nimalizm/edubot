@@ -86,13 +86,16 @@ func (h *StudentHandler) GetAssignments(c *gin.Context) {
 	// Применяем пагинацию
 	start := offset
 	end := offset + limit
+	
+	var result []*models.AssignmentTarget
 	if start >= len(filteredTargets) {
-		filteredTargets = []*models.AssignmentTarget{}
-	} else if end > len(filteredTargets) {
-		end = len(filteredTargets)
+		result = []*models.AssignmentTarget{}
+	} else {
+		if end > len(filteredTargets) {
+			end = len(filteredTargets)
+		}
+		result = filteredTargets[start:end]
 	}
-
-	result := filteredTargets[start:end]
 
 	c.JSON(http.StatusOK, gin.H{
 		"assignments": result,

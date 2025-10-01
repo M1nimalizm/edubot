@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-chart-line"></i> Прогресс ученика</h1>
+                <div class="header-actions">
+                    <button class="btn btn-outline" onclick="window.location.href='/teacher/students'">
+                        <i class="fas fa-arrow-left"></i> Назад к ученикам
+                    </button>
+                    <button class="btn btn-outline" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Выйти
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="progress-container">
+                <!-- Информация об ученике -->
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-user"></i> Информация об ученике</h3>
+                    <div id="studentInfo" class="student-info">
+                        <div class="loading">Загрузка информации об ученике...</div>
+                    </div>
+                </div>
+
+                <!-- Статистика прогресса -->
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-chart-bar"></i> Статистика</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalAssignments">-</div>
+                            <div class="stat-label">Всего заданий</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="completedAssignments">-</div>
+                            <div class="stat-label">Выполнено</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="averageGrade">-</div>
+                            <div class="stat-label">Средняя оценка</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="completionRate">-</div>
+                            <div class="stat-label">Процент выполнения</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- История заданий -->
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-list"></i> История заданий</h3>
+                    <div id="assignmentsHistory" class="assignments-list">
+                        <div class="loading">Загрузка истории заданий...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let studentId = null;
+        let studentData = null;
+
+        // Получаем ID ученика из URL
+        document.addEventListener('DOMContentLoaded', function() {
+            const pathParts = window.location.pathname.split('/');
+            studentId = pathParts[pathParts.length - 2]; // Предпоследний элемент - это ID
+            
+            if (studentId) {
+                loadStudentProgress();
+            } else {
+                showError('ID ученика не найден');
+            }
+        });
+
+        // Загрузка прогресса ученика
+        async function loadStudentProgress() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                showError('Требуется авторизация');
+                return;
+            }
+
+            try {
+                // Загружаем информацию об ученике
+                const studentResponse = await fetch(`/api/teacher/students`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                if (studentResponse.ok) {
+                    const students = await studentResponse.json();
+                    studentData = students.find(s => s.id === studentId);
+                    
+                    if (studentData) {
+                        displayStudentInfo(studentData);
+                    } else {
+                        showError('Ученик не найден');
+                        return;
+                    }
+                } else {
+                    showError('Ошибка загрузки информации об ученике');
+                    return;
+                }
+
+                // Загружаем прогресс ученика
+                const progressResponse = await fetch(`/api/teacher/students/${studentId}/progress`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (progressResponse.ok) {
+                    const progress = await progressResponse.json();
+                    displayProgressStats(progress);
+                    displayAssignmentsHistory(progress.assignments || []);
+                } else {
+                    // Если API не существует, показываем заглушку
+                    displayProgressStats({
+                        total_assignments: 0,
+                        completed_assignments: 0,
+                        average_grade: 0,
+                        completion_rate: 0
+                    });
+                    displayAssignmentsHistory([]);
+                }
+
+            } catch (error) {
+                console.error('Error loading student progress:', error);
+                showError('Ошибка загрузки данных');
+            }
+        }
+
+        // Отображение информации об ученике
+        function displayStudentInfo(student) {
+            const studentInfoDiv = document.getElementById('studentInfo');
+            studentInfoDiv.innerHTML = `
+                <div class="student-details">
+                    <div class="student-avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="student-data">
+                        <h4>${student.first_name} ${student.last_name || ''}</h4>
+                        <p><strong>Класс:</strong> ${student.grade || 'Не указан'}</p>
+                        <p><strong>Предметы:</strong> ${student.subjects || 'Не указаны'}</p>
+                        <p><strong>Telegram ID:</strong> ${student.telegram_id || 'Не указан'}</p>
+                        <p><strong>Username:</strong> @${student.username || 'Не указан'}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Отображение статистики прогресса
+        function displayProgressStats(stats) {
+            document.getElementById('totalAssignments').textContent = stats.total_assignments || 0;
+            document.getElementById('completedAssignments').textContent = stats.completed_assignments || 0;
+            document.getElementById('averageGrade').textContent = stats.average_grade ? stats.average_grade.toFixed(1) : '-';
+            document.getElementById('completionRate').textContent = stats.completion_rate ? stats.completion_rate.toFixed(1) + '%' : '0%';
+        }
+
+        // Отображение истории заданий
+        function displayAssignmentsHistory(assignments) {
+            const assignmentsDiv = document.getElementById('assignmentsHistory');
+            
+            if (assignments.length === 0) {
+                assignmentsDiv.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <p>Ученик еще не получал заданий</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const assignmentsHTML = assignments.map(assignment => `
+                <div class="assignment-item">
+                    <div class="assignment-header">
+                        <h4>${assignment.title || 'Задание'}</h4>
+                        <span class="assignment-status status-${assignment.status || 'pending'}">
+                            ${getStatusText(assignment.status)}
+                        </span>
+                    </div>
+                    <div class="assignment-details">
+                        <p><strong>Предмет:</strong> ${assignment.subject || 'Не указан'}</p>
+                        <p><strong>Срок сдачи:</strong> ${assignment.due_date ? new Date(assignment.due_date).toLocaleDateString('ru-RU') : 'Не указан'}</p>
+                        ${assignment.grade ? `<p><strong>Оценка:</strong> ${assignment.grade}</p>` : ''}
+                        ${assignment.feedback ? `<p><strong>Комментарий:</strong> ${assignment.feedback}</p>` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            assignmentsDiv.innerHTML = assignmentsHTML;
+        }
+
+        // Получение текста статуса
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': 'Ожидает выполнения',
+                'submitted': 'Сдано',
+                'graded': 'Проверено',
+                'overdue': 'Просрочено'
+            };
+            return statusMap[status] || 'Неизвестно';
+        }
+
+        // Вспомогательные функции
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-error';
+            errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+            document.querySelector('.main-content').insertBefore(errorDiv, document.querySelector('.progress-container'));
+        }
+
+        function logout() {
+            if (confirm('Вы уверены, что хотите выйти?')) {
+                localStorage.removeItem('authToken');
+                window.location.href = '/';
+            }
+        }
+    </script>
+</body>
+</html>

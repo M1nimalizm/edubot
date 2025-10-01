@@ -250,6 +250,9 @@ func main() {
 	router.GET("/teacher/students", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
 		c.HTML(http.StatusOK, "teacher-students.html", gin.H{"title": "Ученики - EduBot"})
 	})
+	router.GET("/teacher/students/:id/progress", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+		c.HTML(http.StatusOK, "teacher-student-progress.html", gin.H{"title": "Прогресс ученика - EduBot"})
+	})
 	router.GET("/teacher-groups", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
 		c.HTML(http.StatusOK, "teacher-groups.html", gin.H{"title": "Группы - EduBot"})
 	})
