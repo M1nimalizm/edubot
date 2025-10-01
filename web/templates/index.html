@@ -561,15 +561,17 @@ async function checkAuthAndUpdateVisibility() {
 
         // Управление видимостью по факту авторизации
         const authNodes = document.querySelectorAll('[data-auth]');
-        const isUser = role === 'student' || role === 'teacher';
+        const isAuthenticated = role === 'student' || role === 'teacher' || role === 'guest';
+        const isFullUser = role === 'student' || role === 'teacher';
         authNodes.forEach(node => {
             const need = node.getAttribute('data-auth');
-            if (need === 'user' && !isUser) node.style.display = 'none';
-            if (need === 'guest' && isUser) node.style.display = 'none';
+            if (need === 'user' && !isFullUser) node.style.display = 'none';
+            if (need === 'guest' && isFullUser) node.style.display = 'none';
+            if (need === 'authenticated' && !isAuthenticated) node.style.display = 'none';
         });
 
         // Обновляем UI для авторизованного пользователя
-        if (isUser) {
+        if (isAuthenticated) {
             updateUIForUser(data);
         } else {
             updateUIForGuest();
@@ -761,7 +763,7 @@ function updateUIForUser(user) {
             ${user.photo_url ? `<img src="${user.photo_url}" alt="${user.first_name}" />` : `<div style="width: 32px; height: 32px; border-radius: 50%; background: var(--accent-color); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.first_name ? user.first_name[0].toUpperCase() : 'U'}</div>`}
             <div class="user-info">
                 <div class="user-name">${user.first_name} ${user.last_name || ''}</div>
-                <div class="user-role">${user.role === 'teacher' ? 'Преподаватель' : 'Ученик'}</div>
+                <div class="user-role">${user.role === 'teacher' ? 'Преподаватель' : user.role === 'student' ? 'Ученик' : 'Гость'}</div>
             </div>
             <button class="logout-btn" onclick="logout()" title="Выйти">
                 <i class="fas fa-sign-out-alt"></i>
@@ -777,9 +779,13 @@ function updateUIForUser(user) {
         if (user.role === 'teacher') {
             btn.textContent = 'Панель преподавателя';
             btn.onclick = () => window.location.href = '/teacher-dashboard';
-        } else {
+        } else if (user.role === 'student') {
             btn.textContent = 'Личный кабинет';
             btn.onclick = () => window.location.href = '/student-dashboard';
+        } else {
+            // Для гостей оставляем кнопку записи на пробный урок
+            btn.textContent = 'Записаться на пробный урок';
+            btn.onclick = () => openTrialModal();
         }
     });
 }
@@ -792,6 +798,9 @@ function showUserMenu() {
         window.location.href = '/teacher-dashboard';
     } else if (currentUser && currentUser.role === 'student') {
         window.location.href = '/student-dashboard';
+    } else if (currentUser && currentUser.role === 'guest') {
+        // Для гостей показываем модальное окно записи на пробный урок
+        openTrialModal();
     }
 }
 
@@ -814,6 +823,93 @@ function onTelegramAuth(user){
             showNotification('Ошибка авторизации: ' + err.message, 'error');
         });
 }
+
+// Функции для работы с модальным окном записи на пробный урок
+function openTrialModal() {
+    const modal = document.getElementById('trialModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeTrialModal() {
+    const modal = document.getElementById('trialModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+// Обработка отправки формы записи на пробный урок
+async function submitTrialRequest(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('trialForm');
+    const formData = new FormData(form);
+    
+    const trialData = {
+        name: formData.get('name'),
+        grade: parseInt(formData.get('grade')),
+        subject: formData.get('subject'),
+        level: parseInt(formData.get('level')),
+        contact_type: 'phone',
+        contact_value: formData.get('phone'),
+        comment: formData.get('message')
+    };
+    
+    // Проверяем обязательные поля
+    if (!trialData.name || !trialData.grade || !trialData.subject || !trialData.level) {
+        showNotification('Заполните все обязательные поля', 'error');
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('authToken');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch('/api/public/trial-request', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(trialData)
+        });
+        
+        if (response.ok) {
+            showNotification('Заявка на пробный урок отправлена! Мы свяжемся с вами в ближайшее время.', 'success');
+            closeTrialModal();
+            form.reset();
+        } else {
+            const error = await response.json().catch(() => ({}));
+            showNotification('Ошибка при отправке заявки: ' + (error.error || 'неизвестная ошибка'), 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка при отправке заявки:', error);
+        showNotification('Ошибка сети при отправке заявки', 'error');
+    }
+}
+
+// Инициализация формы при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    const trialForm = document.getElementById('trialForm');
+    if (trialForm) {
+        trialForm.addEventListener('submit', submitTrialRequest);
+    }
+    
+    // Закрытие модального окна при клике вне его
+    const trialModal = document.getElementById('trialModal');
+    if (trialModal) {
+        trialModal.addEventListener('click', function(event) {
+            if (event.target === trialModal) {
+                closeTrialModal();
+            }
+        });
+    }
+});
 </script>
-</html>
 </html>

@@ -20,6 +20,7 @@ type Bot struct {
 		ID   string
 		Name string
 	}, error)
+	systemMessages map[int64]int // ID последнего системного сообщения для каждого чата
 }
 
 // NewBot создает новый экземпляр бота
@@ -32,15 +33,47 @@ func NewBot(token, webhook string) (*Bot, error) {
 	bot.Debug = false // Включаем в режиме разработки
 
 	return &Bot{
-		api:     bot,
-		token:   token,
-		webhook: webhook,
+		api:             bot,
+		token:           token,
+		webhook:         webhook,
+		systemMessages:  make(map[int64]int),
 	}, nil
 }
 
 // SetAssignStudent callback to backend
 func (b *Bot) SetAssignStudent(cb func(teacherTelegramID int64, telegramID *int64, username string, grade *int, subjects string) error) {
 	b.assignStudent = cb
+}
+
+// deletePreviousSystemMessage удаляет предыдущее системное сообщение
+func (b *Bot) deletePreviousSystemMessage(chatID int64) {
+	if messageID, exists := b.systemMessages[chatID]; exists && messageID > 0 {
+		deleteMsg := tgbotapi.NewDeleteMessage(chatID, messageID)
+		_, err := b.api.Request(deleteMsg)
+		if err != nil {
+			log.Printf("Failed to delete previous system message %d in chat %d: %v", messageID, chatID, err)
+		}
+	}
+}
+
+// sendSystemMessage отправляет системное сообщение с автоудалением предыдущего
+func (b *Bot) sendSystemMessage(chatID int64, text string, parseMode string) error {
+	// Удаляем предыдущее системное сообщение
+	b.deletePreviousSystemMessage(chatID)
+	
+	msg := tgbotapi.NewMessage(chatID, text)
+	if parseMode != "" {
+		msg.ParseMode = parseMode
+	}
+	
+	sentMsg, err := b.api.Send(msg)
+	if err != nil {
+		return err
+	}
+	
+	// Сохраняем ID нового системного сообщения
+	b.systemMessages[chatID] = sentMsg.MessageID
+	return nil
 }
 
 // SetGetUserRole callback
@@ -360,7 +393,13 @@ func (b *Bot) sendMainMenu(chatID int64, role string) {
 	kb := tgbotapi.NewInlineKeyboardMarkup(rows...)
 	msg := tgbotapi.NewMessage(chatID, "Выберите действие:")
 	msg.ReplyMarkup = kb
-	_, _ = b.api.Send(msg)
+	
+	// Удаляем предыдущее системное сообщение и отправляем новое
+	b.deletePreviousSystemMessage(chatID)
+	sentMsg, err := b.api.Send(msg)
+	if err == nil {
+		b.systemMessages[chatID] = sentMsg.MessageID
+	}
 }
 
 // processCallbackQuery обрабатывает инлайн-кнопки
@@ -476,10 +515,13 @@ func (b *Bot) sendWelcomeMessage(chatID int64) error {
 	)
 	msg.ReplyMarkup = keyboard
 
-	_, err := b.api.Send(msg)
+	// Удаляем предыдущее системное сообщение и отправляем новое
+	b.deletePreviousSystemMessage(chatID)
+	sentMsg, err := b.api.Send(msg)
 	if err != nil {
 		return fmt.Errorf("failed to send welcome message: %w", err)
 	}
+	b.systemMessages[chatID] = sentMsg.MessageID
 	return nil
 }
 
@@ -530,10 +572,13 @@ func (b *Bot) sendHelpMessage(chatID int64) error {
 	)
 	msg.ReplyMarkup = keyboard
 
-	_, err := b.api.Send(msg)
+	// Удаляем предыдущее системное сообщение и отправляем новое
+	b.deletePreviousSystemMessage(chatID)
+	sentMsg, err := b.api.Send(msg)
 	if err != nil {
 		return fmt.Errorf("failed to send help message: %w", err)
 	}
+	b.systemMessages[chatID] = sentMsg.MessageID
 	return nil
 }
 
