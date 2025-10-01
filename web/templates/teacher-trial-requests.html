@@ -107,6 +107,162 @@
             flex-wrap: wrap;
         }
         
+        .trial-request-actions .btn {
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        /* Модальное окно */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-top: 1px solid #eee;
+            justify-content: flex-end;
+        }
+        
+        .modal-body .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .modal-body .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .modal-body input,
+        .modal-body select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        
+        .modal-body input[readonly] {
+            background-color: #f8f9fa;
+            color: #666;
+        }
+        
+        /* Кнопка "Назад" */
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            margin-right: 0.5rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background-color 0.3s;
+        }
+        
+        .back-btn:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        /* Мобильное меню */
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+        
+        .mobile-menu {
+            display: none;
+            background: white;
+            border-top: 1px solid #eee;
+            padding: 1rem;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .mobile-menu.active {
+            display: flex;
+        }
+        
+        .mobile-menu .nav-link {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            transition: background-color 0.3s;
+        }
+        
+        .mobile-menu .nav-link:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .mobile-menu .btn {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+            
+            .mobile-menu-toggle {
+                display: block;
+            }
+            
+            .nav-brand span {
+                display: none;
+            }
+        }
+        
         .btn {
             padding: 0.5rem 1rem;
             border: none;
@@ -197,6 +353,9 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-brand">
+                <button class="back-btn" onclick="goBack()" title="Назад">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
                 <a href="/app">
                     <i class="fas fa-graduation-cap"></i>
                     EduBot
@@ -216,6 +375,23 @@
                     <i class="fas fa-sign-out-alt"></i> Выйти
                 </button>
             </div>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <div class="mobile-menu" id="mobileMenu">
+            <a href="/teacher-dashboard" class="nav-link">
+                <i class="fas fa-tachometer-alt"></i>
+                Панель управления
+            </a>
+            <a href="/teacher-trial-requests" class="nav-link active">
+                <i class="fas fa-calendar-check"></i>
+                Заявки на пробные уроки
+            </a>
+            <a href="/app" class="nav-link">На главную</a>
+            <button class="btn btn-outline" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Выйти
+            </button>
         </div>
     </nav>
 
@@ -345,6 +521,10 @@
                                         <i class="fas fa-times"></i>
                                         Отклонить
                                     </button>
+                                    <button class="btn btn-outline" onclick="removeFromRequests('${request.id}')">
+                                        <i class="fas fa-trash"></i>
+                                        Удалить из заявок
+                                    </button>
                                 ` : ''}
                                 
                                 <button class="btn btn-secondary" onclick="viewRequestDetails('${request.id}')">
@@ -406,7 +586,81 @@
 
         // Назначить учеником
         async function assignAsStudent(requestId, name, contactValue) {
-            if (!confirm(`Назначить ${name} учеником?`)) return;
+            // Находим заявку по ID
+            const request = trialRequests.find(r => r.id === requestId);
+            if (!request) {
+                showError('Заявка не найдена');
+                return;
+            }
+            
+            // Показываем модальное окно с формой
+            showAssignStudentModal(request);
+        }
+
+        // Показать модальное окно для назначения ученика
+        function showAssignStudentModal(request) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>Назначить учеником</h2>
+                        <button class="modal-close" onclick="closeAssignModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Имя:</label>
+                            <input type="text" id="assignName" value="${request.name}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Контакт:</label>
+                            <input type="text" id="assignContact" value="${request.contact_value}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="assignGrade">Класс *</label>
+                            <select id="assignGrade" required>
+                                <option value="">Выберите класс</option>
+                                <option value="10" ${request.grade == 10 ? 'selected' : ''}>10 класс</option>
+                                <option value="11" ${request.grade == 11 ? 'selected' : ''}>11 класс</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="assignSubjects">Предметы *</label>
+                            <select id="assignSubjects" required>
+                                <option value="">Выберите предметы</option>
+                                <option value="Математика" ${request.subject === 'math' ? 'selected' : ''}>Математика</option>
+                                <option value="Физика" ${request.subject === 'physics' ? 'selected' : ''}>Физика</option>
+                                <option value="Математика, Физика" ${request.subject === 'math,physics' ? 'selected' : ''}>Математика и Физика</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline" onclick="closeAssignModal()">Отмена</button>
+                        <button class="btn btn-primary" onclick="confirmAssignStudent('${request.id}')">Назначить учеником</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        // Закрыть модальное окно
+        function closeAssignModal() {
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Подтвердить назначение ученика
+        async function confirmAssignStudent(requestId) {
+            const grade = document.getElementById('assignGrade').value;
+            const subjects = document.getElementById('assignSubjects').value;
+            
+            if (!grade || !subjects) {
+                showError('Заполните все обязательные поля');
+                return;
+            }
             
             try {
                 const token = localStorage.getItem('authToken');
@@ -417,14 +671,15 @@
                         'Authorization': 'Bearer ' + token 
                     },
                     body: JSON.stringify({
-                        contact_value: contactValue,
-                        grade: 10, // По умолчанию 10 класс
-                        subjects: 'physics,math'
+                        request_id: requestId,
+                        grade: grade,
+                        subjects: subjects
                     })
                 });
                 
                 if (response.ok) {
                     showSuccess('Пользователь назначен учеником');
+                    closeAssignModal();
                     loadTrialRequests();
                 } else {
                     const error = await response.json().catch(() => ({}));
@@ -433,6 +688,31 @@
             } catch (error) {
                 console.error('Error assigning student:', error);
                 showError('Ошибка при назначении учеником');
+            }
+        }
+
+        // Удалить из заявок (скрыть, но не удалять из БД)
+        async function removeFromRequests(requestId) {
+            if (!confirm('Удалить эту заявку из списка? Заявка останется в базе данных.')) return;
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`/api/teacher/trial-requests/${requestId}/hide`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': 'Bearer ' + token 
+                    }
+                });
+                
+                if (response.ok) {
+                    showSuccess('Заявка удалена из списка');
+                    loadTrialRequests();
+                } else {
+                    showError('Ошибка при удалении заявки');
+                }
+            } catch (error) {
+                console.error('Error removing request:', error);
+                showError('Ошибка при удалении заявки');
             }
         }
 
@@ -493,6 +773,33 @@
             container.innerHTML = `<div class="success">${message}</div>`;
             setTimeout(() => container.innerHTML = '', 5000);
         }
+
+        // Мобильное меню
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('active');
+        }
+
+        // Кнопка "Назад"
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/teacher-dashboard';
+            }
+        }
+
+        // Закрытие мобильного меню при клике вне его
+        document.addEventListener('click', function(event) {
+            const mobileMenu = document.getElementById('mobileMenu');
+            const toggle = document.querySelector('.mobile-menu-toggle');
+            
+            if (mobileMenu.classList.contains('active') && 
+                !mobileMenu.contains(event.target) && 
+                !toggle.contains(event.target)) {
+                mobileMenu.classList.remove('active');
+            }
+        });
     </script>
 </body>
 </html>

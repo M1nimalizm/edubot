@@ -116,17 +116,17 @@ func (h *AuthHandler) TelegramAuth(c *gin.Context) {
 		Hash:      req.Hash,
 	}
 
-    result, err := h.authService.AuthenticateWithTelegram(authData)
+	result, err := h.authService.AuthenticateWithTelegram(authData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-    // Ставим jwt в cookie для удобства переходов по HTML
-    if result != nil && result.Token != "" {
-        c.SetCookie("jwt", result.Token, 3600*24, "/", "", false, true)
-    }
-    c.JSON(http.StatusOK, result)
+	// Ставим jwt в cookie для удобства переходов по HTML
+	if result != nil && result.Token != "" {
+		c.SetCookie("jwt", result.Token, 3600*24, "/", "", false, true)
+	}
+	c.JSON(http.StatusOK, result)
 }
 
 // RegisterStudent регистрирует ученика по коду приглашения
@@ -479,4 +479,21 @@ func (h *AuthHandler) SearchUsers(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, SearchUsersResponse{Users: users})
+}
+
+// HideTrialRequest скрывает заявку на пробный урок (не удаляет из БД)
+func (h *AuthHandler) HideTrialRequest(c *gin.Context) {
+	requestID := c.Param("id")
+	if requestID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Request ID is required"})
+		return
+	}
+
+	err := h.authService.HideTrialRequest(requestID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Trial request hidden successfully"})
 }

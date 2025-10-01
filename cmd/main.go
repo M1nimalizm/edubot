@@ -416,6 +416,7 @@ func main() {
 		// Управление заявками на пробные уроки
 		teacher.POST("/trial-requests/:id/approve", authHandler.ApproveTrialRequest)
 		teacher.POST("/trial-requests/:id/reject", authHandler.RejectTrialRequest)
+		teacher.POST("/trial-requests/:id/hide", authHandler.HideTrialRequest)
 
 		// Поиск пользователей
 		teacher.POST("/users/search", authHandler.SearchUsers)

@@ -327,7 +327,7 @@ func (s *AuthService) SelectRole(user *models.User, role models.UserRole) (strin
 
 // GetTrialRequests получает все заявки на пробные занятия
 func (s *AuthService) GetTrialRequests() ([]models.TrialRequest, error) {
-	return s.trialRepo.GetAll()
+	return s.trialRepo.GetVisible()
 }
 
 // GetStats получает статистику для панели управления
@@ -465,7 +465,7 @@ func (s *AuthService) ApproveTrialRequest(requestID string) error {
 	if err != nil {
 		return fmt.Errorf("invalid request ID: %w", err)
 	}
-	
+
 	request, err := s.trialRepo.GetByID(id)
 	if err != nil {
 		return fmt.Errorf("failed to get trial request: %w", err)
@@ -491,7 +491,7 @@ func (s *AuthService) RejectTrialRequest(requestID string) error {
 	if err != nil {
 		return fmt.Errorf("invalid request ID: %w", err)
 	}
-	
+
 	request, err := s.trialRepo.GetByID(id)
 	if err != nil {
 		return fmt.Errorf("failed to get trial request: %w", err)
@@ -518,6 +518,26 @@ func (s *AuthService) SearchUsers(query string) ([]models.User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to search users: %w", err)
 	}
-	
+
 	return users, nil
+}
+
+// HideTrialRequest скрывает заявку на пробный урок (устанавливает статус "hidden")
+func (s *AuthService) HideTrialRequest(requestID string) error {
+	id, err := uuid.Parse(requestID)
+	if err != nil {
+		return fmt.Errorf("invalid request ID: %w", err)
+	}
+
+	request, err := s.trialRepo.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("failed to get trial request: %w", err)
+	}
+
+	request.Status = "hidden"
+	if err := s.trialRepo.Update(request); err != nil {
+		return fmt.Errorf("failed to update trial request: %w", err)
+	}
+
+	return nil
 }

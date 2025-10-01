@@ -42,6 +42,13 @@ func (r *TrialRequestRepository) GetAll() ([]models.TrialRequest, error) {
 	return requests, err
 }
 
+// GetVisible получает только видимые заявки (не скрытые)
+func (r *TrialRequestRepository) GetVisible() ([]models.TrialRequest, error) {
+	var requests []models.TrialRequest
+	err := r.db.Where("status != ?", "hidden").Order("created_at DESC").Find(&requests).Error
+	return requests, err
+}
+
 // GetByStatus получает заявки по статусу
 func (r *TrialRequestRepository) GetByStatus(status string) ([]models.TrialRequest, error) {
 	var requests []models.TrialRequest
