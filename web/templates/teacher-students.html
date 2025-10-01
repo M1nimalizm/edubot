@@ -364,15 +364,6 @@
                         <label for="gradeFilter">Класс</label>
                         <select id="gradeFilter" onchange="filterStudents()">
                             <option value="">Все классы</option>
-                            <option value="1">1 класс</option>
-                            <option value="2">2 класс</option>
-                            <option value="3">3 класс</option>
-                            <option value="4">4 класс</option>
-                            <option value="5">5 класс</option>
-                            <option value="6">6 класс</option>
-                            <option value="7">7 класс</option>
-                            <option value="8">8 класс</option>
-                            <option value="9">9 класс</option>
                             <option value="10">10 класс</option>
                             <option value="11">11 класс</option>
                         </select>
@@ -382,15 +373,7 @@
                         <select id="subjectFilter" onchange="filterStudents()">
                             <option value="">Все предметы</option>
                             <option value="математика">Математика</option>
-                            <option value="русский язык">Русский язык</option>
-                            <option value="английский язык">Английский язык</option>
                             <option value="физика">Физика</option>
-                            <option value="химия">Химия</option>
-                            <option value="биология">Биология</option>
-                            <option value="история">История</option>
-                            <option value="обществознание">Обществознание</option>
-                            <option value="география">География</option>
-                            <option value="литература">Литература</option>
                         </select>
                     </div>
                 </div>
@@ -613,11 +596,11 @@
                     filteredStudents = [...allStudents];
                     displayStudents();
                 } else {
-                    showError('Ошибка загрузки учеников');
+                    showError('Проблема загрузки учеников');
                 }
             } catch (error) {
                 console.error('Error loading students:', error);
-                showError('Ошибка загрузки учеников');
+                showError('Проблема загрузки учеников');
             }
         }
 
@@ -665,11 +648,11 @@
                     loadStudents();
                 } else {
                     const err = await response.json().catch(() => ({}));
-                    showError('Ошибка: ' + (err.error || 'не удалось создать ученика'));
+                    showError('Проблема: ' + (err.error || 'не получилось создать ученика'));
                 }
             } catch (e) {
                 console.error(e);
-                showError('Ошибка сети при создании ученика');
+                showError('Проблема сети при создании ученика');
             }
         }
 
@@ -715,11 +698,11 @@
                     loadStudents();
                 } else {
                     const err = await response.json().catch(() => ({}));
-                    showError('Ошибка: ' + (err.error || 'не удалось назначить'));
+                    showError('Проблема: ' + (err.error || 'не получилось назначить'));
                 }
             } catch (e) {
                 console.error(e);
-                showError('Ошибка сети при назначении ученика');
+                showError('Проблема сети при назначении ученика');
             }
         }
 

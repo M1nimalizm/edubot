@@ -11,7 +11,7 @@
     
     <!-- Telegram WebApp -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="/static/css/style.css?v=2025-09-29-1">
+    <link rel="stylesheet" href="/static/css/style.css?v=1759319497">
     <link rel="stylesheet" href="/static/css/media.css?v=2025-09-29-1">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -609,7 +609,7 @@ async function startTelegramLogin(){
         mountTelegramLoginWidget();
     }catch(e){ 
         console.error('Ошибка авторизации:', e);
-        showNotification('Ошибка авторизации: ' + e.message, 'error');
+        showNotification('Проблема с авторизацией: ' + e.message, 'error');
     }
 }
 
@@ -828,7 +828,7 @@ function onTelegramAuth(user){
         })
         .catch(err => {
             console.error('Ошибка авторизации через Telegram:', err);
-            showNotification('Ошибка авторизации: ' + err.message, 'error');
+            showNotification('Проблема с авторизацией: ' + err.message, 'error');
         });
 }
 
@@ -894,11 +894,11 @@ async function submitTrialRequest(event) {
             form.reset();
         } else {
             const error = await response.json().catch(() => ({}));
-            showNotification('Ошибка при отправке заявки: ' + (error.error || 'неизвестная ошибка'), 'error');
+            showNotification('Проблема при отправке заявки: ' + (error.error || 'неизвестная проблема'), 'error');
         }
     } catch (error) {
         console.error('Ошибка при отправке заявки:', error);
-        showNotification('Ошибка сети при отправке заявки', 'error');
+        showNotification('Проблема сети при отправке заявки', 'error');
     }
 }
 
@@ -920,4 +920,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+<script src="/static/js/common.js?v=1759319497"></script>
+</body>
 </html>

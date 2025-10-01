@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мой прогресс - EduBot</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="/static/css/style.css?v=1759319497">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .progress-container {
@@ -226,6 +226,9 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-brand">
+                <button class="back-btn" onclick="goBack()" title="Назад">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
                 <i class="fas fa-graduation-cap"></i>
                 <span>EduBot - Мой прогресс</span>
             </div>
@@ -236,6 +239,16 @@
                     <i class="fas fa-sign-out-alt"></i> Выйти
                 </button>
             </div>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <div class="mobile-menu">
+            <a href="/student-dashboard" class="nav-link">Мои задания</a>
+            <a href="/app" class="nav-link">На главную</a>
+            <button class="btn btn-outline" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Выйти
+            </button>
         </div>
     </nav>
 
@@ -482,5 +495,6 @@
             alert('❌ ' + message);
         }
     </script>
+    <script src="/static/js/common.js?v=1759319497"></script>
 </body>
 </html>

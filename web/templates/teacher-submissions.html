@@ -4,18 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Проверка заданий - EduBot</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=2025-09-22-1">
+    <link rel="stylesheet" href="/static/css/style.css?v=1759319497">
     <link rel="stylesheet" href="/static/css/media.css?v=2025-09-22-1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="/static/js/media-player.js?v=2025-09-22-1"></script>
 </head>
 <body>
+    <!-- Навигация -->
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-brand">
-                <h2>EduBot - Проверка заданий</h2>
+                <button class="back-btn" onclick="goBack()" title="Назад">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <i class="fas fa-graduation-cap"></i>
+                <span>EduBot - Проверка заданий</span>
             </div>
-            <div class="nav-links">
+            <div class="nav-menu">
                 <a href="/teacher-dashboard" class="nav-link">
                     <i class="fas fa-tachometer-alt"></i>
                     Дашборд
@@ -37,6 +42,31 @@
                     Выйти
                 </a>
             </div>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <div class="mobile-menu">
+            <a href="/teacher-dashboard" class="nav-link">
+                <i class="fas fa-tachometer-alt"></i>
+                Дашборд
+            </a>
+            <a href="/teacher-assignments" class="nav-link">
+                <i class="fas fa-tasks"></i>
+                Задания
+            </a>
+            <a href="/teacher-submissions" class="nav-link active">
+                <i class="fas fa-check-circle"></i>
+                Проверка
+            </a>
+            <a href="/teacher-students" class="nav-link">
+                <i class="fas fa-users"></i>
+                Ученики
+            </a>
+            <a href="#" class="nav-link" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                Выйти
+            </a>
         </div>
     </nav>
 
@@ -733,5 +763,6 @@
             window.location.href = '/';
         }
     </script>
+    <script src="/static/js/common.js?v=1759319497"></script>
 </body>
 </html>

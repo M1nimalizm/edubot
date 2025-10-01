@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мои задания - EduBot</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="/static/css/style.css?v=1759319497">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .student-container {
@@ -340,6 +340,9 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-brand">
+                <button class="back-btn" onclick="goBack()" title="Назад">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
                 <i class="fas fa-graduation-cap"></i>
                 <span>EduBot - Мои задания</span>
             </div>
@@ -355,6 +358,21 @@
                     <i class="fas fa-sign-out-alt"></i> Выйти
                 </button>
             </div>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <div class="mobile-menu">
+            <a href="/app" class="nav-link">На главную</a>
+            <button class="btn btn-outline" onclick="openProgress()">
+                <i class="fas fa-chart-line"></i> Прогресс
+            </button>
+            <button class="btn btn-outline" onclick="openChat()">
+                <i class="fas fa-comments"></i> Чат
+            </button>
+            <button class="btn btn-outline" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Выйти
+            </button>
         </div>
     </nav>
 
@@ -658,7 +676,7 @@
                             <button class="btn btn-outline" onclick="openTelegramBot()">
                                 <i class="fab fa-telegram"></i> Написать боту
                             </button>
-                            <a class="btn" href="/" onclick="event.preventDefault(); window.scrollTo({top: 0, behavior: 'smooth'});">
+                            <a class="btn" href="/app" onclick="event.preventDefault(); window.scrollTo({top: 0, behavior: 'smooth'});">
                                 <i class="fas fa-info-circle"></i> Узнать о курсе
                             </a>
                         </div>
@@ -1097,5 +1115,6 @@
             alert('❌ ' + message);
         }
     </script>
+    <script src="/static/js/common.js?v=1759319497"></script>
 </body>
 </html>

@@ -4,24 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.title}}</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="/static/css/style.css?v=1759319497">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <header class="header">
-            <div class="header-content">
-                <h1><i class="fas fa-chart-line"></i> Прогресс ученика</h1>
-                <div class="header-actions">
-                    <button class="btn btn-outline" onclick="window.location.href='/teacher/students'">
-                        <i class="fas fa-arrow-left"></i> Назад к ученикам
-                    </button>
-                    <button class="btn btn-outline" onclick="logout()">
-                        <i class="fas fa-sign-out-alt"></i> Выйти
-                    </button>
-                </div>
+    <!-- Навигация -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <button class="back-btn" onclick="goBack()" title="Назад">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <i class="fas fa-graduation-cap"></i>
+                <span>EduBot - Прогресс ученика</span>
             </div>
-        </header>
+            <div class="nav-menu">
+                <button class="btn btn-outline" onclick="window.location.href='/teacher/students'">
+                    <i class="fas fa-arrow-left"></i> Назад к ученикам
+                </button>
+                <button class="btn btn-outline" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </button>
+            </div>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <div class="mobile-menu">
+            <button class="btn btn-outline" onclick="window.location.href='/teacher/students'">
+                <i class="fas fa-arrow-left"></i> Назад к ученикам
+            </button>
+            <button class="btn btn-outline" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Выйти
+            </button>
+        </div>
+    </nav>
 
         <main class="main-content">
             <div class="progress-container">
@@ -225,5 +243,6 @@
             }
         }
     </script>
+    <script src="/static/js/common.js?v=1759319497"></script>
 </body>
 </html>

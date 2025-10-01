@@ -375,11 +375,11 @@
                     trialRequests = await response.json();
                     displayTrialRequests();
                 } else {
-                    showError('Ошибка загрузки заявок');
+                    showError('Проблема загрузки заявок');
                 }
             } catch (error) {
                 console.error('Error loading trial requests:', error);
-                showError('Ошибка загрузки заявок');
+                showError('Проблема загрузки заявок');
             }
         }
 
@@ -485,11 +485,11 @@
                     showSuccess('Заявка одобрена');
                     loadTrialRequests();
                 } else {
-                    showError('Ошибка при одобрении заявки');
+                    showError('Проблема при одобрении заявки');
                 }
             } catch (error) {
                 console.error('Error approving request:', error);
-                showError('Ошибка при одобрении заявки');
+                showError('Проблема при одобрении заявки');
             }
         }
 
