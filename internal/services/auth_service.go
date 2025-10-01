@@ -177,9 +177,12 @@ func (s *AuthService) SubmitTrialRequest(request *models.TrialRequest) error {
 		"created_at":    request.CreatedAt.Format("02.01.2006 15:04"),
 	}
 
+	fmt.Printf("Sending trial request notification to teacher ID: %d\n", s.teacherTelegramID)
 	if err := s.telegramBot.SendTrialRequestNotification(s.teacherTelegramID, requestData); err != nil {
 		// Логируем ошибку, но не прерываем выполнение
 		fmt.Printf("Failed to send notification: %v\n", err)
+	} else {
+		fmt.Printf("Trial request notification sent successfully\n")
 	}
 
 	return nil
@@ -454,4 +457,56 @@ func (s *AuthService) validateTelegramAuth(authData *TelegramAuthData) bool {
 	// В реальном приложении здесь должна быть проверка подписи
 	// с использованием секретного ключа бота
 	return true
+}
+
+// ApproveTrialRequest одобряет заявку на пробный урок
+func (s *AuthService) ApproveTrialRequest(requestID string) error {
+	id, err := uuid.Parse(requestID)
+	if err != nil {
+		return fmt.Errorf("invalid request ID: %w", err)
+	}
+	
+	request, err := s.trialRepo.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("failed to get trial request: %w", err)
+	}
+
+	request.Status = "approved"
+	if err := s.trialRepo.Update(request); err != nil {
+		return fmt.Errorf("failed to update trial request: %w", err)
+	}
+
+	// Отправляем уведомление заявителю (если есть telegram_id)
+	if request.TelegramID != 0 && s.telegramBot != nil {
+		message := fmt.Sprintf("🎉 Ваша заявка на пробный урок одобрена!\n\nМы свяжемся с вами в ближайшее время для согласования времени проведения занятия.")
+		s.telegramBot.SendMessage(request.TelegramID, message)
+	}
+
+	return nil
+}
+
+// RejectTrialRequest отклоняет заявку на пробный урок
+func (s *AuthService) RejectTrialRequest(requestID string) error {
+	id, err := uuid.Parse(requestID)
+	if err != nil {
+		return fmt.Errorf("invalid request ID: %w", err)
+	}
+	
+	request, err := s.trialRepo.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("failed to get trial request: %w", err)
+	}
+
+	request.Status = "rejected"
+	if err := s.trialRepo.Update(request); err != nil {
+		return fmt.Errorf("failed to update trial request: %w", err)
+	}
+
+	// Отправляем уведомление заявителю (если есть telegram_id)
+	if request.TelegramID != 0 && s.telegramBot != nil {
+		message := fmt.Sprintf("К сожалению, ваша заявка на пробный урок отклонена.\n\nЕсли у вас есть вопросы, пожалуйста, свяжитесь с преподавателем.")
+		s.telegramBot.SendMessage(request.TelegramID, message)
+	}
+
+	return nil
 }

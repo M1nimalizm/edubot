@@ -220,7 +220,18 @@ func (b *Bot) SendTrialRequestNotification(teacherID int64, requestData map[stri
 		requestData["created_at"],
 	)
 
-	return b.SendMessage(teacherID, text)
+	log.Printf("Sending trial request notification to teacher %d", teacherID)
+	
+	msg := tgbotapi.NewMessage(teacherID, text)
+	msg.ParseMode = "HTML"
+	
+	_, err := b.api.Send(msg)
+	if err != nil {
+		log.Printf("Failed to send trial request notification: %v", err)
+	} else {
+		log.Printf("Trial request notification sent successfully")
+	}
+	return err
 }
 
 // SendAssignmentNotification отправляет уведомление о новом задании

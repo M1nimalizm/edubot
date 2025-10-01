@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заявки на пробные уроки - EduBot</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .trial-requests-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .trial-requests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .trial-request-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .trial-request-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .trial-request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .trial-request-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .trial-request-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .trial-request-info {
+            margin-bottom: 1rem;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-label {
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        
+        .info-value {
+            color: var(--text-color);
+        }
+        
+        .trial-request-comment {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+        
+        .trial-request-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-color);
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            color: #ccc;
+            margin-bottom: 1rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-color);
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/app">
+                    <i class="fas fa-graduation-cap"></i>
+                    EduBot
+                </a>
+            </div>
+            <div class="nav-menu">
+                <a href="/teacher-dashboard" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Панель управления
+                </a>
+                <a href="/teacher-trial-requests" class="nav-link active">
+                    <i class="fas fa-calendar-check"></i>
+                    Заявки на пробные уроки
+                </a>
+                <a href="/teacher/students" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    Ученики
+                </a>
+                <a href="/teacher-groups" class="nav-link">
+                    <i class="fas fa-layer-group"></i>
+                    Группы
+                </a>
+                <a href="/teacher/assignments/create" class="nav-link">
+                    <i class="fas fa-plus"></i>
+                    Создать задание
+                </a>
+                <a href="/teacher-submissions" class="nav-link">
+                    <i class="fas fa-check-circle"></i>
+                    Проверка заданий
+                </a>
+                <div class="nav-user">
+                    <div class="user-avatar" onclick="showUserMenu()">
+                        <i class="fas fa-user"></i>
+                        <span>Преподаватель</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <div class="trial-requests-container">
+            <div class="page-header">
+                <h1><i class="fas fa-calendar-check"></i> Заявки на пробные уроки</h1>
+                <button class="btn btn-primary" onclick="refreshRequests()">
+                    <i class="fas fa-sync-alt"></i>
+                    Обновить
+                </button>
+            </div>
+
+            <div id="errorContainer"></div>
+            <div id="successContainer"></div>
+
+            <div id="trialRequestsContainer">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Загрузка заявок...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let trialRequests = [];
+
+        // Загружаем заявки при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTrialRequests();
+        });
+
+        // Загрузка списка заявок
+        async function loadTrialRequests() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                showError('Требуется авторизация. Войдите через Telegram на главной.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/teacher/trial-requests', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                if (response.ok) {
+                    trialRequests = await response.json();
+                    displayTrialRequests();
+                } else {
+                    showError('Ошибка загрузки заявок');
+                }
+            } catch (error) {
+                console.error('Error loading trial requests:', error);
+                showError('Ошибка загрузки заявок');
+            }
+        }
+
+        // Отображение заявок
+        function displayTrialRequests() {
+            const container = document.getElementById('trialRequestsContainer');
+            
+            if (trialRequests.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-times"></i>
+                        <h3>Нет заявок на пробные уроки</h3>
+                        <p>Когда поступят новые заявки, они появятся здесь</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="trial-requests-grid">
+                    ${trialRequests.map(request => `
+                        <div class="trial-request-card">
+                            <div class="trial-request-header">
+                                <div class="trial-request-name">${request.name}</div>
+                                <div class="trial-request-status status-${request.status}">
+                                    ${getStatusText(request.status)}
+                                </div>
+                            </div>
+                            
+                            <div class="trial-request-info">
+                                <div class="info-row">
+                                    <span class="info-label">Класс:</span>
+                                    <span class="info-value">${request.grade}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Предмет:</span>
+                                    <span class="info-value">${getSubjectText(request.subject)}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Уровень:</span>
+                                    <span class="info-value">${request.level}/5</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">${getContactLabel(request.contact_type)}:</span>
+                                    <span class="info-value">${request.contact_value}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Дата подачи:</span>
+                                    <span class="info-value">${formatDate(request.created_at)}</span>
+                                </div>
+                            </div>
+                            
+                            ${request.comment ? `
+                                <div class="trial-request-comment">
+                                    <strong>Комментарий:</strong><br>
+                                    ${request.comment}
+                                </div>
+                            ` : ''}
+                            
+                            <div class="trial-request-actions">
+                                ${request.status === 'pending' ? `
+                                    <button class="btn btn-success" onclick="approveRequest('${request.id}')">
+                                        <i class="fas fa-check"></i>
+                                        Одобрить
+                                    </button>
+                                    <button class="btn btn-primary" onclick="assignAsStudent('${request.id}', '${request.name}', '${request.contact_value}')">
+                                        <i class="fas fa-user-plus"></i>
+                                        Назначить учеником
+                                    </button>
+                                    <button class="btn btn-danger" onclick="rejectRequest('${request.id}')">
+                                        <i class="fas fa-times"></i>
+                                        Отклонить
+                                    </button>
+                                ` : ''}
+                                
+                                <button class="btn btn-secondary" onclick="viewRequestDetails('${request.id}')">
+                                    <i class="fas fa-eye"></i>
+                                    Подробнее
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Одобрить заявку
+        async function approveRequest(requestId) {
+            if (!confirm('Одобрить эту заявку на пробный урок?')) return;
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`/api/teacher/trial-requests/${requestId}/approve`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                if (response.ok) {
+                    showSuccess('Заявка одобрена');
+                    loadTrialRequests();
+                } else {
+                    showError('Ошибка при одобрении заявки');
+                }
+            } catch (error) {
+                console.error('Error approving request:', error);
+                showError('Ошибка при одобрении заявки');
+            }
+        }
+
+        // Отклонить заявку
+        async function rejectRequest(requestId) {
+            if (!confirm('Отклонить эту заявку на пробный урок?')) return;
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`/api/teacher/trial-requests/${requestId}/reject`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                if (response.ok) {
+                    showSuccess('Заявка отклонена');
+                    loadTrialRequests();
+                } else {
+                    showError('Ошибка при отклонении заявки');
+                }
+            } catch (error) {
+                console.error('Error rejecting request:', error);
+                showError('Ошибка при отклонении заявки');
+            }
+        }
+
+        // Назначить учеником
+        async function assignAsStudent(requestId, name, contactValue) {
+            if (!confirm(`Назначить ${name} учеником?`)) return;
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch('/api/teacher/students/assign', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token 
+                    },
+                    body: JSON.stringify({
+                        contact_value: contactValue,
+                        grade: 10, // По умолчанию 10 класс
+                        subjects: 'physics,math'
+                    })
+                });
+                
+                if (response.ok) {
+                    showSuccess('Пользователь назначен учеником');
+                    loadTrialRequests();
+                } else {
+                    const error = await response.json().catch(() => ({}));
+                    showError('Ошибка: ' + (error.error || 'не удалось назначить учеником'));
+                }
+            } catch (error) {
+                console.error('Error assigning student:', error);
+                showError('Ошибка при назначении учеником');
+            }
+        }
+
+        // Показать детали заявки
+        function viewRequestDetails(requestId) {
+            const request = trialRequests.find(r => r.id === requestId);
+            if (!request) return;
+            
+            alert(`Детали заявки:\n\nИмя: ${request.name}\nКласс: ${request.grade}\nПредмет: ${getSubjectText(request.subject)}\nУровень: ${request.level}/5\nКонтакт: ${request.contact_value}\nКомментарий: ${request.comment || 'Нет'}\nДата: ${formatDate(request.created_at)}`);
+        }
+
+        // Обновить заявки
+        function refreshRequests() {
+            loadTrialRequests();
+        }
+
+        // Показать меню пользователя
+        function showUserMenu() {
+            window.location.href = '/teacher-dashboard';
+        }
+
+        // Вспомогательные функции
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': 'Ожидает',
+                'approved': 'Одобрена',
+                'rejected': 'Отклонена'
+            };
+            return statusMap[status] || status;
+        }
+
+        function getSubjectText(subject) {
+            const subjectMap = {
+                'physics': 'Физика',
+                'math': 'Математика',
+                'both': 'Оба предмета'
+            };
+            return subjectMap[subject] || subject;
+        }
+
+        function getContactLabel(contactType) {
+            return contactType === 'phone' ? 'Телефон' : 'Telegram';
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function showError(message) {
+            const container = document.getElementById('errorContainer');
+            container.innerHTML = `<div class="error">${message}</div>`;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+
+        function showSuccess(message) {
+            const container = document.getElementById('successContainer');
+            container.innerHTML = `<div class="success">${message}</div>`;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+    </script>
+</body>
+</html>

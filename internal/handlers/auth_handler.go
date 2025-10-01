@@ -405,3 +405,51 @@ func (h *AuthHandler) SelectRole(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"token": token, "role": role})
 }
+
+// ApproveTrialRequest одобряет заявку на пробный урок
+func (h *AuthHandler) ApproveTrialRequest(c *gin.Context) {
+	// Проверяем роль
+	roleVal, exists := c.Get("user_role")
+	if !exists || roleVal != models.RoleTeacher {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+
+	requestID := c.Param("id")
+	if requestID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "request ID is required"})
+		return
+	}
+
+	err := h.authService.ApproveTrialRequest(requestID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Trial request approved successfully"})
+}
+
+// RejectTrialRequest отклоняет заявку на пробный урок
+func (h *AuthHandler) RejectTrialRequest(c *gin.Context) {
+	// Проверяем роль
+	roleVal, exists := c.Get("user_role")
+	if !exists || roleVal != models.RoleTeacher {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+
+	requestID := c.Param("id")
+	if requestID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "request ID is required"})
+		return
+	}
+
+	err := h.authService.RejectTrialRequest(requestID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Trial request rejected successfully"})
+}

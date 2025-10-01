@@ -256,6 +256,9 @@ func main() {
 	router.GET("/homepage-media", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
 		c.HTML(http.StatusOK, "homepage-media.html", gin.H{"title": "Управление медиафайлами - EduBot"})
 	})
+	router.GET("/teacher-trial-requests", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
+		c.HTML(http.StatusOK, "teacher-trial-requests.html", gin.H{"title": "Заявки на пробные уроки - EduBot"})
+	})
 
 	// HTML-страницы доступны только когда сайт включен
 	if !disableSite {
@@ -400,6 +403,10 @@ func main() {
 		teacher.GET("/students", authHandler.GetStudents)
 		teacher.POST("/students", authHandler.CreateStudentByTeacher)
 		teacher.POST("/students/assign", authHandler.AssignStudentToTeacher)
+
+		// Управление заявками на пробные уроки
+		teacher.POST("/trial-requests/:id/approve", authHandler.ApproveTrialRequest)
+		teacher.POST("/trial-requests/:id/reject", authHandler.RejectTrialRequest)
 
 		// Группы
 		teacher.POST("/groups", groupHandler.CreateGroup)
