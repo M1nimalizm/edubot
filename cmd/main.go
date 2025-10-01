@@ -253,7 +253,6 @@ func main() {
 	router.GET("/teacher/content/create", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
 		c.HTML(http.StatusOK, "teacher-content.html", gin.H{"title": "Добавление материалов - EduBot"})
 	})
-	log.Printf("Registering /teacher/students route")
 	router.GET("/teacher/students", handlers.AuthMiddleware(authService), handlers.RequireHTMLRoles(models.RoleTeacher), func(c *gin.Context) {
 		c.HTML(http.StatusOK, "teacher-students.html", gin.H{"title": "Ученики - EduBot"})
 	})

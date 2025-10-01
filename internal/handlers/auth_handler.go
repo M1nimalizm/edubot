@@ -90,7 +90,7 @@ type TrialRequestRequest struct {
 
 // SearchUsersRequest запрос для поиска пользователей
 type SearchUsersRequest struct {
-	Query string `json:"query" binding:"required"`
+	Query string `json:"query"`
 }
 
 // SearchUsersResponse ответ поиска пользователей
