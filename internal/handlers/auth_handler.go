@@ -88,6 +88,16 @@ type TrialRequestRequest struct {
 	ContactValue string `json:"contact_value" binding:"required"`
 }
 
+// SearchUsersRequest запрос для поиска пользователей
+type SearchUsersRequest struct {
+	Query string `json:"query" binding:"required"`
+}
+
+// SearchUsersResponse ответ поиска пользователей
+type SearchUsersResponse struct {
+	Users []models.User `json:"users"`
+}
+
 // TelegramAuth авторизует пользователя через Telegram
 func (h *AuthHandler) TelegramAuth(c *gin.Context) {
 	var req TelegramAuthRequest
@@ -452,4 +462,21 @@ func (h *AuthHandler) RejectTrialRequest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Trial request rejected successfully"})
+}
+
+// SearchUsers ищет пользователей по запросу (только гости)
+func (h *AuthHandler) SearchUsers(c *gin.Context) {
+	var req SearchUsersRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	users, err := h.authService.SearchUsers(req.Query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, SearchUsersResponse{Users: users})
 }

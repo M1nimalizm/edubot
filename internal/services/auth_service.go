@@ -510,3 +510,14 @@ func (s *AuthService) RejectTrialRequest(requestID string) error {
 
 	return nil
 }
+
+// SearchUsers ищет пользователей по запросу (только гости)
+func (s *AuthService) SearchUsers(query string) ([]models.User, error) {
+	// Ищем только пользователей с ролью "guest"
+	users, err := s.userRepo.SearchByQuery(query, "guest")
+	if err != nil {
+		return nil, fmt.Errorf("failed to search users: %w", err)
+	}
+	
+	return users, nil
+}

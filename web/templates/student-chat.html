@@ -851,13 +851,23 @@
         // Создание чата с преподавателем
         async function createStudentTeacherChat() {
             try {
+                // Получаем информацию о текущем пользователе
+                const profileResponse = await fetch('/api/profile');
+                if (!profileResponse.ok) {
+                    showError('Ошибка получения профиля');
+                    return;
+                }
+                
+                const profile = await profileResponse.json();
+                
+                // Создаем чат с преподавателем
                 const response = await fetch('/api/chat/threads/student-teacher', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        teacher_id: currentUser.teacher_id // Предполагаем, что у студента есть teacher_id
+                        student_id: profile.id
                     })
                 });
                 

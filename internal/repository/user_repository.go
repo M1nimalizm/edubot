@@ -22,6 +22,7 @@ type UserRepository interface {
 	ListStudents() ([]models.User, error)
 	ListByRole(role models.UserRole) ([]models.User, error)
 	GenerateInviteCode() (string, error)
+	SearchByQuery(query string, role string) ([]models.User, error)
 }
 
 // userRepository реализация репозитория пользователей
@@ -118,4 +119,17 @@ func (r *userRepository) GenerateInviteCode() (string, error) {
 			return code, nil
 		}
 	}
+}
+
+// SearchByQuery ищет пользователей по запросу с фильтром по роли
+func (r *userRepository) SearchByQuery(query string, role string) ([]models.User, error) {
+	var users []models.User
+	
+	// Поиск по имени, фамилии, username или telegram_id
+	err := r.db.Where("role = ? AND (first_name ILIKE ? OR last_name ILIKE ? OR username ILIKE ? OR telegram_id::text ILIKE ?)", 
+		role, "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%").
+		Order("created_at DESC").
+		Find(&users).Error
+	
+	return users, err
 }

@@ -73,6 +73,52 @@
             resize: vertical;
         }
         
+        .form-group input[type="datetime-local"] {
+            background: white;
+            cursor: pointer;
+        }
+        
+        .form-group input[type="datetime-local"]:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .help-text {
+            display: block;
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .form-group select {
+            background: white;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+        
+        .form-group select:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .error-message {
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+        
+        .form-group.error input,
+        .form-group.error select {
+            border-color: #dc2626;
+        }
+        
+        .form-group.error .error-message {
+            display: block;
+        }
+        
         .btn-group {
             display: flex;
             gap: 1rem;
@@ -329,7 +375,8 @@
                         
                         <div class="form-group">
                             <label for="dueDate">Срок выполнения</label>
-                            <input type="datetime-local" id="dueDate" name="dueDate">
+                            <input type="datetime-local" id="dueDate" name="dueDate" min="" onchange="validateDate()">
+                            <small class="help-text">Выберите дату и время выполнения задания</small>
                         </div>
                     </div>
                 </div>
@@ -401,7 +448,143 @@
         // Загружаем учеников при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
             loadStudents();
+            handleUrlParameters();
+            initializeDateField();
         });
+
+        // Инициализация поля даты
+        function initializeDateField() {
+            const dateInput = document.getElementById('dueDate');
+            if (dateInput) {
+                // Устанавливаем минимальную дату на завтра
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(9, 0, 0, 0); // 9:00 утра
+                
+                const minDate = tomorrow.toISOString().slice(0, 16);
+                dateInput.min = minDate;
+                
+                // Устанавливаем значение по умолчанию на завтра в 18:00
+                const defaultDate = new Date();
+                defaultDate.setDate(defaultDate.getDate() + 1);
+                defaultDate.setHours(18, 0, 0, 0);
+                dateInput.value = defaultDate.toISOString().slice(0, 16);
+            }
+        }
+
+        // Валидация даты
+        function validateDate() {
+            const dateInput = document.getElementById('dueDate');
+            const formGroup = dateInput.closest('.form-group');
+            const errorMessage = formGroup.querySelector('.error-message') || createErrorMessage(formGroup);
+            
+            if (!dateInput.value) {
+                showFieldError(formGroup, errorMessage, 'Выберите дату выполнения задания');
+                return false;
+            }
+            
+            const selectedDate = new Date(dateInput.value);
+            const now = new Date();
+            
+            if (selectedDate <= now) {
+                showFieldError(formGroup, errorMessage, 'Дата должна быть в будущем');
+                return false;
+            }
+            
+            // Убираем ошибку если дата корректна
+            hideFieldError(formGroup, errorMessage);
+            return true;
+        }
+
+        // Создание элемента сообщения об ошибке
+        function createErrorMessage(formGroup) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            formGroup.appendChild(errorDiv);
+            return errorDiv;
+        }
+
+        // Показать ошибку поля
+        function showFieldError(formGroup, errorMessage, message) {
+            formGroup.classList.add('error');
+            errorMessage.textContent = message;
+        }
+
+        // Скрыть ошибку поля
+        function hideFieldError(formGroup, errorMessage) {
+            formGroup.classList.remove('error');
+            errorMessage.textContent = '';
+        }
+
+        // Валидация всей формы
+        function validateForm() {
+            let isValid = true;
+            
+            // Валидация обязательных полей
+            const requiredFields = ['title', 'description', 'subject', 'grade', 'level'];
+            requiredFields.forEach(fieldName => {
+                const field = document.getElementById(fieldName);
+                const formGroup = field.closest('.form-group');
+                const errorMessage = formGroup.querySelector('.error-message') || createErrorMessage(formGroup);
+                
+                if (!field.value.trim()) {
+                    showFieldError(formGroup, errorMessage, 'Это поле обязательно для заполнения');
+                    isValid = false;
+                } else {
+                    hideFieldError(formGroup, errorMessage);
+                }
+            });
+            
+            // Валидация даты
+            if (!validateDate()) {
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+
+        // Обработка URL параметров для автозаполнения
+        function handleUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const studentId = urlParams.get('student');
+            const studentName = urlParams.get('name');
+            
+            if (studentId && studentName) {
+                // Автозаполняем данные ученика
+                setTimeout(() => {
+                    selectStudent(studentId, studentName, '');
+                    
+                    // Автозаполняем класс и предметы из данных ученика
+                    const student = students.find(s => s.id === studentId);
+                    if (student) {
+                        // Заполняем класс
+                        const gradeSelect = document.getElementById('grade');
+                        if (gradeSelect && student.grade) {
+                            gradeSelect.value = student.grade;
+                        }
+                        
+                        // Заполняем предметы
+                        const subjectSelect = document.getElementById('subject');
+                        if (subjectSelect && student.subjects) {
+                            // Если предметы указаны через запятую, берем первый
+                            const subjects = student.subjects.split(',').map(s => s.trim());
+                            if (subjects.length > 0) {
+                                const firstSubject = subjects[0].toLowerCase();
+                                // Маппинг предметов
+                                const subjectMap = {
+                                    'математика': 'math',
+                                    'физика': 'physics',
+                                    'математика, физика': 'both',
+                                    'физика, математика': 'both'
+                                };
+                                const mappedSubject = subjectMap[firstSubject] || subjectMap[student.subjects.toLowerCase()] || 'math';
+                                subjectSelect.value = mappedSubject;
+                            }
+                        }
+                    }
+                }, 500); // Небольшая задержка для загрузки учеников
+            }
+        }
 
         // Загрузка списка учеников
         async function loadStudents() {
@@ -589,6 +772,11 @@
         // Обработка отправки формы
         document.getElementById('assignmentForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // Валидация формы
+            if (!validateForm()) {
+                return;
+            }
             
             if (!selectedStudent) {
                 showError('Выберите ученика');

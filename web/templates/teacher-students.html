@@ -169,6 +169,75 @@
                 flex-direction: column;
             }
         }
+        
+        .help-text {
+            display: block;
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .search-results {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .users-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .user-item {
+            padding: 0.75rem;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .user-item:hover {
+            background: #f0f8ff;
+            border-color: var(--primary-color);
+        }
+        
+        .user-item.selected {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .user-name {
+            font-weight: 600;
+        }
+        
+        .user-meta {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+        
+        .assign-form {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f0f8ff;
+            border-radius: 8px;
+            border: 1px solid #b3d9ff;
+        }
     </style>
 </head>
 <body>
@@ -199,46 +268,60 @@
             <!-- Форма добавления ученика -->
             <div class="search-section" style="margin-top: -1rem; margin-bottom: 2rem;">
                 <h3 style="margin-top:0; margin-bottom:1rem;"><i class="fas fa-user-plus"></i> Добавить ученика</h3>
+                
+                <!-- Поиск существующих пользователей Telegram -->
                 <div class="search-row">
                     <div class="form-group">
-                        <label for="assignTelegramId">Telegram ID</label>
-                        <input type="text" id="assignTelegramId" placeholder="Напр. 123456789">
-                    </div>
-                    <div class="form-group">
-                        <label for="assignUsername">@username</label>
-                        <input type="text" id="assignUsername" placeholder="Напр. @ivanov">
-                    </div>
-                    <div class="form-group">
-                        <label for="studentFirstName">Имя (для создания нового)</label>
-                        <input type="text" id="studentFirstName" placeholder="Иван">
-                    </div>
-                    <div class="form-group">
-                        <label for="studentLastName">Фамилия</label>
-                        <input type="text" id="studentLastName" placeholder="Иванов">
-                    </div>
-                    <div class="form-group">
-                        <label for="studentGrade">Класс</label>
-                        <select id="studentGrade">
-                            <option value="">Выберите</option>
-                            <option value="10">10</option>
-                            <option value="11">11</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="search-row" style="margin-top:1rem;">
-                    <div class="form-group">
-                        <label for="studentSubjects">Предметы (через запятую)</label>
-                        <input type="text" id="studentSubjects" placeholder="математика, физика">
-                    </div>
-                    <div class="form-group">
-                        <label for="studentPhone">Телефон</label>
-                        <input type="text" id="studentPhone" placeholder="+7...">
+                        <label for="telegramSearch">Поиск по Telegram *</label>
+                        <input type="text" id="telegramSearch" placeholder="Введите @username или Telegram ID" onkeyup="searchTelegramUsers()">
+                        <small class="help-text">Найдите пользователя, который уже нажал /start в боте</small>
                     </div>
                     <div class="form-group">
                         <label>&nbsp;</label>
-                        <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
-                            <button class="btn" onclick="assignStudent()"><i class="fas fa-user-check"></i> Назначить</button>
-                            <button class="btn btn-outline" onclick="createStudent()"><i class="fas fa-save"></i> Создать</button>
+                        <button class="btn btn-outline" onclick="searchTelegramUsers()">
+                            <i class="fas fa-search"></i> Найти
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Результаты поиска -->
+                <div id="telegramSearchResults" class="search-results" style="display: none;">
+                    <h4>Найденные пользователи:</h4>
+                    <div id="telegramUsersList" class="users-list"></div>
+                </div>
+                
+                <!-- Форма для назначения ученика -->
+                <div id="assignStudentForm" class="assign-form" style="display: none;">
+                    <div class="search-row">
+                        <div class="form-group">
+                            <label for="studentGrade">Класс *</label>
+                            <select id="studentGrade" required>
+                                <option value="">Выберите класс</option>
+                                <option value="10">10 класс</option>
+                                <option value="11">11 класс</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="studentSubjects">Предметы *</label>
+                            <select id="studentSubjects" required>
+                                <option value="">Выберите предметы</option>
+                                <option value="Математика">Математика</option>
+                                <option value="Физика">Физика</option>
+                                <option value="Математика, Физика">Математика и Физика</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="search-row">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+                                <button class="btn btn-primary" onclick="assignStudent()">
+                                    <i class="fas fa-user-check"></i> Назначить учеником
+                                </button>
+                                <button class="btn btn-outline" onclick="cancelAssign()">
+                                    <i class="fas fa-times"></i> Отмена
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -298,11 +381,100 @@
     <script>
         let allStudents = [];
         let filteredStudents = [];
+        let selectedTelegramUser = null;
 
         // Загружаем учеников при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
             loadStudents();
         });
+
+        // Поиск пользователей Telegram
+        async function searchTelegramUsers() {
+            const searchTerm = document.getElementById('telegramSearch').value.trim();
+            if (!searchTerm) {
+                hideSearchResults();
+                return;
+            }
+
+            try {
+                // Ищем среди существующих пользователей (гости)
+                const response = await fetch('/api/teacher/users/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('authToken')
+                    },
+                    body: JSON.stringify({ query: searchTerm })
+                });
+
+                if (response.ok) {
+                    const users = await response.json();
+                    displayTelegramUsers(users);
+                } else {
+                    showError('Ошибка поиска пользователей');
+                }
+            } catch (error) {
+                console.error('Error searching users:', error);
+                showError('Ошибка поиска пользователей');
+            }
+        }
+
+        // Отображение найденных пользователей
+        function displayTelegramUsers(users) {
+            const resultsDiv = document.getElementById('telegramSearchResults');
+            const usersList = document.getElementById('telegramUsersList');
+
+            if (users.length === 0) {
+                usersList.innerHTML = '<div class="no-results">Пользователи не найдены</div>';
+            } else {
+                usersList.innerHTML = users.map(user => `
+                    <div class="user-item" onclick="selectTelegramUser('${user.id}', '${user.first_name}', '${user.last_name || ''}', '${user.username || ''}', '${user.telegram_id}')">
+                        <div class="user-info">
+                            <div class="user-details">
+                                <div class="user-name">${user.first_name} ${user.last_name || ''}</div>
+                                <div class="user-meta">@${user.username || 'без username'} • ID: ${user.telegram_id}</div>
+                            </div>
+                            <div class="user-status">
+                                <span class="badge badge-secondary">Гость</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            resultsDiv.style.display = 'block';
+        }
+
+        // Выбор пользователя Telegram
+        function selectTelegramUser(userId, firstName, lastName, username, telegramId) {
+            selectedTelegramUser = {
+                id: userId,
+                first_name: firstName,
+                last_name: lastName,
+                username: username,
+                telegram_id: telegramId
+            };
+
+            // Обновляем UI
+            document.querySelectorAll('.user-item').forEach(item => item.classList.remove('selected'));
+            event.target.closest('.user-item').classList.add('selected');
+
+            // Показываем форму назначения
+            document.getElementById('assignStudentForm').style.display = 'block';
+        }
+
+        // Скрыть результаты поиска
+        function hideSearchResults() {
+            document.getElementById('telegramSearchResults').style.display = 'none';
+            document.getElementById('assignStudentForm').style.display = 'none';
+            selectedTelegramUser = null;
+        }
+
+        // Отмена назначения
+        function cancelAssign() {
+            hideSearchResults();
+            document.getElementById('telegramSearch').value = '';
+        }
 
         // Загрузка списка учеников
         async function loadStudents() {
@@ -382,30 +554,32 @@
 
         // Назначение существующего пользователя учеником
         async function assignStudent() {
+            if (!selectedTelegramUser) {
+                showError('Выберите пользователя');
+                return;
+            }
+
+            const grade = document.getElementById('studentGrade').value;
+            const subjects = document.getElementById('studentSubjects').value;
+
+            if (!grade || !subjects) {
+                showError('Заполните все обязательные поля');
+                return;
+            }
+
             const token = localStorage.getItem('authToken');
             if (!token) {
-                showError('Требуется авторизация. Войдите через Telegram на главной.');
+                showError('Требуется авторизация');
                 return;
             }
-            const telegramIdStr = document.getElementById('assignTelegramId').value.trim();
-            const username = document.getElementById('assignUsername').value.trim().replace(/^@/, '');
-            const gradeVal = document.getElementById('studentGrade').value;
-            const subjects = document.getElementById('studentSubjects').value.trim();
 
-            const payload = { username: username, subjects: subjects };
-            if (telegramIdStr) {
-                const idNum = parseInt(telegramIdStr, 10);
-                if (!isNaN(idNum)) payload.telegram_id = idNum;
-            }
-            if (gradeVal) {
-                const g = parseInt(gradeVal, 10);
-                if (!isNaN(g)) payload.grade = g;
-            }
-
-            if (!payload.telegram_id && !payload.username) {
-                showError('Укажите Telegram ID или @username');
-                return;
-            }
+            const payload = {
+                user_id: selectedTelegramUser.id,
+                telegram_id: parseInt(selectedTelegramUser.telegram_id),
+                username: selectedTelegramUser.username,
+                grade: parseInt(grade),
+                subjects: subjects
+            };
 
             try {
                 const response = await fetch('/api/teacher/students/assign', {
@@ -415,8 +589,8 @@
                 });
                 if (response.ok) {
                     showSuccess('Ученик назначен');
-                    document.getElementById('assignTelegramId').value = '';
-                    document.getElementById('assignUsername').value = '';
+                    hideSearchResults();
+                    document.getElementById('telegramSearch').value = '';
                     loadStudents();
                 } else {
                     const err = await response.json().catch(() => ({}));

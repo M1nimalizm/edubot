@@ -411,6 +411,9 @@ func main() {
 		teacher.POST("/trial-requests/:id/approve", authHandler.ApproveTrialRequest)
 		teacher.POST("/trial-requests/:id/reject", authHandler.RejectTrialRequest)
 
+		// Поиск пользователей
+		teacher.POST("/users/search", authHandler.SearchUsers)
+
 		// Группы
 		teacher.POST("/groups", groupHandler.CreateGroup)
 		teacher.GET("/groups", groupHandler.ListGroups)
