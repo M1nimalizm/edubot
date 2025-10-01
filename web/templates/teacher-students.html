@@ -250,7 +250,7 @@
             </div>
             <div class="nav-menu">
                 <a href="/teacher-dashboard" class="nav-link">Панель управления</a>
-                <a href="/" class="nav-link">На главную</a>
+                <a href="/app" class="nav-link">На главную</a>
                 <button class="btn btn-outline" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> Выйти
                 </button>
@@ -278,9 +278,14 @@
                     </div>
                     <div class="form-group">
                         <label>&nbsp;</label>
-                        <button class="btn btn-outline" onclick="searchTelegramUsers()">
-                            <i class="fas fa-search"></i> Найти
-                        </button>
+                        <div style="display:flex; gap:.5rem;">
+                            <button class="btn btn-outline" onclick="searchTelegramUsers()">
+                                <i class="fas fa-search"></i> Найти
+                            </button>
+                            <button class="btn btn-outline" onclick="refreshBotUsers()">
+                                <i class="fas fa-sync-alt"></i> Обновить
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -288,6 +293,12 @@
                 <div id="telegramSearchResults" class="search-results" style="display: none;">
                     <h4>Найденные пользователи:</h4>
                     <div id="telegramUsersList" class="users-list"></div>
+                </div>
+                
+                <!-- Список всех пользователей бота -->
+                <div id="allBotUsers" class="search-results" style="display: none;">
+                    <h4>Все пользователи бота:</h4>
+                    <div id="allBotUsersList" class="users-list"></div>
                 </div>
                 
                 <!-- Форма для назначения ученика -->
@@ -386,7 +397,91 @@
         // Загружаем учеников при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
             loadStudents();
+            // Автоматически загружаем список пользователей бота
+            loadAllBotUsers();
         });
+
+        // Обновление списка пользователей бота
+        async function refreshBotUsers() {
+            try {
+                // Показываем индикатор загрузки
+                const refreshBtn = event.target;
+                const originalText = refreshBtn.innerHTML;
+                refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обновление...';
+                refreshBtn.disabled = true;
+
+                // Загружаем всех пользователей бота
+                await loadAllBotUsers();
+
+                // Восстанавливаем кнопку
+                refreshBtn.innerHTML = originalText;
+                refreshBtn.disabled = false;
+                
+                showSuccess('Список пользователей обновлен');
+            } catch (error) {
+                console.error('Error refreshing users:', error);
+                showError('Ошибка обновления списка пользователей');
+                
+                // Восстанавливаем кнопку в случае ошибки
+                const refreshBtn = event.target;
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Обновить';
+                refreshBtn.disabled = false;
+            }
+        }
+
+        // Загрузка всех пользователей бота
+        async function loadAllBotUsers() {
+            try {
+                const response = await fetch('/api/teacher/users/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('authToken')
+                    },
+                    body: JSON.stringify({ query: '' }) // Пустой запрос для получения всех пользователей
+                });
+
+                if (response.ok) {
+                    const users = await response.json();
+                    displayAllBotUsers(users);
+                } else {
+                    showError('Ошибка загрузки пользователей бота');
+                }
+            } catch (error) {
+                console.error('Error loading bot users:', error);
+                showError('Ошибка загрузки пользователей бота');
+            }
+        }
+
+        // Отображение всех пользователей бота
+        function displayAllBotUsers(users) {
+            const allUsersDiv = document.getElementById('allBotUsers');
+            const allUsersList = document.getElementById('allBotUsersList');
+
+            if (users.length === 0) {
+                allUsersList.innerHTML = '<div class="no-results">Пользователи бота не найдены</div>';
+            } else {
+                allUsersList.innerHTML = users.map(user => `
+                    <div class="user-item" onclick="selectTelegramUser('${user.id}', '${user.first_name}', '${user.last_name || ''}', '${user.username || ''}', '${user.telegram_id}')">
+                        <div class="user-info">
+                            <div class="user-details">
+                                <div class="user-name">${user.first_name} ${user.last_name || ''}</div>
+                                <div class="user-meta">@${user.username || 'без username'} • ID: ${user.telegram_id}</div>
+                            </div>
+                            <div class="user-status">
+                                <span class="badge badge-secondary">Гость</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Показываем список всех пользователей
+            allUsersDiv.style.display = 'block';
+            
+            // Скрываем результаты поиска
+            document.getElementById('telegramSearchResults').style.display = 'none';
+        }
 
         // Поиск пользователей Telegram
         async function searchTelegramUsers() {
@@ -443,6 +538,9 @@
             }
 
             resultsDiv.style.display = 'block';
+            
+            // Скрываем список всех пользователей
+            document.getElementById('allBotUsers').style.display = 'none';
         }
 
         // Выбор пользователя Telegram
@@ -466,6 +564,7 @@
         // Скрыть результаты поиска
         function hideSearchResults() {
             document.getElementById('telegramSearchResults').style.display = 'none';
+            document.getElementById('allBotUsers').style.display = 'none';
             document.getElementById('assignStudentForm').style.display = 'none';
             selectedTelegramUser = null;
         }

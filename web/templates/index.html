@@ -460,22 +460,30 @@
             const videoContainer = document.getElementById('welcomeVideoContainer');
             const videoFallback = document.getElementById('welcomeVideoFallback');
             
-            if (videoContainer && media.url) {
-                videoFallback.style.display = 'none';
+            if (videoContainer && media && media.url) {
+                // Скрываем фолбэк
+                if (videoFallback) {
+                    videoFallback.style.display = 'none';
+                }
+                
+                // Создаем видео элемент
                 videoContainer.innerHTML = `
                     <video controls style="width: 100%; max-width: 800px; border-radius: var(--border-radius); box-shadow: var(--shadow);">
-                        <source src="${media.url}" type="${media.mime_type}">
+                        <source src="${media.url}" type="${media.mime_type || 'video/mp4'}">
                         Ваш браузер не поддерживает видео.
                     </video>
                 `;
+            } else if (videoContainer && videoFallback) {
+                // Если видео не найдено, показываем фолбэк
+                videoFallback.style.display = 'block';
+                videoContainer.innerHTML = videoFallback.outerHTML;
             }
         }
         
-        // Автоматически загружаем приветственный ролик при загрузке страницы
+        // Автоматически загружаем медиафайлы главной страницы при загрузке
         document.addEventListener('DOMContentLoaded', () => {
             // Небольшая задержка для лучшего UX
             setTimeout(() => {
-                loadWelcomeVideo();
                 loadHomepageMedia();
             }, 1000);
         });

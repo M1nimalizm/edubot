@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"edubot/internal/config"
@@ -30,6 +31,11 @@ func main() {
 	log.Printf("Port: %s", cfg.Port)
 	log.Printf("Host: %s", cfg.Host)
 	log.Printf("Base URL: %s", cfg.BaseURL)
+
+	// Создаем необходимые директории
+	if err := createDirectories(cfg.DBPath, cfg.UploadPath); err != nil {
+		log.Fatalf("Failed to create directories: %v", err)
+	}
 
 	// Подключаемся к базе данных
 	db, err := database.NewDatabase(cfg.DBPath)
@@ -491,6 +497,23 @@ func main() {
 	if err := router.Run(addr); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
+}
+
+// createDirectories создает необходимые директории для работы приложения
+func createDirectories(dbPath, uploadPath string) error {
+	// Создаем директорию для базы данных
+	dbDir := filepath.Dir(dbPath)
+	if err := os.MkdirAll(dbDir, 0755); err != nil {
+		return fmt.Errorf("failed to create database directory: %w", err)
+	}
+
+	// Создаем директорию для загрузок
+	if err := os.MkdirAll(uploadPath, 0755); err != nil {
+		return fmt.Errorf("failed to create upload directory: %w", err)
+	}
+
+	log.Printf("Created directories: %s, %s", dbDir, uploadPath)
+	return nil
 }
 
 // isTelegramWebApp пытается определить, что запрос пришел из Telegram Mini App

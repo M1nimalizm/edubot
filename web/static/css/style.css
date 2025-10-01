@@ -64,6 +64,11 @@ body {
     height: 70px;
 }
 
+.main-content {
+    margin-top: 70px; /* Отступ для фиксированной навигации */
+    min-height: calc(100vh - 70px);
+}
+
 .nav-brand {
     display: flex;
     align-items: center;

@@ -40,7 +40,7 @@ func (r *userRepository) Create(user *models.User) error {
 	if user.ID == uuid.Nil {
 		user.ID = uuid.New()
 	}
-    return r.db.Create(user).Error
+	return r.db.Create(user).Error
 }
 
 // GetByID получает пользователя по ID
@@ -75,12 +75,12 @@ func (r *userRepository) GetByInviteCode(code string) (*models.User, error) {
 
 // GetByUsername получает пользователя по Telegram username
 func (r *userRepository) GetByUsername(username string) (*models.User, error) {
-    var user models.User
-    err := r.db.Where("username = ?", username).First(&user).Error
-    if err != nil {
-        return nil, err
-    }
-    return &user, nil
+	var user models.User
+	err := r.db.Where("username = ?", username).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 // Update обновляет пользователя
@@ -124,12 +124,20 @@ func (r *userRepository) GenerateInviteCode() (string, error) {
 // SearchByQuery ищет пользователей по запросу с фильтром по роли
 func (r *userRepository) SearchByQuery(query string, role string) ([]models.User, error) {
 	var users []models.User
-	
+
+	if query == "" {
+		// Если запрос пустой, возвращаем всех пользователей с указанной ролью
+		err := r.db.Where("role = ?", role).
+			Order("created_at DESC").
+			Find(&users).Error
+		return users, err
+	}
+
 	// Поиск по имени, фамилии, username или telegram_id
-	err := r.db.Where("role = ? AND (first_name ILIKE ? OR last_name ILIKE ? OR username ILIKE ? OR telegram_id::text ILIKE ?)", 
+	err := r.db.Where("role = ? AND (first_name ILIKE ? OR last_name ILIKE ? OR username ILIKE ? OR telegram_id::text ILIKE ?)",
 		role, "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%").
 		Order("created_at DESC").
 		Find(&users).Error
-	
+
 	return users, err
 }
