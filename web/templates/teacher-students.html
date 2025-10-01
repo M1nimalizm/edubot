@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ученики - EduBot</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="/static/css/style.css?v=2.0.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .students-container {
@@ -404,7 +404,7 @@
     </main>
 
 
-    <script src="/static/js/common.js?v=1.0.0"></script>
+    <script src="/static/js/common.js?v=2.0.0"></script>
     <script>
         let allStudents = [];
         let filteredStudents = [];
@@ -442,7 +442,7 @@
                 showSuccess('Список пользователей обновлен');
             } catch (error) {
                 console.error('Error refreshing users:', error);
-                showError('Ошибка обновления списка пользователей');
+                showError('Не удалось обновить список пользователей');
                 
                 // Восстанавливаем кнопку в случае ошибки
                 const refreshBtn = event.target;
@@ -467,11 +467,11 @@
                     const users = await response.json();
                     displayAllBotUsers(users);
                 } else {
-                    showError('Ошибка загрузки пользователей бота');
+                    showError('Не удалось загрузить пользователей бота');
                 }
             } catch (error) {
                 console.error('Error loading bot users:', error);
-                showError('Ошибка загрузки пользователей бота');
+                showError('Не удалось загрузить пользователей бота');
             }
         }
 
@@ -528,11 +528,11 @@
                     const users = await response.json();
                     displayTelegramUsers(users);
                 } else {
-                    showError('Ошибка поиска пользователей');
+                    showError('Не удалось найти пользователей');
                 }
             } catch (error) {
                 console.error('Error searching users:', error);
-                showError('Ошибка поиска пользователей');
+                showError('Не удалось найти пользователей');
             }
         }
 

@@ -77,9 +77,15 @@ function showError(message) {
         document.body.appendChild(container);
     }
     
+    // Заменяем слово "ошибка" на более дружелюбные формулировки
+    let friendlyMessage = message
+        .replace(/ошибка/gi, 'проблема')
+        .replace(/не удалось/gi, 'не получилось')
+        .replace(/неизвестная ошибка/gi, 'неизвестная проблема');
+    
     container.innerHTML = `
         <div style="background: #E74C3C; color: white; padding: 1rem; border-radius: 6px; margin-bottom: 0.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <i class="fas fa-exclamation-circle"></i> ${message}
+            <i class="fas fa-exclamation-triangle"></i> ${friendlyMessage}
         </div>
     `;
     
