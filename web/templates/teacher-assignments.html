@@ -286,76 +286,7 @@
             }
         }
         
-        /* Кнопка "Назад" */
-        .back-btn {
-            background: none;
-            border: none;
-            color: var(--primary-color);
-            font-size: 1.2rem;
-            padding: 0.5rem;
-            margin-right: 0.5rem;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: background-color 0.3s;
-        }
-        
-        .back-btn:hover {
-            background-color: rgba(52, 152, 219, 0.1);
-        }
-        
-        /* Мобильное меню */
-        .mobile-menu-toggle {
-            display: none;
-            background: none;
-            border: none;
-            color: var(--primary-color);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0.5rem;
-        }
-        
-        .mobile-menu {
-            display: none;
-            background: white;
-            border-top: 1px solid #eee;
-            padding: 1rem;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        
-        .mobile-menu.active {
-            display: flex;
-        }
-        
-        .mobile-menu .nav-link {
-            padding: 0.75rem 1rem;
-            border-radius: 6px;
-            transition: background-color 0.3s;
-        }
-        
-        .mobile-menu .nav-link:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .mobile-menu .btn {
-            width: 100%;
-            justify-content: center;
-        }
-        
-        /* Адаптивность */
-        @media (max-width: 768px) {
-            .nav-menu {
-                display: none;
-            }
-            
-            .mobile-menu-toggle {
-                display: block;
-            }
-            
-            .nav-brand span {
-                display: none;
-            }
-        }
+        /* Стили для мобильного меню и кнопки "Назад" теперь в style.css */
     </style>
 </head>
 <body>
@@ -525,6 +456,7 @@
         </div>
     </main>
 
+    <script src="/static/js/common.js?v=1.0.0"></script>
     <script>
         let students = [];
         let selectedStudent = null;
@@ -985,33 +917,6 @@
             // Простое уведомление об ошибке
             alert('❌ ' + message);
         }
-
-        // Мобильное меню
-        function toggleMobileMenu() {
-            const mobileMenu = document.getElementById('mobileMenu');
-            mobileMenu.classList.toggle('active');
-        }
-
-        // Кнопка "Назад"
-        function goBack() {
-            if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                window.location.href = '/teacher-dashboard';
-            }
-        }
-
-        // Закрытие мобильного меню при клике вне его
-        document.addEventListener('click', function(event) {
-            const mobileMenu = document.getElementById('mobileMenu');
-            const toggle = document.querySelector('.mobile-menu-toggle');
-            
-            if (mobileMenu.classList.contains('active') && 
-                !mobileMenu.contains(event.target) && 
-                !toggle.contains(event.target)) {
-                mobileMenu.classList.remove('active');
-            }
-        });
     </script>
 </body>
 </html>
